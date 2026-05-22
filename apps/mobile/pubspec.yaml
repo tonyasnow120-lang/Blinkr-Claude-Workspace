@@ -1,0 +1,39 @@
+name: blinkr
+description: Real-time staring contest mobile game
+
+publish_to: none
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+  flutter: ">=3.22.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  supabase_flutter: ^2.5.0
+  dio: ^5.4.0
+  go_router: ^14.0.0
+  flutter_riverpod: ^2.5.0
+  riverpod_annotation: ^2.3.0
+  camera: ^0.10.0
+  mediapipe_face_mesh: ^0.1.0
+  livekit_client: ^2.1.0
+  firebase_core: ^3.0.0
+  firebase_messaging: ^15.0.0
+  flutter_local_notifications: ^17.0.0
+  lottie: ^3.1.0
+  freezed_annotation: ^2.4.0
+  json_annotation: ^4.9.0
+  uuid: ^4.4.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  build_runner: ^2.4.0
+  freezed: ^2.4.0
+  json_serializable: ^6.8.0
+  riverpod_generator: ^2.4.0
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
