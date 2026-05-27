@@ -3,7 +3,6 @@ import { z } from 'zod'
 import { eq } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { users, userStats } from '../db/schema.js'
-import { requireAuth } from '../middleware/auth.js'
 import { Errors } from '../lib/errors.js'
 import { getMatchesForUser } from '../services/matchService.js'
 
@@ -18,7 +17,9 @@ const MatchQuerySchema = z.object({
 })
 
 export async function userRoutes(app: FastifyInstance) {
-  app.get('/users/me', { preHandler: requireAuth }, async (request, reply) => {
+  // All routes protected by global JWT preHandler in server.ts
+
+  app.get('/users/me', async (request, reply) => {
     const userId = (request.user as { sub: string }).sub
 
     const [profile] = await db
@@ -32,7 +33,7 @@ export async function userRoutes(app: FastifyInstance) {
     return reply.send({ data: profile })
   })
 
-  app.patch('/users/me', { preHandler: requireAuth }, async (request, reply) => {
+  app.patch('/users/me', async (request, reply) => {
     const userId = (request.user as { sub: string }).sub
     const body = UpdateMeSchema.parse(request.body)
 
@@ -50,18 +51,14 @@ export async function userRoutes(app: FastifyInstance) {
     return reply.send({ data: updated })
   })
 
-  app.get(
-    '/users/me/matches',
-    { preHandler: requireAuth },
-    async (request, reply) => {
-      const userId = (request.user as { sub: string }).sub
-      const { limit, offset } = MatchQuerySchema.parse(request.query)
-      const results = await getMatchesForUser(db, userId, limit, offset)
-      return reply.send({ data: results })
-    },
-  )
+  app.get('/users/me/matches', async (request, reply) => {
+    const userId = (request.user as { sub: string }).sub
+    const { limit, offset } = MatchQuerySchema.parse(request.query)
+    const results = await getMatchesForUser(db, userId, limit, offset)
+    return reply.send({ data: results })
+  })
 
-  app.get('/users/:id', { preHandler: requireAuth }, async (request, reply) => {
+  app.get('/users/:id', async (request, reply) => {
     const { id } = request.params as { id: string }
 
     const [user] = await db

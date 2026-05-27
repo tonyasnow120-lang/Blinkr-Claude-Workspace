@@ -4,20 +4,39 @@ import 'package:go_router/go_router.dart';
 import '../providers/match_provider.dart';
 import '../widgets/camera_feed.dart';
 import '../widgets/countdown_overlay.dart';
+import '../../../core/security/screen_security.dart';
 
-class ContestScreen extends ConsumerWidget {
+class ContestScreen extends ConsumerStatefulWidget {
   final String matchId;
 
   const ContestScreen({super.key, required this.matchId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final notifier = ref.read(matchNotifierProvider(matchId).notifier);
-    final matchState = ref.watch(matchNotifierProvider(matchId));
+  ConsumerState<ContestScreen> createState() => _ContestScreenState();
+}
 
-    ref.listen(matchNotifierProvider(matchId), (prev, next) {
+class _ContestScreenState extends ConsumerState<ContestScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Block screenshots and screen recording during live contest (GAP-15)
+    ScreenSecurity.enableSecureMode();
+  }
+
+  @override
+  void dispose() {
+    ScreenSecurity.disableSecureMode();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final notifier = ref.read(matchNotifierProvider(widget.matchId).notifier);
+    final matchState = ref.watch(matchNotifierProvider(widget.matchId));
+
+    ref.listen(matchNotifierProvider(widget.matchId), (prev, next) {
       if (next.phase == MatchPhase.result || next.phase == MatchPhase.abandoned) {
-        context.pushReplacement('/match/$matchId/result');
+        context.pushReplacement('/match/${widget.matchId}/result');
       }
     });
 

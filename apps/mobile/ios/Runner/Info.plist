@@ -23,7 +23,14 @@
     <key>CFBundleVersion</key>
     <string>$(FLUTTER_BUILD_NUMBER)</string>
 
-    <!-- Deep link: blinkr:// URL scheme -->
+    <!-- Explicit ATS config — no arbitrary loads permitted (GAP-28) -->
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsArbitraryLoads</key>
+        <false/>
+    </dict>
+
+    <!-- Deep link: blinkr:// URL scheme (fallback — not for sensitive flows) -->
     <key>CFBundleURLTypes</key>
     <array>
         <dict>
@@ -38,6 +45,9 @@
 
     <key>NSCameraUsageDescription</key>
     <string>Blinkr uses your camera to detect blinks during a staring contest.</string>
+
+    <!-- No IDFA used — ATT prompt not required. Confirmed: Firebase Analytics default
+         config does not collect IDFA. See STORE_COMPLIANCE.md. (GAP-28) -->
 
     <key>UILaunchStoryboardName</key>
     <string>LaunchScreen</string>

@@ -3,9 +3,8 @@ import { z } from 'zod'
 import { eq } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { users, userStats } from '../db/schema.js'
-import { requireAuth } from '../middleware/auth.js'
 import { Errors } from '../lib/errors.js'
-import { AppError } from '../lib/errors.js'
+import { getSupabaseAdmin } from '../services/supabaseAdmin.js'
 
 const RegisterProfileSchema = z.object({
   username: z
@@ -22,61 +21,71 @@ const FcmTokenSchema = z.object({
 })
 
 export async function authRoutes(app: FastifyInstance) {
-  app.post(
-    '/auth/register-profile',
-    { preHandler: requireAuth },
-    async (request, reply) => {
-      const userId = (request.user as { sub: string }).sub
-      const body = RegisterProfileSchema.parse(request.body)
+  // All routes in this plugin are protected by the global JWT preHandler in server.ts
 
-      const existing = await db
-        .select({ id: users.id })
-        .from(users)
-        .where(eq(users.id, userId))
-        .limit(1)
+  app.post('/auth/register-profile', async (request, reply) => {
+    const userId = (request.user as { sub: string }).sub
+    const body = RegisterProfileSchema.parse(request.body)
 
-      if (existing.length > 0) {
-        throw Errors.conflict('Profile already exists for this user')
-      }
+    const existing = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1)
 
-      const usernameTaken = await db
-        .select({ id: users.id })
-        .from(users)
-        .where(eq(users.username, body.username))
-        .limit(1)
+    if (existing.length > 0) {
+      throw Errors.conflict('Profile already exists for this user')
+    }
 
-      if (usernameTaken.length > 0) {
-        throw Errors.conflict('Username is already taken')
-      }
+    const usernameTaken = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.username, body.username))
+      .limit(1)
 
-      const [newUser] = await db.transaction(async (tx) => {
-        const [user] = await tx
-          .insert(users)
-          .values({
-            id: userId,
-            username: body.username,
-            displayName: body.displayName,
-            avatarUrl: body.avatarUrl,
-          })
-          .returning()
+    if (usernameTaken.length > 0) {
+      throw Errors.conflict('Username is already taken')
+    }
 
-        await tx.insert(userStats).values({ userId })
-        return [user]
-      })
+    const [newUser] = await db.transaction(async (tx) => {
+      const [user] = await tx
+        .insert(users)
+        .values({
+          id: userId,
+          username: body.username,
+          displayName: body.displayName,
+          avatarUrl: body.avatarUrl,
+        })
+        .returning()
 
-      return reply.code(201).send({ data: newUser })
-    },
-  )
+      await tx.insert(userStats).values({ userId })
+      return [user]
+    })
 
-  app.patch(
-    '/auth/fcm-token',
-    { preHandler: requireAuth },
-    async (request, reply) => {
-      const userId = (request.user as { sub: string }).sub
-      const { fcmToken } = FcmTokenSchema.parse(request.body)
+    return reply.code(201).send({ data: newUser })
+  })
 
-      await db.update(users).set({ fcmToken }).where(eq(users.id, userId))
-      return reply.send({ data: { updated: true } })
-    },
-  )
+  app.patch('/auth/fcm-token', async (request, reply) => {
+    const userId = (request.user as { sub: string }).sub
+    const { fcmToken } = FcmTokenSchema.parse(request.body)
+
+    await db.update(users).set({ fcmToken }).where(eq(users.id, userId))
+    return reply.send({ data: { updated: true } })
+  })
+
+  // Server-side session invalidation — prevents revoked tokens from remaining valid (GAP-20)
+  app.post('/auth/logout', async (request, reply) => {
+    const claims = request.user as { sub: string; session_id?: string }
+    const supabaseAdmin = getSupabaseAdmin()
+
+    if (claims.session_id) {
+      // Invalidate the specific session
+      await supabaseAdmin.auth.admin.signOut(claims.session_id)
+    } else {
+      // Fallback: sign out all sessions for the user
+      await supabaseAdmin.auth.admin.signOut(claims.sub)
+    }
+
+    return reply.send({ data: { loggedOut: true } })
+  })
 }

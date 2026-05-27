@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../features/auth/screens/welcome_screen.dart';
 import '../features/auth/screens/login_screen.dart';
 import '../features/auth/screens/verify_screen.dart';
@@ -13,9 +14,28 @@ import '../features/match/screens/contest_screen.dart';
 import '../features/match/screens/result_screen.dart';
 import '../features/profile/screens/profile_screen.dart';
 
+// Validates challenge codes: 9 uppercase alphanumeric chars, no O/0/I/1 (M9, GAP-9)
+final _codePattern = RegExp(r'^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{9}$');
+
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/',
+    redirect: (context, state) {
+      final session = Supabase.instance.client.auth.currentSession;
+      final isAuthenticated = session != null;
+      final path = state.matchedLocation;
+
+      // Public paths available without authentication
+      final isPublic = path == '/' || path == '/login' || path.startsWith('/verify');
+
+      // Redirect unauthenticated users away from protected routes (C2)
+      if (!isAuthenticated && !isPublic) return '/';
+
+      // Redirect authenticated users away from auth screens
+      if (isAuthenticated && (path == '/' || path == '/login')) return '/home';
+
+      return null;
+    },
     routes: [
       GoRoute(
         path: '/',
@@ -42,9 +62,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/challenge/join',
         builder: (context, state) => const JoinChallengeScreen(),
       ),
-      // Deep link entry: blinkr://match/:code
+      // HTTPS Universal Link: https://blinkr.app/match/:code (GAP-9, primary)
+      // Custom scheme blinkr://match/:code kept as fallback (see AndroidManifest.xml)
       GoRoute(
         path: '/match/:code',
+        redirect: (context, state) {
+          final code = state.pathParameters['code'] ?? '';
+          // Validate code format to prevent arbitrary navigation via crafted deep links (M9)
+          if (!_codePattern.hasMatch(code)) return '/home';
+          return null;
+        },
         builder: (context, state) =>
             JoinChallengeScreen(code: state.pathParameters['code']),
       ),

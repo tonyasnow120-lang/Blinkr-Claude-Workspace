@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Runner entitlements — enables iOS Universal Links (GAP-9)
+  Add the Associated Domains capability in Xcode or via this file.
+  Ensure https://blinkr.app/.well-known/apple-app-site-association is served
+  by the backend with the correct Content-Type and appID.
+-->
+<plist version="1.0">
+<dict>
+    <key>com.apple.developer.associated-domains</key>
+    <array>
+        <string>applinks:blinkr.app</string>
+    </array>
+</dict>
+</plist>

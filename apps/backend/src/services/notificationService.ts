@@ -1,22 +1,31 @@
 import admin from 'firebase-admin'
+import { maskEmail } from './securityLogger.js'
 
-// TODO: set env var GOOGLE_APPLICATION_CREDENTIALS pointing to your service account JSON
+// Credential loaded from environment — never from a committed JSON file (GAP-7)
 let app: admin.app.App | null = null
 
 function getApp(): admin.app.App {
   if (!app) {
+    const credJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON
+    if (!credJson) {
+      throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON environment variable is required')
+    }
     app = admin.initializeApp({
-      credential: admin.credential.applicationDefault(),
+      credential: admin.credential.cert(JSON.parse(credJson)),
     })
   }
   return app
 }
+
+// Valid notification type enum — validated on the mobile client before routing (GAP-7)
+export type NotificationType = 'challenge_invite' | 'match_result'
 
 export async function sendMatchInvite(
   fcmToken: string,
   challengerName: string,
   code: string,
 ): Promise<void> {
+  // FCM payload contains NO JWT, NO session data, NO PII — only type enum + public code (GAP-7)
   await getApp().messaging().send({
     token: fcmToken,
     notification: {
@@ -24,7 +33,7 @@ export async function sendMatchInvite(
       body: 'Tap to accept the Blinkr challenge.',
     },
     data: {
-      type: 'challenge_invite',
+      type: 'challenge_invite' satisfies NotificationType,
       code,
     },
     apns: {
@@ -40,10 +49,13 @@ export async function sendMatchResult(
   await getApp().messaging().send({
     token: fcmToken,
     notification: {
-      title: won ? 'You won the stare-down! 🏆' : 'You blinked! 😅',
+      title: won ? 'You won the stare-down!' : 'You blinked!',
       body: won ? 'Your opponent blinked first.' : 'Better luck next time.',
     },
-    data: { type: 'match_result', result: won ? 'win' : 'loss' },
+    data: {
+      type: 'match_result' satisfies NotificationType,
+      result: won ? 'win' : 'loss',
+    },
     apns: {
       payload: { aps: { sound: 'default' } },
     },

@@ -35,7 +35,8 @@ export const challenges = pgTable(
   'challenges',
   {
     id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
-    code: char('code', { length: 6 }).unique().notNull(),
+    // 9-char code from 32-char alphabet = 45 bits entropy (C5, GAP-23)
+    code: char('code', { length: 9 }).unique().notNull(),
     challengerId: uuid('challenger_id')
       .notNull()
       .references(() => users.id),
@@ -46,6 +47,8 @@ export const challenges = pgTable(
       .default('pending')
       .notNull(),
     expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    // Tracks one-time-use acceptance — null until a match is created (GAP-11)
+    usedAt: timestamp('used_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => ({

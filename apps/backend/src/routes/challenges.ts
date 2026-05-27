@@ -1,17 +1,24 @@
 import type { FastifyInstance } from 'fastify'
-import { eq } from 'drizzle-orm'
+import { eq, and, isNull } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { challenges, matches, users } from '../db/schema.js'
-import { requireAuth } from '../middleware/auth.js'
-import { createChallenge, getChallengeByCode } from '../services/challengeService.js'
+import { createChallenge, getChallengeByCode, markChallengeUsed } from '../services/challengeService.js'
 import { createMatch } from '../services/matchService.js'
 import * as livekitService from '../services/livekitService.js'
 import { Errors } from '../lib/errors.js'
+import { logSecurityEvent } from '../services/securityLogger.js'
 
-const DEEP_LINK_SCHEME = process.env.DEEP_LINK_SCHEME ?? 'blinkr'
+// Primary deep link scheme — HTTPS Universal Link (GAP-9)
+// blinkr:// custom scheme kept as fallback for backward compat
+const HTTPS_BASE_URL = process.env.APP_BASE_URL ?? 'https://blinkr.app'
+
+// Artificial delay for not-found responses to prevent timing-based code enumeration (GAP-12)
+const NOT_FOUND_DELAY_MS = 50
 
 export async function challengeRoutes(app: FastifyInstance) {
-  app.post('/challenges', { preHandler: requireAuth }, async (request, reply) => {
+  // All routes protected by global JWT preHandler in server.ts
+
+  app.post('/challenges', async (request, reply) => {
     const challengerId = (request.user as { sub: string }).sub
     const challenge = await createChallenge(db, challengerId)
 
@@ -19,110 +26,151 @@ export async function challengeRoutes(app: FastifyInstance) {
       data: {
         id: challenge.id,
         code: challenge.code,
-        deepLink: `${DEEP_LINK_SCHEME}://match/${challenge.code}`,
+        deepLink: `${HTTPS_BASE_URL}/match/${challenge.code}`,
+        deepLinkFallback: `blinkr://match/${challenge.code}`,
         expiresAt: challenge.expiresAt,
       },
     })
   })
 
-  app.get(
-    '/challenges/:code',
-    { preHandler: requireAuth },
-    async (request, reply) => {
-      const { code } = request.params as { code: string }
-      const challenge = await getChallengeByCode(db, code)
+  app.get('/challenges/:code', async (request, reply) => {
+    const userId = (request.user as { sub: string }).sub
+    const { code } = request.params as { code: string }
 
-      const [challenger] = await db
-        .select({ displayName: users.displayName, username: users.username })
-        .from(users)
-        .where(eq(users.id, challenge.challengerId))
-        .limit(1)
+    const [challenge] = await db
+      .select()
+      .from(challenges)
+      .where(eq(challenges.code, code))
+      .limit(1)
 
-      return reply.send({ data: { ...challenge, challenger } })
-    },
-  )
+    if (!challenge) {
+      // Constant-time response on not-found to prevent timing-based enumeration (GAP-12)
+      await new Promise((r) => setTimeout(r, NOT_FOUND_DELAY_MS))
+      throw Errors.notFound('Challenge')
+    }
 
-  app.post(
-    '/challenges/:code/accept',
-    { preHandler: requireAuth },
-    async (request, reply) => {
-      const acceptorId = (request.user as { sub: string }).sub
-      const { code } = request.params as { code: string }
+    const isParticipant =
+      challenge.challengerId === userId || challenge.opponentId === userId
 
-      const challenge = await getChallengeByCode(db, code)
+    // Fetch challenger display name for join screen
+    const [challenger] = await db
+      .select({ displayName: users.displayName, username: users.username })
+      .from(users)
+      .where(eq(users.id, challenge.challengerId))
+      .limit(1)
 
-      if (challenge.status !== 'pending') {
-        throw Errors.conflict('Challenge is no longer pending')
-      }
-      if (challenge.challengerId === acceptorId) {
-        throw Errors.validation('You cannot accept your own challenge')
-      }
-
-      const match = await createMatch(
-        db,
-        challenge.id,
-        challenge.challengerId,
-        acceptorId,
-        'pending-room',
-      )
-
-      const roomName = await livekitService.createRoom(match.id)
-
-      await db
-        .update(matches)
-        .set({ livekitRoomName: roomName })
-        .where(eq(matches.id, match.id))
-
-      await db
-        .update(challenges)
-        .set({ opponentId: acceptorId, status: 'accepted' })
-        .where(eq(challenges.id, challenge.id))
-
-      const [acceptorUser] = await db
-        .select({ displayName: users.displayName, username: users.username })
-        .from(users)
-        .where(eq(users.id, acceptorId))
-        .limit(1)
-
-      const acceptorToken = livekitService.createParticipantToken(
-        roomName,
-        acceptorId,
-        acceptorUser?.displayName ?? acceptorUser?.username ?? acceptorId,
-      )
-
+    if (!isParticipant) {
+      // Non-participants get only what's needed to render the join screen (GAP-12)
+      // Same shape for both valid and invalid codes (handled by not-found above)
       return reply.send({
         data: {
-          matchId: match.id,
-          livekitToken: acceptorToken,
-          livekitUrl: process.env.LIVEKIT_WS_URL,
-          livekitRoomName: roomName,
+          challengerDisplayName: challenger?.displayName ?? challenger?.username,
+          expiresAt: challenge.expiresAt,
+          status: challenge.status,
         },
       })
-    },
-  )
+    }
 
-  app.delete(
-    '/challenges/:code',
-    { preHandler: requireAuth },
-    async (request, reply) => {
-      const userId = (request.user as { sub: string }).sub
-      const { code } = request.params as { code: string }
+    // Full details for participants
+    return reply.send({
+      data: {
+        ...challenge,
+        challenger,
+      },
+    })
+  })
 
-      const [challenge] = await db
-        .select()
-        .from(challenges)
-        .where(eq(challenges.code, code))
-        .limit(1)
+  app.post('/challenges/:code/accept', async (request, reply) => {
+    const acceptorId = (request.user as { sub: string }).sub
+    const { code } = request.params as { code: string }
 
-      if (!challenge) throw Errors.notFound('Challenge')
-      if (challenge.challengerId !== userId) throw Errors.forbidden()
+    const challenge = await getChallengeByCode(db, code)
 
-      await db
-        .update(challenges)
-        .set({ status: 'cancelled' })
-        .where(eq(challenges.id, challenge.id))
+    if (challenge.status !== 'pending') {
+      throw Errors.conflict('Challenge is no longer pending')
+    }
+    if (challenge.challengerId === acceptorId) {
+      throw Errors.validation('You cannot accept your own challenge')
+    }
 
-      return reply.send({ data: { cancelled: true } })
-    },
-  )
+    // Atomically mark the challenge as used — prevents double-accept race conditions (GAP-11)
+    const claimed = await markChallengeUsed(db, challenge.id)
+    if (!claimed) {
+      logSecurityEvent(request.log, 'idor_attempt', {
+        userId: acceptorId,
+        challengeId: challenge.id,
+        reason: 'challenge_already_used_or_expired',
+      })
+      throw Errors.conflict('Challenge has already been accepted or expired')
+    }
+
+    const match = await createMatch(
+      db,
+      challenge.id,
+      challenge.challengerId,
+      acceptorId,
+      'pending-room',
+    )
+
+    const roomName = await livekitService.createRoom(match.id)
+
+    await db
+      .update(matches)
+      .set({ livekitRoomName: roomName })
+      .where(eq(matches.id, match.id))
+
+    await db
+      .update(challenges)
+      .set({ opponentId: acceptorId, status: 'accepted' })
+      .where(eq(challenges.id, challenge.id))
+
+    const [acceptorUser] = await db
+      .select({ displayName: users.displayName, username: users.username })
+      .from(users)
+      .where(eq(users.id, acceptorId))
+      .limit(1)
+
+    const acceptorToken = livekitService.createParticipantToken(
+      roomName,
+      acceptorId,
+      acceptorUser?.displayName ?? acceptorUser?.username ?? acceptorId,
+    )
+
+    return reply.send({
+      data: {
+        matchId: match.id,
+        livekitToken: acceptorToken,
+        livekitUrl: process.env.LIVEKIT_WS_URL,
+        livekitRoomName: roomName,
+      },
+    })
+  })
+
+  app.delete('/challenges/:code', async (request, reply) => {
+    const userId = (request.user as { sub: string }).sub
+    const { code } = request.params as { code: string }
+
+    const [challenge] = await db
+      .select()
+      .from(challenges)
+      .where(eq(challenges.code, code))
+      .limit(1)
+
+    if (!challenge) throw Errors.notFound('Challenge')
+    if (challenge.challengerId !== userId) {
+      logSecurityEvent(request.log, 'idor_attempt', {
+        userId,
+        challengeId: challenge.id,
+        reason: 'delete_not_challenger',
+      })
+      throw Errors.forbidden()
+    }
+
+    await db
+      .update(challenges)
+      .set({ status: 'cancelled' })
+      .where(eq(challenges.id, challenge.id))
+
+    return reply.send({ data: { cancelled: true } })
+  })
 }

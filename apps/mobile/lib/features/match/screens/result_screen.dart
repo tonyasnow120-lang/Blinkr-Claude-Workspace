@@ -4,15 +4,34 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/match_provider.dart';
 import '../widgets/win_animation.dart';
+import '../../../core/security/screen_security.dart';
 
-class ResultScreen extends ConsumerWidget {
+class ResultScreen extends ConsumerStatefulWidget {
   final String matchId;
 
   const ResultScreen({super.key, required this.matchId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final matchState = ref.watch(matchNotifierProvider(matchId));
+  ConsumerState<ResultScreen> createState() => _ResultScreenState();
+}
+
+class _ResultScreenState extends ConsumerState<ResultScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Block screenshots of result screen to protect match outcome privacy (GAP-15)
+    ScreenSecurity.enableSecureMode();
+  }
+
+  @override
+  void dispose() {
+    ScreenSecurity.disableSecureMode();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final matchState = ref.watch(matchNotifierProvider(widget.matchId));
     final currentUserId = Supabase.instance.client.auth.currentUser?.id;
 
     final result = matchState.result;

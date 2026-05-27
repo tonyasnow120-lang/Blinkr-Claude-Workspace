@@ -25,6 +25,12 @@ dependencies:
   freezed_annotation: ^2.4.0
   json_annotation: ^4.9.0
   uuid: ^4.4.0
+  # Security: encrypted session storage — prevents tokens landing in SharedPreferences (GAP-1, M3)
+  flutter_secure_storage: ^9.0.0
+  # Security: camera permission rationale UI before first-use request (M4)
+  permission_handler: ^11.0.0
+  # Security: Android FLAG_SECURE on contest and result screens (GAP-15)
+  flutter_windowmanager: ^0.2.0
 
 dev_dependencies:
   flutter_test:

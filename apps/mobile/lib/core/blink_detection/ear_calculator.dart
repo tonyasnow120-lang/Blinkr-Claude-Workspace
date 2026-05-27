@@ -1,6 +1,25 @@
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 
+// SECURITY / PRIVACY AUDIT — Biometric Data Handling (M8)
+//
+// This module computes the Eye Aspect Ratio (EAR) from MediaPipe Face Mesh landmarks.
+//
+// What is processed ON DEVICE ONLY:
+//   • 468 facial landmark coordinates (x, y, z) per frame — computed locally
+//   • EAR value derived from 6 per-eye landmark points
+//   • Binary blink signal (true/false + timestamp) — the only output that leaves this module
+//
+// What is NOT stored or transmitted:
+//   • Raw camera frames — NOT stored, NOT transmitted
+//   • Facial landmark coordinates — NOT stored, NOT transmitted
+//   • EAR values — NOT stored (only the boolean blink outcome is sent to the server)
+//   • Biometric templates or identifiers — NOT generated
+//
+// The blink event object { detectedAt, earValue, eventType } that is POSTed to the backend
+// contains the EAR value as supporting evidence for adjudication. This is match metadata,
+// not a biometric identifier. See PRIVACY_COMPLIANCE.md for the full regulatory analysis.
+
 const double kBlinkEarThreshold = 0.20;
 const int kBlinkFrameDebounce = 2;
 

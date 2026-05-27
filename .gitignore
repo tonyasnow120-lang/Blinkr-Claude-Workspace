@@ -1,0 +1,57 @@
+# Dependencies
+node_modules/
+dist/
+.pnpm-store/
+
+# Environment secrets — NEVER commit these
+.env
+.env.*
+!.env.example
+apps/backend/.env
+apps/backend/.env.*
+!apps/backend/.env.example
+
+# Firebase credentials
+google-services.json
+GoogleService-Info.plist
+
+# Android signing
+*.keystore
+*.jks
+key.properties
+
+# iOS signing
+*.p8
+*.p12
+*.mobileprovision
+*.cer
+
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+pubspec.lock
+apps/mobile/.dart_tool/
+apps/mobile/build/
+
+# Debug symbols (store securely — do not commit)
+build/debug-info/
+apps/mobile/build/debug-info/
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/settings.json
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Supabase local
+supabase/.branches/
+supabase/.temp/
