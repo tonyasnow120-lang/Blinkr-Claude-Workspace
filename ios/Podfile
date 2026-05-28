@@ -1,0 +1,41 @@
+require Pod::Executable.execute_command('node', ['-e',
+  'process.stdout.write(require("path").dirname(require.resolve("react-native/package.json")))'
+]).strip + '/scripts/react_native_pods'
+
+platform :ios, min_ios_version_supported
+prepare_react_native_project!
+
+# New Architecture is on by default in RN 0.76
+ENV['RCT_NEW_ARCH_ENABLED'] = '1'
+
+target 'Blinkr' do
+  config = use_native_modules!
+
+  use_react_native!(
+    :path => config[:reactNativePath],
+    :hermes_enabled => true,
+    :fabric_enabled => true,
+    :flipper_configuration => FlipperConfiguration.disabled,
+    :app_path => "#{Pod::Config.instance.installation_root}/.."
+  )
+
+  # ─── ARKit ──────────────────────────────────────────────────────────────────
+  # ARKit is a system framework — no pod needed.
+  # Add ARFaceTracking entitlement in Xcode: Signing & Capabilities → ARKit.
+
+  # ─── Firebase (collaborator fills in) ───────────────────────────────────────
+  # Uncomment after dropping GoogleService-Info.plist into ios/Blinkr/
+  # pod 'FirebaseCore', :modular_headers => true
+
+  target 'BlinkrTests' do
+    inherit! :complete
+  end
+
+  post_install do |installer|
+    react_native_post_install(
+      installer,
+      config[:reactNativePath],
+      :mac_catalyst_enabled => false
+    )
+  end
+end
