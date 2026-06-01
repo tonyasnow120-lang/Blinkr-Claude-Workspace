@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
+import 'dart:ui' show Offset;
 import 'blink_event.dart';
 import 'ear_calculator.dart';
 
