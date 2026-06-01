@@ -23,6 +23,22 @@ jobs:
       - name: Flutter pub get
         run: cd apps/mobile && flutter pub get
 
+      - name: Scaffold missing Android platform files
+        run: |
+          cd apps/mobile
+          # Save custom files that flutter create would overwrite
+          cp android/app/src/main/AndroidManifest.xml /tmp/AndroidManifest.xml
+          cp android/app/src/main/kotlin/com/blinkr/app/MainActivity.kt /tmp/MainActivity.kt
+          cp android/app/src/main/res/xml/network_security_config.xml /tmp/network_security_config.xml
+          cp android/app/proguard-rules.pro /tmp/proguard-rules.pro
+          # Generate all missing Gradle files, wrapper, icons, etc.
+          flutter create --platforms android . --org com.blinkr
+          # Restore our custom files on top
+          cp /tmp/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
+          cp /tmp/MainActivity.kt android/app/src/main/kotlin/com/blinkr/app/MainActivity.kt
+          cp /tmp/network_security_config.xml android/app/src/main/res/xml/network_security_config.xml
+          cp /tmp/proguard-rules.pro android/app/proguard-rules.pro
+
       - name: Write dart-define file
         run: |
           cat > apps/mobile/.env.dart-define <<EOF
@@ -67,6 +83,11 @@ jobs:
 
       - name: Flutter pub get
         run: cd apps/mobile && flutter pub get
+
+      - name: Scaffold missing iOS platform files
+        run: |
+          cd apps/mobile
+          flutter create --platforms ios . --org com.blinkr
 
       - name: Write dart-define file
         run: |
