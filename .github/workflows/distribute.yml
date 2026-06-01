@@ -33,6 +33,7 @@ jobs:
           flutter create --platforms android . --org com.blinkr
           # Restore our custom files on top (flutter create overwrites these)
           cp /tmp/pubspec.yaml pubspec.yaml
+          rm -f pubspec.lock  # Force fresh resolution so dependency_overrides take effect
           cp /tmp/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
           cp /tmp/MainActivity.kt android/app/src/main/kotlin/com/blinkr/app/MainActivity.kt
           cp /tmp/network_security_config.xml android/app/src/main/res/xml/network_security_config.xml
@@ -89,6 +90,7 @@ jobs:
           cp pubspec.yaml /tmp/pubspec.yaml
           flutter create --platforms ios . --org com.blinkr
           cp /tmp/pubspec.yaml pubspec.yaml
+          rm -f pubspec.lock
 
       - name: Flutter pub get
         run: cd apps/mobile && flutter pub get
