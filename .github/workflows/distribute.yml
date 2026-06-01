@@ -38,6 +38,8 @@ jobs:
           cp /tmp/MainActivity.kt android/app/src/main/kotlin/com/blinkr/app/MainActivity.kt
           cp /tmp/network_security_config.xml android/app/src/main/res/xml/network_security_config.xml
           cp /tmp/proguard-rules.pro android/app/proguard-rules.pro
+          # flutter create names the app after the directory ('mobile') → fix applicationId/namespace
+          sed -i 's/com\.blinkr\.mobile/com.blinkr.app/g' android/app/build.gradle
 
       - name: Flutter pub get
         run: cd apps/mobile && flutter pub get
