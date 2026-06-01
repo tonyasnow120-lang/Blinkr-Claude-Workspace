@@ -29,10 +29,17 @@ void main() async {
         autoRefreshToken: true,
       ),
     );
-    await Firebase.initializeApp();
   } catch (e) {
-    runApp(_StartupErrorApp(message: 'Startup failed:\n$e'));
+    runApp(_StartupErrorApp(message: 'Supabase init failed:\n$e'));
     return;
+  }
+
+  // Firebase is only required for push notifications — initialize best-effort
+  // so the app runs even if google-services.json is not yet configured.
+  try {
+    await Firebase.initializeApp();
+  } catch (_) {
+    // Push notifications will be unavailable; core match flow still works.
   }
 
   runApp(const ProviderScope(child: BlinkrApp()));
