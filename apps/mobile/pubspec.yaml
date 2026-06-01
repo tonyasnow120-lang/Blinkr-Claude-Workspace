@@ -38,5 +38,11 @@ dev_dependencies:
   riverpod_generator: ^2.4.0
   flutter_lints: ^4.0.0
 
+# flutter_webrtc 0.12.x (pulled by livekit_client) doesn't support the
+# TextureRegistry.SurfaceProducer.Callback API introduced in Flutter 3.22.
+# Override to 0.13.x which adds that support.
+dependency_overrides:
+  flutter_webrtc: ^0.13.0
+
 flutter:
   uses-material-design: true
