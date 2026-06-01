@@ -1,5 +1,5 @@
 import 'dart:math';
-import 'package:flutter/foundation.dart';
+import 'dart:ui' show Offset;
 
 // SECURITY / PRIVACY AUDIT — Biometric Data Handling (M8)
 //

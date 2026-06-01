@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'app/app.dart';
+import 'core/security/secure_local_storage.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

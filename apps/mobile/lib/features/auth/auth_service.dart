@@ -33,7 +33,7 @@ class AuthService {
   /// The SHA-256 hashed nonce is enforced by supabase_flutter, satisfying
   /// Apple's Sign In with Apple specification. (GAP-3, GAP-4)
   Future<void> signInWithApple() async {
-    await _supabase.auth.signInWithApple();
+    await _supabase.auth.signInWithOAuth(OAuthProvider.apple);
   }
 
   /// Signs in with Google.
