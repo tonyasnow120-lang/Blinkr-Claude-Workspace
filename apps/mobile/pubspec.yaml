@@ -16,7 +16,6 @@ dependencies:
   flutter_riverpod: ^2.5.0
   riverpod_annotation: ^2.3.0
   camera: ^0.10.0
-  mediapipe_face_mesh: ^0.1.0
   livekit_client: ^2.1.0
   firebase_core: ^3.0.0
   firebase_messaging: ^15.0.0
