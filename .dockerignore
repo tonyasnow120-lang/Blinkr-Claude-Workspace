@@ -1,0 +1,16 @@
+# Everything except what the backend Docker build needs
+**
+
+# Allow workspace config
+!pnpm-workspace.yaml
+!package.json
+
+# Allow backend source
+!apps/backend/
+!apps/backend/**
+
+# Re-exclude backend build artifacts and secrets
+apps/backend/dist/
+apps/backend/node_modules/
+apps/backend/.env
+apps/backend/.env.*
