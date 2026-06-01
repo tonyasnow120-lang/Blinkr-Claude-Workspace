@@ -1,0 +1,57 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [main, 'claude/**']
+  pull_request:
+
+jobs:
+  backend-audit:
+    name: Backend Dependency Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install backend dependencies
+        run: cd apps/backend && pnpm install --frozen-lockfile
+
+      - name: Audit backend for HIGH/CRITICAL vulnerabilities
+        run: cd apps/backend && pnpm audit --audit-level=high
+
+  flutter-outdated:
+    name: Flutter Dependency Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.0'
+
+      - name: Flutter pub get
+        run: cd apps/mobile && flutter pub get
+
+      - name: Check for outdated packages
+        run: cd apps/mobile && flutter pub outdated --no-dev-dependencies
+
+  secret-scan:
+    name: Gitleaks Secret Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,68 +1,59 @@
-# ─── Node ─────────────────────────────────────────────────────────────────────
+# Dependencies
 node_modules/
-npm-debug.log
-yarn-error.log
-yarn-debug.log
-
-# ─── React Native ─────────────────────────────────────────────────────────────
-.expo/
-.expo-shared/
 dist/
-web-build/
+.pnpm-store/
 
-# ─── iOS ──────────────────────────────────────────────────────────────────────
-ios/Pods/
-ios/build/
-ios/*.xcworkspace
-ios/DerivedData/
-ios/*.xcuserstate
-ios/.xcode.env.local
-*.pbxuser
-!default.pbxuser
-*.mode1v3
-!default.mode1v3
-*.mode2v3
-!default.mode2v3
-*.perspectivev3
-!default.perspectivev3
-xcuserdata/
+# Environment secrets — NEVER commit these
+.env
+.env.*
+!.env.example
+apps/backend/.env
+apps/backend/.env.*
+!apps/backend/.env.example
+apps/mobile/.env.dart-define
+!apps/mobile/.env.dart-define.example
 
-# ─── Android ──────────────────────────────────────────────────────────────────
-android/build/
-android/app/build/
-android/.gradle/
-android/local.properties
-android/captures/
-android/.idea/
-*.iml
-*.iws
-*.ipr
-
-# ─── Firebase ─────────────────────────────────────────────────────────────────
+# Firebase credentials
 google-services.json
 GoogleService-Info.plist
-.firebaserc
-firebase-debug.log
 
-# ─── Metro bundler cache ───────────────────────────────────────────────────────
-.metro-health-check*
-.cache/
+# Android signing
+*.keystore
+*.jks
+key.properties
 
-# ─── OS ───────────────────────────────────────────────────────────────────────
+# iOS signing
+*.p8
+*.p12
+*.mobileprovision
+*.cer
+
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+pubspec.lock
+apps/mobile/.dart_tool/
+apps/mobile/build/
+
+# Debug symbols (store securely — do not commit)
+build/debug-info/
+apps/mobile/build/debug-info/
+
+# macOS
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-Thumbs.db
 
-# ─── Editor ───────────────────────────────────────────────────────────────────
-.vscode/
+# IDE
 .idea/
+.vscode/settings.json
 *.swp
 *.swo
 
-# ─── Env / secrets ────────────────────────────────────────────────────────────
-.env
-.env.local
-.env.*.local
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Supabase local
+supabase/.branches/
+supabase/.temp/

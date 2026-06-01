@@ -1,0 +1,37 @@
+title = "Blinkr Secret Scanning"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "supabase-service-role"
+description = "Supabase service_role JWT token"
+regex = '''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.[A-Za-z0-9_-]{40,}\.[A-Za-z0-9_-]{40,}'''
+keywords = ["service_role", "supabase"]
+tags = ["key", "supabase"]
+
+[[rules]]
+id = "supabase-url"
+description = "Supabase project URL with actual value"
+regex = '''https://[a-z0-9]{20}\.supabase\.co'''
+tags = ["url", "supabase"]
+
+[[rules]]
+id = "livekit-api-secret"
+description = "LiveKit API secret"
+regex = '''livekit[_\-\.]?api[_\-\.]?secret['":\s=]+[A-Za-z0-9+/]{20,}'''
+tags = ["key", "livekit"]
+
+[allowlist]
+description = "Files that may contain example keys or patterns"
+files = [
+  ".env.example",
+  "SECRETS.md",
+  "SECURITY_AUDIT_REPORT.md",
+]
+regexes = [
+  '''SUPABASE_URL=\s*$''',
+  '''SUPABASE_ANON_KEY=\s*$''',
+  '''SUPABASE_SERVICE_ROLE_KEY=\s*$''',
+  '''DATABASE_URL=\s*$''',
+]

@@ -1,0 +1,66 @@
+import 'dart:async';
+import 'package:flutter/material.dart';
+
+class CountdownOverlay extends StatefulWidget {
+  final DateTime startsAt;
+  final VoidCallback onComplete;
+
+  const CountdownOverlay({
+    super.key,
+    required this.startsAt,
+    required this.onComplete,
+  });
+
+  @override
+  State<CountdownOverlay> createState() => _CountdownOverlayState();
+}
+
+class _CountdownOverlayState extends State<CountdownOverlay> {
+  late Timer _timer;
+  int _remaining = 3;
+
+  @override
+  void initState() {
+    super.initState();
+    _tick();
+    _timer = Timer.periodic(const Duration(milliseconds: 100), (_) => _tick());
+  }
+
+  void _tick() {
+    final now = DateTime.now();
+    final diff = widget.startsAt.difference(now).inSeconds;
+    if (diff <= 0) {
+      _timer.cancel();
+      if (mounted) widget.onComplete();
+    } else {
+      if (mounted) setState(() => _remaining = diff);
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.black.withOpacity(0.7),
+      child: Center(
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: Text(
+            '$_remaining',
+            key: ValueKey(_remaining),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 120,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
