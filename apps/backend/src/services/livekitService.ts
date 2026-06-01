@@ -23,11 +23,11 @@ export async function createRoom(matchId: string): Promise<string> {
   return roomName
 }
 
-export function createParticipantToken(
+export async function createParticipantToken(
   roomName: string,
   userId: string,
   displayName: string,
-): string {
+): Promise<string> {
   const token = new AccessToken(apiKey!, apiSecret!, {
     identity: userId,
     name: displayName,

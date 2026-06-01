@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { matches, users, userStats } from '../db/schema.js'
 import { getMatchById, processBlinkAndAdjudicate } from '../services/matchService.js'
@@ -146,7 +146,7 @@ export async function matchRoutes(app: FastifyInstance) {
     if (wasLive) {
       await db
         .update(userStats)
-        .set({ wins: db.dynamic().ref('wins') })
+        .set({ wins: sql`${userStats.wins} + 1` })
         .where(eq(userStats.userId, otherId))
     }
 
