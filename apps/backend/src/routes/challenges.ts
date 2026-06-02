@@ -130,7 +130,7 @@ export async function challengeRoutes(app: FastifyInstance) {
       .where(eq(users.id, acceptorId))
       .limit(1)
 
-    const acceptorToken = livekitService.createParticipantToken(
+    const acceptorToken = await livekitService.createParticipantToken(
       roomName,
       acceptorId,
       acceptorUser?.displayName ?? acceptorUser?.username ?? acceptorId,
