@@ -35,9 +35,9 @@ void main() async {
   }
 
   // Firebase is only required for push notifications — initialize best-effort
-  // so the app runs even if google-services.json is not yet configured.
+  // with a timeout so a hanging call never blocks runApp.
   try {
-    await Firebase.initializeApp();
+    await Firebase.initializeApp().timeout(const Duration(seconds: 5));
   } catch (_) {
     // Push notifications will be unavailable; core match flow still works.
   }
