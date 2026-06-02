@@ -20,6 +20,15 @@ dependencies:
   json_annotation: ^4.9.0
   uuid: ^4.4.0
 
+# app_links is pulled in transitively by supabase_flutter (OAuth deep-link
+# callbacks). Version 6.4.1 "Updated Gradle settings" to read
+# flutter.compileSdkVersion, which the Flutter 3.24 build does not expose to
+# plugin subprojects, breaking the Android build. 6.4.0 uses the older Gradle
+# convention and is API-compatible. Pinned here so the CI's fresh resolution
+# (pubspec.lock is removed) cannot float back up to 6.4.1.
+dependency_overrides:
+  app_links: 6.4.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
