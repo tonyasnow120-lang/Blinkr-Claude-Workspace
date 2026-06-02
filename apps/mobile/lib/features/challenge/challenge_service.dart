@@ -1,6 +1,5 @@
 import '../../core/api/api_client.dart';
 import '../../core/api/api_endpoints.dart';
-import '../../core/models/challenge.dart';
 
 class ChallengeService {
   final ApiClient _api;

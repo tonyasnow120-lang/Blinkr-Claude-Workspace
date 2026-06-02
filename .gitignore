@@ -2,7 +2,6 @@
 node_modules/
 dist/
 .pnpm-store/
-pnpm-lock.yaml
 
 # Environment secrets — NEVER commit these
 .env

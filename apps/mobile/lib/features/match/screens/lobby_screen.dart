@@ -22,8 +22,6 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final matchState = ref.watch(matchNotifierProvider(widget.matchId));
-
     ref.listen(matchNotifierProvider(widget.matchId), (prev, next) {
       if (next.phase == MatchPhase.countdown) {
         context.pushReplacement(

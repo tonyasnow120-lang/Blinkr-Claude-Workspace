@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/match_provider.dart';
 import '../widgets/camera_feed.dart';
-import '../widgets/countdown_overlay.dart';
 import '../../../core/security/screen_security.dart';
 
 class ContestScreen extends ConsumerStatefulWidget {
@@ -32,7 +31,6 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
   @override
   Widget build(BuildContext context) {
     final notifier = ref.read(matchNotifierProvider(widget.matchId).notifier);
-    final matchState = ref.watch(matchNotifierProvider(widget.matchId));
 
     ref.listen(matchNotifierProvider(widget.matchId), (prev, next) {
       if (next.phase == MatchPhase.result || next.phase == MatchPhase.abandoned) {
