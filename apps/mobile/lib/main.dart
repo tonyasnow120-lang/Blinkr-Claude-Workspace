@@ -1,10 +1,10 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'app/app.dart';
-import 'core/security/secure_local_storage.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,14 +32,22 @@ void main() async {
   }
 
   try {
+    // Note: SecureLocalStorage (flutter_secure_storage) caused Android Keystore
+    // deadlocks on the test device. Using default SharedPreferences storage so
+    // startup is not blocked. Encrypted storage to be re-enabled in v1.1 with
+    // a per-device compatibility check.
     await Supabase.initialize(
       url: supabaseUrl,
       anonKey: supabaseAnonKey,
       authOptions: const FlutterAuthClientOptions(
-        localStorage: SecureLocalStorage(),
         autoRefreshToken: true,
       ),
-    );
+    ).timeout(const Duration(seconds: 15));
+  } on TimeoutException {
+    runApp(const _StartupErrorApp(
+      message: 'Startup timed out connecting to Supabase.\nPlease check your internet connection and restart.',
+    ));
+    return;
   } catch (e) {
     runApp(_StartupErrorApp(message: 'Supabase init failed:\n$e'));
     return;
