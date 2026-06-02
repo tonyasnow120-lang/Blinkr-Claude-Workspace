@@ -8,6 +8,11 @@ import 'core/security/secure_local_storage.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Surface widget errors as visible red text instead of a silent black screen.
+  ErrorWidget.builder = (details) => _StartupErrorApp(
+    message: 'UI error:\n${details.exceptionAsString()}',
+  );
+
   const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
   const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
 
