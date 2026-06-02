@@ -15,9 +15,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # AGP 8.x (Flutter 3.24 template) requires JDK 17. Pin it so the runner's
+      # default Java version cannot break the Gradle build.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # Flutter 3.24 ships an Android template using Kotlin 1.8.22 + AGP 8.x,
+      # which matches the modern AndroidX dependencies. Flutter 3.22 used Kotlin
+      # 1.6 and produced a broken embedding (black screen on launch).
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.0'
+          flutter-version: '3.24.5'
           channel: 'stable'
 
       - name: Scaffold missing Android platform files
@@ -40,6 +50,9 @@ jobs:
           cp /tmp/proguard-rules.pro android/app/proguard-rules.pro
           # flutter create names the app after the directory ('mobile') → fix applicationId/namespace
           sed -i 's/com\.blinkr\.mobile/com.blinkr.app/g' android/app/build.gradle
+          # Delete the stale MainActivity flutter create generated at the 'mobile'
+          # package path; ours lives at com/blinkr/app. Leaving both is a defect.
+          rm -rf android/app/src/main/kotlin/com/blinkr/mobile
 
       - name: Flutter pub get
         run: cd apps/mobile && flutter pub get
@@ -88,7 +101,7 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.0'
+          flutter-version: '3.24.5'
           channel: 'stable'
 
       - name: Scaffold missing iOS platform files
