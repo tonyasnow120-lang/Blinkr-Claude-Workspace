@@ -18,6 +18,7 @@ void main() async {
     return _ErrorOverlay(message: message);
   };
 
+  debugPrint('BLINKR: main() starting');
   const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
   const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
 
@@ -44,14 +45,18 @@ void main() async {
     return;
   }
 
+  debugPrint('BLINKR: Supabase initialized OK');
+
   // Firebase is only required for push notifications — initialize best-effort
   // with a timeout so a hanging call never blocks runApp.
   try {
     await Firebase.initializeApp().timeout(const Duration(seconds: 5));
-  } catch (_) {
-    // Push notifications will be unavailable; core match flow still works.
+    debugPrint('BLINKR: Firebase initialized OK');
+  } catch (e) {
+    debugPrint('BLINKR: Firebase init skipped: $e');
   }
 
+  debugPrint('BLINKR: calling runApp');
   runApp(const ProviderScope(child: BlinkrApp()));
 }
 

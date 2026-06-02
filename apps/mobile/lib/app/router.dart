@@ -18,9 +18,27 @@ import '../features/profile/screens/profile_screen.dart';
 final _codePattern = RegExp(r'^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{9}$');
 
 final routerProvider = Provider<GoRouter>((ref) {
+  debugPrint('BLINKR: routerProvider initializing');
   return GoRouter(
     initialLocation: '/',
+    errorBuilder: (context, state) {
+      debugPrint('BLINKR: router errorBuilder: ${state.error}');
+      return Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Text(
+              'Navigation error:\n${state.error}',
+              style: const TextStyle(color: Colors.redAccent, fontSize: 14),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      );
+    },
     redirect: (context, state) {
+      debugPrint('BLINKR: redirect called for ${state.matchedLocation}');
       final session = Supabase.instance.client.auth.currentSession;
       final isAuthenticated = session != null;
       final path = state.matchedLocation;
