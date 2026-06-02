@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'app/app.dart';
 
 void main() async {
@@ -54,16 +53,9 @@ void main() async {
   }
 
   debugPrint('BLINKR: Supabase initialized OK');
-
-  // Firebase is only required for push notifications — initialize best-effort
-  // with a timeout so a hanging call never blocks runApp.
-  try {
-    await Firebase.initializeApp().timeout(const Duration(seconds: 5));
-    debugPrint('BLINKR: Firebase initialized OK');
-  } catch (e) {
-    debugPrint('BLINKR: Firebase init skipped: $e');
-  }
-
+  // Firebase/FCM removed: firebase_messaging auto-initializes at the native
+  // plugin layer (before Dart runs) and was hanging the app on startup.
+  // Push notifications will be re-added in v1.1 once core flow is stable.
   debugPrint('BLINKR: calling runApp');
   runApp(const ProviderScope(child: BlinkrApp()));
 }
