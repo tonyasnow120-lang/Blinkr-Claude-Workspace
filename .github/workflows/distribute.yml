@@ -64,16 +64,12 @@ jobs:
             exit 1
           fi
           echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > apps/mobile/android/app/google-services.json
-          python3 -c "
-          import json, sys
-          try:
-              data = json.load(open('apps/mobile/android/app/google-services.json'))
-              pkg = data['client'][0]['client_info']['android_client_info']['package_name']
-              print(f'google-services.json OK — package: {pkg}')
-          except Exception as e:
-              print(f'google-services.json is invalid: {e}')
-              sys.exit(1)
-          "
+          PKG=$(jq -r '.client[0].client_info.android_client_info.package_name' apps/mobile/android/app/google-services.json)
+          if [ -z "$PKG" ] || [ "$PKG" = "null" ]; then
+            echo "::error::google-services.json is invalid or missing package_name"
+            exit 1
+          fi
+          echo "google-services.json OK — package: $PKG"
 
       - name: Build APK (release with obfuscation)
         run: |
