@@ -14,6 +14,10 @@ class AppLifecycleObserver extends StatefulWidget {
 class _AppLifecycleObserverState extends State<AppLifecycleObserver>
     with WidgetsBindingObserver {
   bool _obscured = false;
+  // Guard against startup lifecycle events (e.g. Android 12+ `hidden` during launch
+  // animation) that fire before the app ever enters `resumed`. Without this, the
+  // overlay would appear immediately on first launch and never clear.
+  bool _hasEverResumed = false;
 
   @override
   void initState() {
@@ -30,16 +34,19 @@ class _AppLifecycleObserverState extends State<AppLifecycleObserver>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     switch (state) {
-      // Only obscure when truly backgrounded — not on `inactive` (system overlay, phone call)
-      // or `hidden` (Android 12+ launch animation transition) to avoid false black-screen on startup.
-      case AppLifecycleState.paused:
-        if (!_obscured) setState(() => _obscured = true);
-        break;
-      case AppLifecycleState.resumed:
-        if (_obscured) setState(() => _obscured = false);
-        break;
+      // `inactive` fires before the OS captures the iOS app-switcher thumbnail,
+      // so it must trigger the overlay (not just `paused`) to protect all screens.
+      // `hidden` and `paused` cover Android. All three are gated on _hasEverResumed
+      // so the startup launch animation cannot falsely trigger the overlay.
       case AppLifecycleState.inactive:
       case AppLifecycleState.hidden:
+      case AppLifecycleState.paused:
+        if (_hasEverResumed && !_obscured) setState(() => _obscured = true);
+        break;
+      case AppLifecycleState.resumed:
+        _hasEverResumed = true;
+        if (_obscured) setState(() => _obscured = false);
+        break;
       case AppLifecycleState.detached:
         break;
     }
