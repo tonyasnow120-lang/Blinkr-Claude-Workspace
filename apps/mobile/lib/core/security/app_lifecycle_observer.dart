@@ -30,14 +30,16 @@ class _AppLifecycleObserverState extends State<AppLifecycleObserver>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     switch (state) {
-      case AppLifecycleState.inactive:
+      // Only obscure when truly backgrounded — not on `inactive` (system overlay, phone call)
+      // or `hidden` (Android 12+ launch animation transition) to avoid false black-screen on startup.
       case AppLifecycleState.paused:
-      case AppLifecycleState.hidden:
         if (!_obscured) setState(() => _obscured = true);
         break;
       case AppLifecycleState.resumed:
         if (_obscured) setState(() => _obscured = false);
         break;
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.hidden:
       case AppLifecycleState.detached:
         break;
     }
