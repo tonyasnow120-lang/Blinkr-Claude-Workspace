@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -8,10 +9,14 @@ import 'core/security/secure_local_storage.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Surface widget errors as visible red text instead of a silent black screen.
-  ErrorWidget.builder = (details) => _StartupErrorApp(
-    message: 'UI error:\n${details.exceptionAsString()}',
-  );
+  // In debug builds, surface widget errors as red text to aid development.
+  // In release builds use a generic message to avoid leaking internal details.
+  ErrorWidget.builder = (details) {
+    final message = kDebugMode
+        ? 'UI error:\n${details.exceptionAsString()}'
+        : 'Something went wrong.\nPlease restart the app.';
+    return _ErrorOverlay(message: message);
+  };
 
   const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
   const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
@@ -50,6 +55,7 @@ void main() async {
   runApp(const ProviderScope(child: BlinkrApp()));
 }
 
+/// Used by runApp() when startup itself fails — safe to create a root MaterialApp here.
 class _StartupErrorApp extends StatelessWidget {
   final String message;
   const _StartupErrorApp({required this.message});
@@ -68,6 +74,30 @@ class _StartupErrorApp extends StatelessWidget {
               style: const TextStyle(color: Colors.redAccent, fontSize: 14),
               textAlign: TextAlign.center,
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Used by ErrorWidget.builder — must NOT create a MaterialApp because it is
+/// inserted in place inside an already-running MaterialApp.router widget tree.
+class _ErrorOverlay extends StatelessWidget {
+  final String message;
+  const _ErrorOverlay({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: Colors.black,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Text(
+            message,
+            style: const TextStyle(color: Colors.redAccent, fontSize: 14),
+            textAlign: TextAlign.center,
           ),
         ),
       ),
