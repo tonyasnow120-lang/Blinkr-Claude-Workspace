@@ -8,6 +8,10 @@ import 'app/app.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Show a loading screen immediately — proves Dart is running if visible.
+  // Any subsequent failure replaces this with an error screen.
+  runApp(const _LoadingApp());
+
   // In debug builds, surface widget errors as red text to aid development.
   // In release builds use a generic message to avoid leaking internal details.
   ErrorWidget.builder = (details) {
@@ -58,6 +62,39 @@ void main() async {
   // Push notifications will be re-added in v1.1 once core flow is stable.
   debugPrint('BLINKR: calling runApp');
   runApp(const ProviderScope(child: BlinkrApp()));
+}
+
+/// Shown immediately on startup before any async work — proves Dart is running.
+class _LoadingApp extends StatelessWidget {
+  const _LoadingApp();
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'BLINKR',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 8,
+                ),
+              ),
+              SizedBox(height: 32),
+              CircularProgressIndicator(color: Colors.white),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// Used by runApp() when startup itself fails — safe to create a root MaterialApp here.
