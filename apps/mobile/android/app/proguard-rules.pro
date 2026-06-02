@@ -14,10 +14,10 @@
     @io.flutter.plugin.common.MethodChannel.MethodCallHandler *;
 }
 
-# Keep Firebase Messaging (required for FCM)
--keep class com.google.firebase.** { *; }
--keep class com.google.android.gms.** { *; }
-
-# Keep LiveKit WebRTC native layer
--keep class org.webrtc.** { *; }
--keep class io.livekit.** { *; }
+# Flutter's embedding contains optional Play Store "deferred components" support
+# (FlutterPlayStoreSplitApplication, PlayStoreDeferredComponentManager) that
+# references com.google.android.play.core.*. We do NOT use deferred components,
+# so that library is not bundled. Without these rules, R8 full-mode treats the
+# missing references as fatal and the release build fails at minifyReleaseWithR8.
+-dontwarn com.google.android.play.core.**
+-keep class com.google.android.play.core.** { *; }

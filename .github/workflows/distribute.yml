@@ -53,6 +53,11 @@ jobs:
           # Delete the stale MainActivity flutter create generated at the 'mobile'
           # package path; ours lives at com/blinkr/app. Leaving both is a defect.
           rm -rf android/app/src/main/kotlin/com/blinkr/mobile
+          # R8 full mode treats missing optional classes (e.g. the Play Core
+          # deferred-component references in the Flutter embedding, which we do
+          # not use) as fatal. Relax to compat mode so they are warnings, not
+          # build failures. The proguard-rules.pro -dontwarn handles them too.
+          echo "android.enableR8.fullMode=false" >> android/gradle.properties
 
       - name: Flutter pub get
         run: cd apps/mobile && flutter pub get
