@@ -79,6 +79,13 @@ jobs:
             --split-debug-info=build/debug-info/android \
             --dart-define-from-file=.env.dart-define
 
+      - name: Upload APK as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: blinkr-android-release
+          path: apps/mobile/build/app/outputs/apk/release/app-release.apk
+          retention-days: 7
+
       - name: Upload to Firebase App Distribution
         uses: wzieba/Firebase-Distribution-Github-Action@v1
         with:
@@ -86,6 +93,7 @@ jobs:
           serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
           file: apps/mobile/build/app/outputs/apk/release/app-release.apk
           releaseNotes: ${{ inputs.release_notes }}
+          testers: tonyasnow120@gmail.com
 
   ios:
     name: iOS — TestFlight
