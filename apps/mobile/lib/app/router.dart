@@ -14,8 +14,8 @@ import '../features/match/screens/contest_screen.dart';
 import '../features/match/screens/result_screen.dart';
 import '../features/profile/screens/profile_screen.dart';
 
-// Validates challenge codes: 9 uppercase alphanumeric chars, no O/0/I/1 (M9, GAP-9)
-final _codePattern = RegExp(r'^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{9}$');
+// Validates challenge codes: 8 uppercase alphanumeric chars, no O/0/I/1 (M9, GAP-9)
+final _codePattern = RegExp(r'^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$');
 
 final routerProvider = Provider<GoRouter>((ref) {
   debugPrint('BLINKR: routerProvider initializing');
