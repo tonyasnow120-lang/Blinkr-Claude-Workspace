@@ -22,8 +22,8 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
-          cache-dependency-path: apps/backend/pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install
       - run: pnpm build
 
   mobile-test:
@@ -40,5 +40,6 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
+      - run: flutter pub run build_runner build --delete-conflicting-outputs
       - run: flutter analyze
       - run: flutter test test/blink_detection/ear_calculator_test.dart

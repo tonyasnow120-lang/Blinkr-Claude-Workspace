@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../auth/providers/auth_provider.dart';
-import '../../../core/api/api_client.dart';
 import '../../../core/api/api_endpoints.dart';
 
 final profileProvider = FutureProvider<Map<String, dynamic>>((ref) async {
