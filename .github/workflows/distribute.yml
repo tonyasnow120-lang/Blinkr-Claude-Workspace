@@ -112,10 +112,21 @@ jobs:
       - name: Scaffold missing iOS platform files
         run: |
           cd apps/mobile
+          # Save custom files that flutter create would overwrite
           cp pubspec.yaml /tmp/pubspec.yaml
+          cp ios/Runner/Info.plist /tmp/Info.plist
+          cp ios/Runner/Runner.entitlements /tmp/Runner.entitlements
+          cp ios/Runner/PrivacyInfo.xcprivacy /tmp/PrivacyInfo.xcprivacy
+          # Generate all missing iOS platform files (Podfile, xcodeproj, storyboards, etc.)
           flutter create --platforms ios . --org com.blinkr
+          # Restore our custom files on top (flutter create overwrites these)
           cp /tmp/pubspec.yaml pubspec.yaml
           rm -f pubspec.lock
+          cp /tmp/Info.plist ios/Runner/Info.plist
+          cp /tmp/Runner.entitlements ios/Runner/Runner.entitlements
+          cp /tmp/PrivacyInfo.xcprivacy ios/Runner/PrivacyInfo.xcprivacy
+          # flutter create names the app after the directory ('mobile') → fix bundle ID
+          sed -i '' 's/com\.blinkr\.mobile/com.blinkr.app/g' ios/Runner.xcodeproj/project.pbxproj
 
       - name: Flutter pub get
         run: cd apps/mobile && flutter pub get
@@ -143,25 +154,51 @@ jobs:
           BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
         run: |
-          # Create keychain
+          # If signing secrets are not set, skip — unsigned build follows
+          if [ -z "$BUILD_CERTIFICATE_BASE64" ] || [ -z "$BUILD_PROVISION_PROFILE_BASE64" ]; then
+            echo "Signing secrets not configured — will do unsigned verification build"
+            echo "SIGNING_AVAILABLE=false" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          echo "SIGNING_AVAILABLE=true" >> "$GITHUB_ENV"
+          # Create a temporary keychain so the agent certificate doesn't persist
           security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
           security default-keychain -s build.keychain
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
-          # Import certificate
+          security set-keychain-settings -lut 21600 build.keychain
+          # Import distribution certificate
           echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o certificate.p12
           security import certificate.p12 -k build.keychain -P "$P12_PASSWORD" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" build.keychain
           # Install provisioning profile
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode -o ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
+          echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode \
+            -o ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
 
-      - name: Build IPA
+      - name: Build IPA (signed — TestFlight)
+        if: env.SIGNING_AVAILABLE == 'true'
         run: |
           cd apps/mobile
           flutter build ipa --release \
             --dart-define-from-file=.env.dart-define
 
+      - name: Build IPA (unsigned — compilation verification only)
+        if: env.SIGNING_AVAILABLE != 'true'
+        run: |
+          cd apps/mobile
+          flutter build ipa --release --no-codesign \
+            --dart-define-from-file=.env.dart-define
+
+      - name: Upload IPA as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: blinkr-ios-build
+          path: apps/mobile/build/ios/ipa/*.ipa
+          retention-days: 7
+          if-no-files-found: ignore
+
       - name: Upload to TestFlight
+        if: env.SIGNING_AVAILABLE == 'true'
         uses: apple-actions/upload-testflight-build@v1
         with:
           app-path: apps/mobile/build/ios/ipa/blinkr.ipa
