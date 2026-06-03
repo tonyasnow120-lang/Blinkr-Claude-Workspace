@@ -82,7 +82,7 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Tap the sign-in button in the email sent to ${widget.email} — the app will open automatically.\n\nOr enter the 6-digit code below if one was included.',
+              'Tap the sign-in button in the email sent to ${widget.email} — the app will open automatically.\n\nOr enter the code below if one was included.',
               style: TextStyle(color: Colors.white.withOpacity(0.6)),
             ),
             const SizedBox(height: 32),
@@ -93,15 +93,15 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 24,
-                letterSpacing: 8,
+                letterSpacing: 6,
               ),
-              maxLength: 6,
+              maxLength: 8,
               decoration: InputDecoration(
                 counterText: '',
-                hintText: '------',
+                hintText: '--------',
                 hintStyle: TextStyle(
                   color: Colors.white.withOpacity(0.4),
-                  letterSpacing: 8,
+                  letterSpacing: 6,
                   fontSize: 24,
                 ),
                 filled: true,
