@@ -21,11 +21,21 @@ class AuthService {
   }
 
   Future<void> verifyOtp(String email, String token) async {
-    await _supabase.auth.verifyOTP(
-      email: email,
-      token: token,
-      type: OtpType.email,
-    );
+    // Supabase issues 'signup' tokens for first-time users and 'email' tokens
+    // for returning users. Try email first; fall back to signup on failure.
+    try {
+      await _supabase.auth.verifyOTP(
+        email: email,
+        token: token,
+        type: OtpType.email,
+      );
+    } on AuthException {
+      await _supabase.auth.verifyOTP(
+        email: email,
+        token: token,
+        type: OtpType.signup,
+      );
+    }
   }
 
   /// Signs in with Apple.

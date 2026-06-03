@@ -51,7 +51,8 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
       await ref.read(authServiceProvider).verifyOtp(widget.email, code);
       if (mounted) context.go('/home');
     } catch (e) {
-      setState(() => _error = 'Invalid or expired code.');
+      final msg = e is AuthException ? e.message : e.toString();
+      setState(() => _error = 'Verification failed: $msg');
     } finally {
       setState(() => _loading = false);
     }
