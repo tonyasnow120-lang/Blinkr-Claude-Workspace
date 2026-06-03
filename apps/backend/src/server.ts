@@ -40,7 +40,10 @@ await app.register(cors, {
 const supabaseUrl = process.env.SUPABASE_URL ??
   (() => { throw new Error('SUPABASE_URL required') })()
 
-// Fetch Supabase public signing keys from JWKS endpoint — supports RS256 key rotation
+// Legacy HS256 secret — still needed while Supabase issues HS256 tokens
+const legacySecret = process.env.SUPABASE_JWT_SECRET
+
+// RS256 public keys from Supabase JWKS — used once Supabase issues RS256 tokens
 const jwks = jwksClient({
   jwksUri: `${supabaseUrl}/auth/v1/.well-known/jwks.json`,
   cache: true,
@@ -50,12 +53,21 @@ const jwks = jwksClient({
 })
 
 await app.register(jwt, {
-  secret: async (_request: FastifyRequest, tokenOrHeader: { header?: { kid?: string }; kid?: string }) => {
-    const kid = 'header' in tokenOrHeader ? tokenOrHeader.header?.kid : tokenOrHeader.kid
-    const signingKey = await jwks.getSigningKey(kid)
-    return signingKey.getPublicKey()
+  secret: async (_request: FastifyRequest, tokenOrHeader: { header?: { kid?: string; alg?: string }; kid?: string; alg?: string }) => {
+    const header = 'header' in tokenOrHeader ? tokenOrHeader.header : tokenOrHeader
+    const alg = header?.alg
+    const kid = header?.kid
+
+    if (alg === 'RS256' && kid) {
+      const signingKey = await jwks.getSigningKey(kid)
+      return signingKey.getPublicKey()
+    }
+
+    if (legacySecret) return legacySecret
+
+    throw new Error(`Cannot verify JWT: alg=${alg}, kid=${kid}, SUPABASE_JWT_SECRET not set`)
   },
-  verify: { algorithms: ['RS256'] },
+  verify: { algorithms: ['RS256', 'HS256'] },
 })
 
 await registerRateLimit(app)
