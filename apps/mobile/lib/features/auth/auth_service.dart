@@ -14,7 +14,10 @@ class AuthService {
   Stream<AuthState> get authStateStream => _supabase.auth.onAuthStateChange;
 
   Future<void> signInWithOtp(String email) async {
-    await _supabase.auth.signInWithOtp(email: email);
+    await _supabase.auth.signInWithOtp(
+      email: email,
+      emailRedirectTo: 'blinkr://auth/callback',
+    );
   }
 
   Future<void> verifyOtp(String email, String token) async {
