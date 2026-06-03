@@ -88,6 +88,17 @@ const PUBLIC_ROUTES = new Set([
   'GET /.well-known/assetlinks.json',
 ])
 
+// Decode JWT header without verification (base64url → JSON)
+function parseJwtHeader(authHeader: string | undefined): Record<string, unknown> | null {
+  try {
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
+    if (!token) return null
+    return JSON.parse(Buffer.from(token.split('.')[0], 'base64url').toString())
+  } catch {
+    return null
+  }
+}
+
 // Global auth preHandler — every non-public route requires a valid Supabase JWT (GAP-13)
 app.addHook('preHandler', async (request, reply) => {
   const routeKey = `${request.method} ${request.routerPath}`
@@ -95,11 +106,15 @@ app.addHook('preHandler', async (request, reply) => {
   try {
     await request.jwtVerify()
   } catch (err) {
+    const tokenHeader = parseJwtHeader(request.headers.authorization)
     app.log.warn({
       msg: 'JWT verification failed',
       reason: err instanceof Error ? err.message : String(err),
+      tokenAlg: tokenHeader?.alg,
+      tokenKid: tokenHeader?.kid ?? 'none',
+      hasAuthHeader: !!request.headers.authorization,
+      legacySecretSet: !!legacySecret,
       path: request.url,
-      ip: request.ip,
     })
     logSecurityEvent(app.log, 'jwt_validation_failure', {
       ip: request.ip,
