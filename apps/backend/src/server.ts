@@ -41,7 +41,7 @@ const supabaseUrl = process.env.SUPABASE_URL ??
   (() => { throw new Error('SUPABASE_URL required') })()
 
 // Legacy HS256 secret — still needed while Supabase issues HS256 tokens
-const legacySecret = process.env.SUPABASE_JWT_SECRET
+const legacySecret = process.env.SUPABASE_JWT_SECRET?.trim()
 
 // RS256 public keys from Supabase JWKS — used once Supabase issues RS256 tokens
 const jwks = jwksClient({
@@ -52,11 +52,20 @@ const jwks = jwksClient({
   jwksRequestsPerMinute: 10,
 })
 
+app.log.info({
+  jwtMode: legacySecret ? 'dual (HS256 legacy + RS256 JWKS)' : 'JWKS-only (RS256)',
+  jwksUri: `${supabaseUrl}/auth/v1/.well-known/jwks.json`,
+  legacySecretSet: !!legacySecret,
+  legacySecretLength: legacySecret?.length ?? 0,
+}, 'JWT configuration')
+
 await app.register(jwt, {
   secret: async (_request: FastifyRequest, tokenOrHeader: { header?: { kid?: string; alg?: string }; kid?: string; alg?: string }) => {
     const header = 'header' in tokenOrHeader ? tokenOrHeader.header : tokenOrHeader
     const alg = header?.alg
     const kid = header?.kid
+
+    app.log.debug({ alg, kid }, 'JWT secret resolver called')
 
     if (alg === 'RS256' && kid) {
       const signingKey = await jwks.getSigningKey(kid)
@@ -65,7 +74,7 @@ await app.register(jwt, {
 
     if (legacySecret) return legacySecret
 
-    throw new Error(`Cannot verify JWT: alg=${alg}, kid=${kid}, SUPABASE_JWT_SECRET not set`)
+    throw new Error(`Cannot verify JWT: alg=${alg}, kid=${kid ?? 'none'}, SUPABASE_JWT_SECRET not set`)
   },
   verify: { algorithms: ['RS256', 'HS256'] },
 })
@@ -85,7 +94,13 @@ app.addHook('preHandler', async (request, reply) => {
   if (PUBLIC_ROUTES.has(routeKey)) return
   try {
     await request.jwtVerify()
-  } catch {
+  } catch (err) {
+    app.log.warn({
+      msg: 'JWT verification failed',
+      reason: err instanceof Error ? err.message : String(err),
+      path: request.url,
+      ip: request.ip,
+    })
     logSecurityEvent(app.log, 'jwt_validation_failure', {
       ip: request.ip,
       path: request.url,
