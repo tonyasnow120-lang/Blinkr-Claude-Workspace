@@ -34,7 +34,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       await ref.read(authServiceProvider).signInWithOtp(email);
       if (mounted) context.push('/verify', extra: email);
     } catch (e) {
-      setState(() => _error = 'Failed to send code. Please try again.');
+      String msg = e.toString();
+      // Surface Supabase AuthException message directly so errors are actionable
+      if (e is AuthException) msg = e.message;
+      setState(() => _error = 'Failed to send code: $msg');
     } finally {
       setState(() => _loading = false);
     }
