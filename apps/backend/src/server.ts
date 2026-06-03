@@ -1,8 +1,9 @@
 import 'dotenv/config'
-import Fastify from 'fastify'
+import Fastify, { type FastifyRequest } from 'fastify'
 import cors from '@fastify/cors'
 import helmet from '@fastify/helmet'
 import jwt from '@fastify/jwt'
+import jwksClient from 'jwks-rsa'
 import { registerRateLimit } from './middleware/rateLimit.js'
 import { authRoutes } from './routes/auth.js'
 import { userRoutes } from './routes/users.js'
@@ -36,9 +37,25 @@ await app.register(cors, {
   allowedHeaders: ['Content-Type', 'Authorization'],
 })
 
+const supabaseUrl = process.env.SUPABASE_URL ??
+  (() => { throw new Error('SUPABASE_URL required') })()
+
+// Fetch Supabase public signing keys from JWKS endpoint — supports RS256 key rotation
+const jwks = jwksClient({
+  jwksUri: `${supabaseUrl}/auth/v1/.well-known/jwks.json`,
+  cache: true,
+  cacheMaxAge: 600_000, // 10 minutes
+  rateLimit: true,
+  jwksRequestsPerMinute: 10,
+})
+
 await app.register(jwt, {
-  secret: process.env.SUPABASE_JWT_SECRET ??
-    (() => { throw new Error('SUPABASE_JWT_SECRET required') })(),
+  secret: async (_request: FastifyRequest, tokenOrHeader: { header?: { kid?: string }; kid?: string }) => {
+    const kid = 'header' in tokenOrHeader ? tokenOrHeader.header?.kid : tokenOrHeader.kid
+    const signingKey = await jwks.getSigningKey(kid)
+    return signingKey.getPublicKey()
+  },
+  verify: { algorithms: ['RS256'] },
 })
 
 await registerRateLimit(app)
