@@ -67,7 +67,8 @@ await app.register(jwt, {
 
     app.log.debug({ alg, kid }, 'JWT secret resolver called')
 
-    if (alg === 'RS256' && kid) {
+    // ES256 and RS256 both use asymmetric keys from the JWKS endpoint
+    if ((alg === 'ES256' || alg === 'RS256') && kid) {
       const signingKey = await jwks.getSigningKey(kid)
       return signingKey.getPublicKey()
     }
@@ -76,7 +77,7 @@ await app.register(jwt, {
 
     throw new Error(`Cannot verify JWT: alg=${alg}, kid=${kid ?? 'none'}, SUPABASE_JWT_SECRET not set`)
   },
-  verify: { algorithms: ['RS256', 'HS256'] },
+  verify: { algorithms: ['ES256', 'RS256', 'HS256'] },
 })
 
 await registerRateLimit(app)
