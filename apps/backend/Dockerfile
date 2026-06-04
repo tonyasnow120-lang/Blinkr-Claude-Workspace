@@ -1,5 +1,6 @@
 FROM node:22-alpine AS base
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# pnpm 11 requires Node 22+ (node:sqlite built-in)
+RUN corepack enable && corepack prepare pnpm@11.5.0 --activate
 
 FROM base AS deps
 WORKDIR /app
