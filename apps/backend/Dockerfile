@@ -4,13 +4,13 @@ RUN corepack enable && corepack prepare pnpm@11.5.0 --activate
 
 FROM base AS deps
 WORKDIR /app
-COPY package.json ./
-RUN pnpm install --prod
+COPY package.json .npmrc ./
+RUN pnpm install --prod --no-strict-peer-dependencies
 
 FROM base AS build
 WORKDIR /app
-COPY package.json tsconfig.json ./
-RUN pnpm install
+COPY package.json .npmrc tsconfig.json ./
+RUN pnpm install --no-strict-peer-dependencies
 COPY src ./src
 RUN pnpm build
 
