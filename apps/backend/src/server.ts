@@ -3,7 +3,7 @@ import Fastify, { type FastifyRequest } from 'fastify'
 import cors from '@fastify/cors'
 import helmet from '@fastify/helmet'
 import jwt from '@fastify/jwt'
-import jwksClient from 'jwks-rsa'
+import { createRemoteJWKSet, jwtVerify as joseVerify } from 'jose'
 import { registerRateLimit } from './middleware/rateLimit.js'
 import { authRoutes } from './routes/auth.js'
 import { userRoutes } from './routes/users.js'
@@ -15,24 +15,18 @@ import { logSecurityEvent } from './services/securityLogger.js'
 
 const app = Fastify({
   logger: true,
-  bodyLimit: 1_048_576, // 1 MB — prevents memory-exhaustion DoS (H7)
+  bodyLimit: 1_048_576,
 })
 
-// Security headers (H1)
 await app.register(helmet, {
-  contentSecurityPolicy: false, // API server — no HTML served
-  hsts: {
-    maxAge: 31_536_000,
-    includeSubDomains: true,
-    preload: true,
-  },
+  contentSecurityPolicy: false,
+  hsts: { maxAge: 31_536_000, includeSubDomains: true, preload: true },
 })
 
-// CORS — explicit allowlist, no wildcard, credentials not needed for Bearer auth (C1, GAP-19)
 const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? '').split(',').filter(Boolean)
 await app.register(cors, {
   origin: allowedOrigins.length > 0 ? allowedOrigins : false,
-  credentials: false, // Bearer token auth — cookies not used
+  credentials: false,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 })
@@ -40,56 +34,35 @@ await app.register(cors, {
 const supabaseUrl = process.env.SUPABASE_URL ??
   (() => { throw new Error('SUPABASE_URL required') })()
 
-// Legacy HS256 secret — still needed while Supabase issues HS256 tokens
+// Legacy HS256 secret — fallback for tokens issued before Supabase key migration
 const legacySecret = process.env.SUPABASE_JWT_SECRET?.trim()
 
-// RS256 public keys from Supabase JWKS — used once Supabase issues RS256 tokens
-const jwks = jwksClient({
-  jwksUri: `${supabaseUrl}/auth/v1/.well-known/jwks.json`,
-  cache: true,
-  cacheMaxAge: 600_000, // 10 minutes
-  rateLimit: true,
-  jwksRequestsPerMinute: 10,
+// jose JWKS client — handles ES256/RS256 from Supabase JWT Signing Keys natively
+const JWKS = createRemoteJWKSet(
+  new URL(`${supabaseUrl}/auth/v1/.well-known/jwks.json`),
+  { cacheMaxAge: 600_000 },
+)
+
+// Register @fastify/jwt only for its request.user decoration (HS256 legacy fallback)
+await app.register(jwt, {
+  secret: legacySecret ?? 'unused-no-legacy-secret-configured',
+  verify: { algorithms: ['HS256'] },
 })
 
 app.log.info({
-  jwtMode: legacySecret ? 'dual (HS256 legacy + RS256 JWKS)' : 'JWKS-only (RS256)',
   jwksUri: `${supabaseUrl}/auth/v1/.well-known/jwks.json`,
   legacySecretSet: !!legacySecret,
   legacySecretLength: legacySecret?.length ?? 0,
 }, 'JWT configuration')
 
-await app.register(jwt, {
-  secret: async (_request: FastifyRequest, tokenOrHeader: { header?: { kid?: string; alg?: string }; kid?: string; alg?: string }) => {
-    const header = 'header' in tokenOrHeader ? tokenOrHeader.header : tokenOrHeader
-    const alg = header?.alg
-    const kid = header?.kid
-
-    app.log.debug({ alg, kid }, 'JWT secret resolver called')
-
-    // ES256 and RS256 both use asymmetric keys from the JWKS endpoint
-    if ((alg === 'ES256' || alg === 'RS256') && kid) {
-      const signingKey = await jwks.getSigningKey(kid)
-      return signingKey.getPublicKey()
-    }
-
-    if (legacySecret) return legacySecret
-
-    throw new Error(`Cannot verify JWT: alg=${alg}, kid=${kid ?? 'none'}, SUPABASE_JWT_SECRET not set`)
-  },
-  verify: { algorithms: ['ES256', 'RS256', 'HS256'] },
-})
-
 await registerRateLimit(app)
 
-// Routes that do not require a JWT
 const PUBLIC_ROUTES = new Set([
   'GET /health',
   'GET /.well-known/apple-app-site-association',
   'GET /.well-known/assetlinks.json',
 ])
 
-// Decode JWT header without verification (base64url → JSON)
 function parseJwtHeader(authHeader: string | undefined): Record<string, unknown> | null {
   try {
     const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
@@ -100,12 +73,25 @@ function parseJwtHeader(authHeader: string | undefined): Record<string, unknown>
   }
 }
 
-// Global auth preHandler — every non-public route requires a valid Supabase JWT (GAP-13)
 app.addHook('preHandler', async (request, reply) => {
   const routeKey = `${request.method} ${request.routeOptions.url}`
   if (PUBLIC_ROUTES.has(routeKey)) return
+
   try {
-    await request.jwtVerify()
+    const authHeader = request.headers.authorization
+    const tokenHeader = parseJwtHeader(authHeader)
+    const alg = tokenHeader?.alg as string | undefined
+    const kid = tokenHeader?.kid as string | undefined
+
+    if ((alg === 'ES256' || alg === 'RS256') && kid) {
+      // New Supabase JWT Signing Keys — use jose's JWKS client (handles ES256 natively)
+      const token = authHeader!.slice(7)
+      const { payload } = await joseVerify(token, JWKS)
+      request.user = payload as Record<string, unknown>
+    } else {
+      // Legacy HS256 — delegate to @fastify/jwt
+      await request.jwtVerify()
+    }
   } catch (err) {
     const tokenHeader = parseJwtHeader(request.headers.authorization)
     app.log.warn({
@@ -122,31 +108,21 @@ app.addHook('preHandler', async (request, reply) => {
       path: request.url,
       method: request.method,
     })
-    reply
-      .code(401)
-      .send({ error: { code: 'UNAUTHORIZED', message: 'Authentication required' } })
+    reply.code(401).send({ error: { code: 'UNAUTHORIZED', message: 'Authentication required' } })
   }
 })
 
-// Unified error envelope: { error: { code, message } }
 app.setErrorHandler((error, _request, reply) => {
   if (error instanceof AppError) {
-    return reply
-      .code(error.statusCode)
-      .send({ error: { code: error.code, message: error.message } })
+    return reply.code(error.statusCode).send({ error: { code: error.code, message: error.message } })
   }
   if (error.validation) {
-    return reply
-      .code(422)
-      .send({ error: { code: 'VALIDATION_ERROR', message: error.message } })
+    return reply.code(422).send({ error: { code: 'VALIDATION_ERROR', message: error.message } })
   }
   app.log.error(error)
-  return reply
-    .code(500)
-    .send({ error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } })
+  return reply.code(500).send({ error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } })
 })
 
-// Register routes — public well-known first, then /v1 groups
 await app.register(wellKnownRoutes)
 await app.register(authRoutes, { prefix: '/v1' })
 await app.register(userRoutes, { prefix: '/v1' })
