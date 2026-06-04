@@ -102,7 +102,7 @@ function parseJwtHeader(authHeader: string | undefined): Record<string, unknown>
 
 // Global auth preHandler — every non-public route requires a valid Supabase JWT (GAP-13)
 app.addHook('preHandler', async (request, reply) => {
-  const routeKey = `${request.method} ${request.routerPath}`
+  const routeKey = `${request.method} ${request.routeOptions.url}`
   if (PUBLIC_ROUTES.has(routeKey)) return
   try {
     await request.jwtVerify()
