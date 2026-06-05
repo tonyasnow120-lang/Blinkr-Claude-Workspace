@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/auth_provider.dart';
+import '../../../core/api/api_endpoints.dart';
 
 class VerifyScreen extends ConsumerStatefulWidget {
   final String email;
@@ -23,12 +24,24 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
   void initState() {
     super.initState();
     // When the user taps the magic link in the email, supabase_flutter
-    // processes the deep link and fires signedIn. Navigate to home immediately.
+    // processes the deep link and fires signedIn.
     _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
       if (data.event == AuthChangeEvent.signedIn && mounted) {
-        context.go('/home');
+        _navigateAfterLogin();
       }
     });
+  }
+
+  Future<void> _navigateAfterLogin() async {
+    if (!mounted) return;
+    try {
+      final api = ref.read(apiClientProvider);
+      final profile = await api.getOrNull(ApiEndpoints.me);
+      if (!mounted) return;
+      context.go(profile != null ? '/home' : '/setup-profile');
+    } catch (_) {
+      if (mounted) context.go('/home');
+    }
   }
 
   @override
@@ -49,7 +62,7 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
 
     try {
       await ref.read(authServiceProvider).verifyOtp(widget.email, code);
-      if (mounted) context.go('/home');
+      await _navigateAfterLogin();
     } catch (e) {
       final msg = e is AuthException ? e.message : e.toString();
       setState(() => _error = 'Verification failed: $msg');

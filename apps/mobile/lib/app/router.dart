@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../features/auth/screens/welcome_screen.dart';
 import '../features/auth/screens/login_screen.dart';
 import '../features/auth/screens/verify_screen.dart';
+import '../features/auth/screens/setup_profile_screen.dart';
 import '../features/home/screens/home_screen.dart';
 import '../features/challenge/screens/create_challenge_screen.dart';
 import '../features/challenge/screens/join_challenge_screen.dart';
@@ -64,7 +65,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Redirect unauthenticated users away from protected routes (C2)
       if (!isAuthenticated && !isPublic) return '/';
 
-      // Redirect authenticated users away from auth screens
+      // Redirect authenticated users away from auth screens (but allow setup-profile)
       if (isAuthenticated && (path == '/' || path == '/login')) return '/home';
 
       return null;
@@ -86,6 +87,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/home',
         builder: (context, state) => const HomeScreen(),
+      ),
+      GoRoute(
+        path: '/setup-profile',
+        builder: (context, state) => const SetupProfileScreen(),
       ),
       // Deep link landing for magic link auth (blinkr://auth/callback#access_token=...)
       // supabase_flutter processes the URL fragment automatically; this route just

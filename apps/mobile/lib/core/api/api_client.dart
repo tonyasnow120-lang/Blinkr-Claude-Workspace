@@ -74,6 +74,19 @@ class ApiClient {
     }
   }
 
+  /// Like [get] but returns null on 404 instead of throwing.
+  Future<Map<String, dynamic>?> getOrNull(String path) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(path);
+      return response.data;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return null;
+      throw Exception(_friendlyError(e));
+    } catch (e) {
+      throw Exception(_friendlyError(e));
+    }
+  }
+
   Future<Map<String, dynamic>> post(
     String path, {
     Map<String, dynamic>? body,
