@@ -77,6 +77,27 @@ jobs:
           }
           EOF
 
+      - name: Set up Android release signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode \
+              > apps/mobile/android/app/blinkr-release.keystore
+            cat > apps/mobile/android/key.properties <<EOF
+          storePassword=${ANDROID_KEYSTORE_PASSWORD}
+          keyPassword=${ANDROID_KEY_PASSWORD}
+          keyAlias=${ANDROID_KEY_ALIAS}
+          storeFile=app/blinkr-release.keystore
+          EOF
+            echo "Release keystore configured"
+          else
+            echo "No keystore secret — using debug signing"
+          fi
+
       - name: Build APK (release)
         run: |
           cd apps/mobile
