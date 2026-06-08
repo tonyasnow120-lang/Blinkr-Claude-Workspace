@@ -1,3 +1,8 @@
+import 'dart:convert';
+import 'dart:math';
+import 'package:crypto/crypto.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/api/api_client.dart';
 import '../../core/api/api_endpoints.dart';
@@ -38,25 +43,59 @@ class AuthService {
     }
   }
 
-  /// Signs in with Apple.
+  /// Signs in with Apple using the native system sheet (iOS) or web flow (Android).
   ///
   /// Trust boundary: Identity token validation is delegated to Supabase Auth.
   /// Supabase validates Apple identity tokens against Apple's JWKS endpoint
   /// (https://appleid.apple.com/auth/keys) before issuing a session JWT.
-  /// The SHA-256 hashed nonce is enforced by supabase_flutter, satisfying
-  /// Apple's Sign In with Apple specification. (GAP-3, GAP-4)
+  /// The SHA-256 hashed nonce is sent to Apple; the raw nonce is passed to
+  /// Supabase for server-side verification. (GAP-3, GAP-4)
   Future<void> signInWithApple() async {
-    await _supabase.auth.signInWithOAuth(OAuthProvider.apple);
+    final rawNonce = _generateNonce();
+    final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
+
+    final credential = await SignInWithApple.getAppleIDCredential(
+      scopes: [
+        AppleIDAuthorizationScopes.email,
+        AppleIDAuthorizationScopes.fullName,
+      ],
+      nonce: hashedNonce,
+    );
+
+    await _supabase.auth.signInWithIdToken(
+      provider: OAuthProvider.apple,
+      idToken: credential.identityToken!,
+      nonce: rawNonce,
+    );
   }
 
-  /// Signs in with Google.
+  /// Signs in with Google using the native account picker.
   ///
   /// Trust boundary: Identity token validation is delegated to Supabase Auth.
   /// Supabase validates Google identity tokens against Google's JWKS endpoint
   /// (https://www.googleapis.com/oauth2/v3/certs) before issuing a session JWT.
-  /// PKCE is enforced by supabase_flutter's built-in OAuth handler. (GAP-3, GAP-4)
+  /// (GAP-3, GAP-4)
   Future<void> signInWithGoogle() async {
-    await _supabase.auth.signInWithOAuth(OAuthProvider.google);
+    const iosClientId =
+        String.fromEnvironment('GOOGLE_IOS_CLIENT_ID', defaultValue: '');
+    const webClientId =
+        String.fromEnvironment('GOOGLE_WEB_CLIENT_ID', defaultValue: '');
+
+    final googleSignIn = GoogleSignIn(
+      clientId: iosClientId.isNotEmpty ? iosClientId : null,
+      serverClientId: webClientId.isNotEmpty ? webClientId : null,
+    );
+
+    final googleUser = await googleSignIn.signIn();
+    if (googleUser == null) return; // user cancelled
+
+    final googleAuth = await googleUser.authentication;
+
+    await _supabase.auth.signInWithIdToken(
+      provider: OAuthProvider.google,
+      idToken: googleAuth.idToken!,
+      accessToken: googleAuth.accessToken,
+    );
   }
 
   Future<Map<String, dynamic>> registerProfile({
@@ -75,13 +114,20 @@ class AuthService {
 
   /// Signs the user out, invalidating the session server-side first (GAP-20).
   Future<void> signOut() async {
-    // Invalidate the session on the Supabase side via the backend admin endpoint.
-    // This prevents revoked tokens from remaining valid until their expiry.
     try {
       await _api.post('/v1/auth/logout');
     } catch (_) {
       // Continue with local sign-out regardless of backend availability
     }
     await _supabase.auth.signOut();
+  }
+
+  /// Generates a cryptographically secure random nonce for Apple Sign In.
+  String _generateNonce([int length = 32]) {
+    const charset =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final random = Random.secure();
+    return List.generate(
+        length, (_) => charset[random.nextInt(charset.length)]).join();
   }
 }
