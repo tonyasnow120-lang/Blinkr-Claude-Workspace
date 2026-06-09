@@ -343,6 +343,13 @@ jobs:
           print(f'project.pbxproj patched={patched}')
           PYEOF
 
+      - name: Dump signing-related pbxproj lines (diagnostic)
+        if: env.SIGNING_AVAILABLE == 'true'
+        run: |
+          cd apps/mobile
+          grep -n -E "CODE_SIGN|PROVISIONING_PROFILE|DEVELOPMENT_TEAM|ProvisioningStyle|PRODUCT_BUNDLE_IDENTIFIER|/\* (Debug|Release|Profile) \*/ = \{|isa = (PBXNativeTarget|XCBuildConfiguration|PBXProject)|name = (Runner|RunnerTests)" \
+            ios/Runner.xcodeproj/project.pbxproj || true
+
       - name: Build IPA (signed — TestFlight)
         if: env.SIGNING_AVAILABLE == 'true'
         run: |
