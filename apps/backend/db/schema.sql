@@ -84,6 +84,23 @@ ALTER TABLE public.blink_events ENABLE ROW LEVEL SECURITY;
 
 -- 3. ROW LEVEL SECURITY POLICIES
 -- ============================================================
+-- Drop existing policies first so this script is safe to re-run
+
+DROP POLICY IF EXISTS "users_select"        ON public.users;
+DROP POLICY IF EXISTS "users_update"        ON public.users;
+DROP POLICY IF EXISTS "users_insert"        ON public.users;
+DROP POLICY IF EXISTS "stats_select"        ON public.user_stats;
+DROP POLICY IF EXISTS "stats_insert"        ON public.user_stats;
+DROP POLICY IF EXISTS "stats_update"        ON public.user_stats;
+DROP POLICY IF EXISTS "challenges_select"   ON public.challenges;
+DROP POLICY IF EXISTS "challenges_insert"   ON public.challenges;
+DROP POLICY IF EXISTS "challenges_update"   ON public.challenges;
+DROP POLICY IF EXISTS "challenges_delete"   ON public.challenges;
+DROP POLICY IF EXISTS "matches_select"      ON public.matches;
+DROP POLICY IF EXISTS "matches_update"      ON public.matches;
+DROP POLICY IF EXISTS "matches_insert"      ON public.matches;
+DROP POLICY IF EXISTS "blinks_insert"       ON public.blink_events;
+DROP POLICY IF EXISTS "blinks_select"       ON public.blink_events;
 
 -- users: anyone logged in can read profiles; only owner can update
 CREATE POLICY "users_select"   ON public.users FOR SELECT USING (true);

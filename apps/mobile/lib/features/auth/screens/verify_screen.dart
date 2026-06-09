@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/auth_provider.dart';
+import '../../../core/api/api_endpoints.dart';
 
 class VerifyScreen extends ConsumerStatefulWidget {
   final String email;
@@ -13,11 +16,37 @@ class VerifyScreen extends ConsumerStatefulWidget {
 
 class _VerifyScreenState extends ConsumerState<VerifyScreen> {
   final _codeController = TextEditingController();
+  StreamSubscription<AuthState>? _authSub;
   bool _loading = false;
   String? _error;
 
   @override
+  void initState() {
+    super.initState();
+    // When the user taps the magic link in the email, supabase_flutter
+    // processes the deep link and fires signedIn.
+    _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      if (data.event == AuthChangeEvent.signedIn && mounted) {
+        _navigateAfterLogin();
+      }
+    });
+  }
+
+  Future<void> _navigateAfterLogin() async {
+    if (!mounted) return;
+    try {
+      final api = ref.read(apiClientProvider);
+      final profile = await api.getOrNull(ApiEndpoints.me);
+      if (!mounted) return;
+      context.go(profile != null ? '/home' : '/setup-profile');
+    } catch (_) {
+      if (mounted) context.go('/home');
+    }
+  }
+
+  @override
   void dispose() {
+    _authSub?.cancel();
     _codeController.dispose();
     super.dispose();
   }
@@ -33,9 +62,10 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
 
     try {
       await ref.read(authServiceProvider).verifyOtp(widget.email, code);
-      if (mounted) context.go('/home');
+      await _navigateAfterLogin();
     } catch (e) {
-      setState(() => _error = 'Invalid or expired code.');
+      final msg = e is AuthException ? e.message : e.toString();
+      setState(() => _error = 'Verification failed: $msg');
     } finally {
       setState(() => _loading = false);
     }
@@ -65,7 +95,7 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Enter the code we sent to ${widget.email}',
+              'Tap the sign-in button in the email sent to ${widget.email} — the app will open automatically.\n\nOr enter the code below if one was included.',
               style: TextStyle(color: Colors.white.withOpacity(0.6)),
             ),
             const SizedBox(height: 32),
@@ -76,15 +106,15 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 24,
-                letterSpacing: 8,
+                letterSpacing: 6,
               ),
-              maxLength: 6,
+              maxLength: 8,
               decoration: InputDecoration(
                 counterText: '',
-                hintText: '------',
+                hintText: '--------',
                 hintStyle: TextStyle(
                   color: Colors.white.withOpacity(0.4),
-                  letterSpacing: 8,
+                  letterSpacing: 6,
                   fontSize: 24,
                 ),
                 filled: true,

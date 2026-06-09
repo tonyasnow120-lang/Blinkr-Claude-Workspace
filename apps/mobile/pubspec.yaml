@@ -3,9 +3,11 @@ description: Real-time staring contest mobile game
 
 publish_to: none
 
+version: 1.0.0+1
+
 environment:
-  sdk: ">=3.3.0 <4.0.0"
-  flutter: ">=3.22.0"
+  sdk: ">=3.3.0"
+  flutter: ">=3.27.0"
 
 dependencies:
   flutter:
@@ -19,6 +21,9 @@ dependencies:
   freezed_annotation: ^2.4.0
   json_annotation: ^4.9.0
   uuid: ^4.4.0
+  google_sign_in: ^6.2.0
+  sign_in_with_apple: ^6.1.0
+  crypto: ^3.0.0
 
 # app_links is pulled in transitively by supabase_flutter (OAuth deep-link
 # callbacks). Version 6.4.1 "Updated Gradle settings" to read

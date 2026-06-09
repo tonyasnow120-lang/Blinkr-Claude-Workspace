@@ -22,8 +22,10 @@ void main() async {
   };
 
   debugPrint('BLINKR: main() starting');
-  const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-  const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+  // Strip trailing slashes — a trailing slash on SUPABASE_URL causes GoTrue to
+  // receive double-slash paths (e.g. //auth/v1/otp) which it rejects as invalid.
+  final supabaseUrl = const String.fromEnvironment('SUPABASE_URL').trimRight().replaceAll(RegExp(r'/+$'), '');
+  final supabaseAnonKey = const String.fromEnvironment('SUPABASE_ANON_KEY').trim();
 
   if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
     runApp(const _StartupErrorApp(

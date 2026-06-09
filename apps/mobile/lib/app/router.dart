@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../features/auth/screens/welcome_screen.dart';
 import '../features/auth/screens/login_screen.dart';
 import '../features/auth/screens/verify_screen.dart';
+import '../features/auth/screens/setup_profile_screen.dart';
 import '../features/home/screens/home_screen.dart';
 import '../features/challenge/screens/create_challenge_screen.dart';
 import '../features/challenge/screens/join_challenge_screen.dart';
@@ -16,6 +17,21 @@ import '../features/profile/screens/profile_screen.dart';
 
 // Validates challenge codes: 8 uppercase alphanumeric chars, no O/0/I/1 (M9, GAP-9)
 final _codePattern = RegExp(r'^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$');
+
+/// Shown while supabase_flutter processes the magic link deep link.
+/// The auth state listener in the router's redirect fires once the session
+/// is established and navigates to /home automatically.
+class _AuthCallbackScreen extends StatelessWidget {
+  const _AuthCallbackScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: Colors.black,
+      body: Center(child: CircularProgressIndicator(color: Colors.white)),
+    );
+  }
+}
 
 final routerProvider = Provider<GoRouter>((ref) {
   debugPrint('BLINKR: routerProvider initializing');
@@ -44,12 +60,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       final path = state.matchedLocation;
 
       // Public paths available without authentication
-      final isPublic = path == '/' || path == '/login' || path.startsWith('/verify');
+      final isPublic = path == '/' || path == '/login' || path.startsWith('/verify') || path == '/auth/callback';
 
       // Redirect unauthenticated users away from protected routes (C2)
       if (!isAuthenticated && !isPublic) return '/';
 
-      // Redirect authenticated users away from auth screens
+      // Redirect authenticated users away from auth screens (but allow setup-profile)
       if (isAuthenticated && (path == '/' || path == '/login')) return '/home';
 
       return null;
@@ -71,6 +87,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/home',
         builder: (context, state) => const HomeScreen(),
+      ),
+      GoRoute(
+        path: '/setup-profile',
+        builder: (context, state) => const SetupProfileScreen(),
+      ),
+      // Deep link landing for magic link auth (blinkr://auth/callback#access_token=...)
+      // supabase_flutter processes the URL fragment automatically; this route just
+      // shows a spinner while the session is established, then redirect kicks in.
+      GoRoute(
+        path: '/auth/callback',
+        builder: (context, state) => const _AuthCallbackScreen(),
       ),
       GoRoute(
         path: '/challenge/create',

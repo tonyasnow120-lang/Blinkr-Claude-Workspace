@@ -17,6 +17,11 @@ apps/mobile/.env.dart-define
 google-services.json
 GoogleService-Info.plist
 
+# Build artifacts
+apps/mobile/build/
+apps/mobile/.dart_tool/
+apps/mobile/pubspec.lock
+
 # Android signing
 *.keystore
 *.jks
@@ -26,34 +31,13 @@ key.properties
 *.p8
 *.p12
 *.mobileprovision
-*.cer
+ios/Runner/GoogleService-Info.plist
 
-# Flutter
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-pubspec.lock
-apps/mobile/.dart_tool/
-apps/mobile/build/
-
-# Debug symbols (store securely — do not commit)
+# Debug symbols (store securely, not in git)
 build/debug-info/
-apps/mobile/build/debug-info/
-
-# macOS
-.DS_Store
 
 # IDE
 .idea/
-.vscode/settings.json
+.vscode/
 *.swp
-*.swo
-
-# Logs
-*.log
-npm-debug.log*
-pnpm-debug.log*
-
-# Supabase local
-supabase/.branches/
-supabase/.temp/
+.DS_Store

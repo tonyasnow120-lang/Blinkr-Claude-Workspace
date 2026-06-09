@@ -51,8 +51,6 @@
 
     <key>UILaunchStoryboardName</key>
     <string>LaunchScreen</string>
-    <key>UIMainStoryboardFile</key>
-    <string>Main</string>
     <key>UISupportedInterfaceOrientations</key>
     <array>
         <string>UIInterfaceOrientationPortrait</string>
@@ -61,8 +59,14 @@
     <array>
         <string>UIInterfaceOrientationPortrait</string>
         <string>UIInterfaceOrientationPortraitUpsideDown</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
     </array>
     <key>UIViewControllerBasedStatusBarAppearance</key>
+    <false/>
+    <!-- Standard HTTPS/TLS (OS-provided) + SHA-256 for Apple Sign In nonce only.
+         Qualifies for EAR Mass Market exception — no ERN required. -->
+    <key>ITSAppUsesNonExemptEncryption</key>
     <false/>
 </dict>
 </plist>
