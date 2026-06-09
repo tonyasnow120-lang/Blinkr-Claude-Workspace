@@ -64,5 +64,9 @@
     </array>
     <key>UIViewControllerBasedStatusBarAppearance</key>
     <false/>
+    <!-- Standard HTTPS/TLS (OS-provided) + SHA-256 for Apple Sign In nonce only.
+         Qualifies for EAR Mass Market exception — no ERN required. -->
+    <key>ITSAppUsesNonExemptEncryption</key>
+    <false/>
 </dict>
 </plist>
