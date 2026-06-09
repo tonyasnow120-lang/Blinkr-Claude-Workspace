@@ -217,7 +217,8 @@ jobs:
           security cms -D -i "$PROFILE_PATH" > /tmp/profile.plist
           TEAM_ID=$(/usr/libexec/PlistBuddy -c "Print TeamIdentifier:0" /tmp/profile.plist)
           PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print Name" /tmp/profile.plist)
-          echo "Team: $TEAM_ID  Profile: $PROFILE_NAME"
+          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /tmp/profile.plist)
+          echo "Team: $TEAM_ID  Profile: $PROFILE_NAME  UUID: $PROFILE_UUID"
           cat > ExportOptions.plist <<PLIST
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -239,6 +240,7 @@ jobs:
           PLIST
           echo "TEAM_ID=$TEAM_ID" >> "$GITHUB_ENV"
           echo "PROFILE_NAME=$PROFILE_NAME" >> "$GITHUB_ENV"
+          echo "PROFILE_UUID=$PROFILE_UUID" >> "$GITHUB_ENV"
           echo "EXPORT_OPTIONS_PATH=$(pwd)/ExportOptions.plist" >> "$GITHUB_ENV"
 
       - name: Patch project.pbxproj — manual signing for Runner only
@@ -249,18 +251,21 @@ jobs:
 
           project_path = 'apps/mobile/ios/Runner.xcodeproj/project.pbxproj'
           team_id = os.environ.get('TEAM_ID', '')
-          profile_name = os.environ.get('PROFILE_NAME', '')
+          profile_uuid = os.environ.get('PROFILE_UUID', '')
 
-          print(f'TEAM_ID={team_id!r}  PROFILE_NAME={profile_name!r}')
+          print(f'TEAM_ID={team_id!r}  PROFILE_UUID={profile_uuid!r}')
 
           with open(project_path, 'r') as f:
               content = f.read()
 
+          # Use UUID (not name) for PROVISIONING_PROFILE — UUID lookup is
+          # unambiguous and works even when the profile display name has
+          # special characters or spaces that confuse the name-based specifier.
           signing_lines = (
               'CODE_SIGN_IDENTITY = "Apple Distribution";\n'
               '\t\t\tCODE_SIGN_STYLE = Manual;\n'
               f'\t\t\tDEVELOPMENT_TEAM = {team_id};\n'
-              f'\t\t\tPROVISIONING_PROFILE_SPECIFIER = "{profile_name}";'
+              f'\t\t\tPROVISIONING_PROFILE = "{profile_uuid}";'
           )
 
           # Approach 1: replace CODE_SIGN_STYLE = Automatic (older Flutter templates)
@@ -298,10 +303,11 @@ jobs:
         run: |
           cd apps/mobile
           # flutter build ios compiles Dart and writes dart-defines into DerivedData.
-          # Signing settings are in project.pbxproj (Runner target only) — NOT on the
-          # xcodebuild command line. Passing them globally on the CLI would propagate
-          # to Swift Package Manager package targets, which don't support provisioning
-          # profiles and would fail with exit code 65.
+          # project.pbxproj is patched above with CODE_SIGN_STYLE=Manual + UUID for
+          # the Runner target only. CLI overrides (DEVELOPMENT_TEAM, PROVISIONING_PROFILE)
+          # are passed as safety nets — they apply globally but SPM package targets use
+          # Automatic signing and ignore explicit PROVISIONING_PROFILE when not in
+          # Manual mode, so exit-65 is not triggered for those targets.
           flutter build ios --release --no-codesign \
             --dart-define-from-file=.env.dart-define
           xcodebuild \
@@ -310,7 +316,8 @@ jobs:
             -configuration Release \
             archive \
             -archivePath /tmp/blinkr.xcarchive \
-            DEVELOPMENT_TEAM="$TEAM_ID"
+            DEVELOPMENT_TEAM="$TEAM_ID" \
+            PROVISIONING_PROFILE="$PROFILE_UUID"
           xcodebuild \
             -exportArchive \
             -archivePath /tmp/blinkr.xcarchive \
