@@ -257,7 +257,7 @@ jobs:
         if: env.SIGNING_AVAILABLE == 'true'
         run: |
           python3 - <<'PYEOF'
-          import os, re
+          import os
 
           project_path = 'apps/mobile/ios/Runner.xcodeproj/project.pbxproj'
           team_id = os.environ.get('TEAM_ID', '')
@@ -279,63 +279,36 @@ jobs:
               f'\t\t\tPROVISIONING_PROFILE_SPECIFIER = "{profile_name}";',
           ])
 
+          # Anchor strictly on the Runner target's bundle identifier
+          # (PRODUCT_BUNDLE_IDENTIFIER = com.blinkr.app;, exact match with
+          # trailing semicolon). This appears exactly 3 times — Debug,
+          # Release, and Profile configs of the Runner target — and does
+          # NOT match "com.blinkr.app.RunnerTests;" since that string is
+          # followed by ".RunnerTests" before the semicolon.
+          #
+          # A previous version of this script used a global replace on
+          # "CODE_SIGN_STYLE = Automatic;", which only exists in the
+          # RunnerTests target's configs in this Flutter-generated
+          # pbxproj — patching the wrong target and leaving Runner's
+          # configs with no signing keys at all (Xcode then defaults
+          # Runner to Automatic signing, causing "No profiles for
+          # 'com.blinkr.app' were found... Automatic signing is disabled
+          # and unable to generate a profile").
+          anchor = 'PRODUCT_BUNDLE_IDENTIFIER = com.blinkr.app;'
+          count = content.count(anchor)
+          print(f'Runner anchor ({anchor!r}): {count} hit(s)')
+
           patched = False
-
-          # Approach 1: replace existing CODE_SIGN_STYLE = Automatic
-          old = 'CODE_SIGN_STYLE = Automatic;'
-          count = content.count(old)
-          print(f'Approach 1 ({old!r}): {count} hit(s)')
           if count > 0:
-              content = content.replace(old, signing_block)
+              content = content.replace(
+                  anchor, anchor + '\n\t\t\t' + signing_block
+              )
               patched = True
-              print(f'  -> replaced {count} occurrence(s)')
-
-          # Approach 2: inject after INFOPLIST_FILE — regex handles quoted and
-          # unquoted path values ("Runner/Info.plist" and Runner/Info.plist)
-          if not patched:
-              pat = re.compile(r'(INFOPLIST_FILE\s*=\s*[^;]+;)')
-              hits = pat.findall(content)
-              print(f'Approach 2 (INFOPLIST_FILE regex): {len(hits)} hit(s)')
-              if hits:
-                  content = pat.sub(
-                      lambda m: m.group(1) + '\n\t\t\t' + signing_block, content
-                  )
-                  patched = True
-                  print(f'  -> injected after {len(hits)} occurrence(s)')
-
-          # Approach 3: anchor on PRODUCT_BUNDLE_IDENTIFIER = com.blinkr.app
-          # Guaranteed present after the sed patch in the scaffold step.
-          if not patched:
-              anchor = 'PRODUCT_BUNDLE_IDENTIFIER = com.blinkr.app;'
-              count3 = content.count(anchor)
-              print(f'Approach 3 ({anchor!r}): {count3} hit(s)')
-              if count3 > 0:
-                  content = content.replace(
-                      anchor, anchor + '\n\t\t\t' + signing_block
-                  )
-                  patched = True
-                  print(f'  -> injected after {count3} occurrence(s)')
-
-          if not patched:
-              print('ERROR: all three approaches failed — project.pbxproj NOT patched')
+              print(f'  -> injected after {count} occurrence(s)')
+          else:
+              print('ERROR: Runner anchor not found — project.pbxproj NOT patched')
 
           content = content.replace('DEVELOPMENT_TEAM = "";', f'DEVELOPMENT_TEAM = {team_id};')
-
-          # The PBXProject section also records signing style per-target via
-          # TargetAttributes -> <TARGET_ID> -> ProvisioningStyle = Automatic.
-          # Xcode's signing resolution honors THIS key independently of the
-          # per-configuration CODE_SIGN_STYLE patched above — leaving it as
-          # Automatic causes Xcode to ignore our manual signing settings and
-          # search for "iOS App Development" profiles ("No profiles for
-          # 'com.blinkr.app' were found... Automatic signing is disabled and
-          # unable to generate a profile"), even though CODE_SIGN_STYLE=Manual
-          # is set elsewhere.
-          attr_old = 'ProvisioningStyle = Automatic;'
-          attr_count = content.count(attr_old)
-          print(f'TargetAttributes ({attr_old!r}): {attr_count} hit(s)')
-          if attr_count > 0:
-              content = content.replace(attr_old, 'ProvisioningStyle = Manual;')
-              print(f'  -> replaced {attr_count} occurrence(s)')
 
           with open(project_path, 'w') as f:
               f.write(content)
