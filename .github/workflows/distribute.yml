@@ -39,6 +39,7 @@ jobs:
           cp /tmp/MainActivity.kt android/app/src/main/kotlin/com/blinkr/app/MainActivity.kt
           cp /tmp/network_security_config.xml android/app/src/main/res/xml/network_security_config.xml
           cp /tmp/proguard-rules.pro android/app/proguard-rules.pro
+          # Flutter 3.44+ generates build.gradle.kts (Kotlin DSL); older versions use .gradle
           GRADLE_FILE=$(ls android/app/build.gradle.kts android/app/build.gradle 2>/dev/null | head -1)
           if [ -n "$GRADLE_FILE" ]; then
             sed -i "s/com\.blinkr\.mobile/com.blinkr.app/g;s/com\.blinkr\.blinkr/com.blinkr.app/g" "$GRADLE_FILE"
@@ -138,27 +139,31 @@ jobs:
           cp /tmp/Info.plist ios/Runner/Info.plist
           cp /tmp/Runner.entitlements ios/Runner/Runner.entitlements
           cp /tmp/PrivacyInfo.xcprivacy ios/Runner/PrivacyInfo.xcprivacy
-          sed -i '' 's/com\.blinkr\.mobile/com.blinkr.app/g;s/com\.blinkr\.blinkr/com.blinkr.app/g' ios/Runner.xcodeproj/project.pbxproj
+          # Fix bundle ID — flutter create uses directory name ('mobile') or pubspec
+          # name ('blinkr'), neither of which is our registered bundle ID.
+          sed -i '' \
+            's/com\.blinkr\.mobile/com.blinkr.app/g;s/com\.blinkr\.blinkr/com.blinkr.app/g' \
+            ios/Runner.xcodeproj/project.pbxproj
 
-      - name: Patch Podfile — disable code signing for pod targets
+      - name: Patch Podfile — disable code signing for CocoaPod targets
         run: |
           python3 - <<'PYEOF'
           podfile_path = 'apps/mobile/ios/Podfile'
           with open(podfile_path, 'r') as f:
               content = f.read()
-          old = 'flutter_additional_ios_build_settings(target)'
-          new_block = (
+          marker = 'flutter_additional_ios_build_settings(target)'
+          patch = (
               '\n      target.build_configurations.each do |config|\n'
               "        config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'\n"
               '      end'
           )
-          if old in content:
-              content = content.replace(old, old + new_block, 1)
+          if marker in content:
+              content = content.replace(marker, marker + patch, 1)
               with open(podfile_path, 'w') as f:
                   f.write(content)
               print('Podfile patched — CODE_SIGNING_ALLOWED=NO for pod targets')
           else:
-              print('WARNING: marker not found in Podfile, skipping patch')
+              print('WARNING: Podfile marker not found, skipping')
           PYEOF
 
       - name: Flutter pub get
@@ -206,10 +211,10 @@ jobs:
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode \
             -o ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
-          echo "=== Certificates imported into build.keychain ==="
+          echo "=== Installed certificate ==="
           security find-identity -v -p codesigning
 
-      - name: Write ExportOptions.plist
+      - name: Write ExportOptions.plist and extract signing metadata
         if: env.SIGNING_AVAILABLE == 'true'
         run: |
           cd apps/mobile
@@ -239,7 +244,6 @@ jobs:
           </plist>
           PLIST
           echo "TEAM_ID=$TEAM_ID" >> "$GITHUB_ENV"
-          echo "PROFILE_NAME=$PROFILE_NAME" >> "$GITHUB_ENV"
           echo "PROFILE_UUID=$PROFILE_UUID" >> "$GITHUB_ENV"
           echo "EXPORT_OPTIONS_PATH=$(pwd)/ExportOptions.plist" >> "$GITHUB_ENV"
 
@@ -247,7 +251,7 @@ jobs:
         if: env.SIGNING_AVAILABLE == 'true'
         run: |
           python3 - <<'PYEOF'
-          import os
+          import os, re
 
           project_path = 'apps/mobile/ios/Runner.xcodeproj/project.pbxproj'
           team_id = os.environ.get('TEAM_ID', '')
@@ -258,66 +262,83 @@ jobs:
           with open(project_path, 'r') as f:
               content = f.read()
 
-          # Use UUID (not name) for PROVISIONING_PROFILE — UUID lookup is
-          # unambiguous and works even when the profile display name has
-          # special characters or spaces that confuse the name-based specifier.
-          signing_lines = (
-              'CODE_SIGN_IDENTITY = "Apple Distribution";\n'
-              '\t\t\tCODE_SIGN_STYLE = Manual;\n'
-              f'\t\t\tDEVELOPMENT_TEAM = {team_id};\n'
-              f'\t\t\tPROVISIONING_PROFILE = "{profile_uuid}";'
-          )
+          # Use UUID (not display name) for PROVISIONING_PROFILE — UUID lookup is
+          # unambiguous and immune to any display-name mismatch or special characters.
+          signing_block = '\n'.join([
+              'CODE_SIGN_IDENTITY = "Apple Distribution";',
+              '\t\t\tCODE_SIGN_STYLE = Manual;',
+              f'\t\t\tDEVELOPMENT_TEAM = {team_id};',
+              f'\t\t\tPROVISIONING_PROFILE = "{profile_uuid}";',
+          ])
 
-          # Approach 1: replace CODE_SIGN_STYLE = Automatic (older Flutter templates)
+          patched = False
+
+          # Approach 1: replace existing CODE_SIGN_STYLE = Automatic
           old = 'CODE_SIGN_STYLE = Automatic;'
           count = content.count(old)
-          print(f'  CODE_SIGN_STYLE = Automatic occurrences: {count}')
+          print(f'Approach 1 ({old!r}): {count} hit(s)')
           if count > 0:
-              content = content.replace(old, signing_lines)
-              print(f'  Replaced {count} occurrence(s) via CODE_SIGN_STYLE anchor')
+              content = content.replace(old, signing_block)
+              patched = True
+              print(f'  -> replaced {count} occurrence(s)')
 
-          # Approach 2: inject after INFOPLIST_FILE = Runner/Info.plist when
-          # approach 1 found nothing (Flutter 3.44+ may omit CODE_SIGN_STYLE)
-          infoplist_anchor = 'INFOPLIST_FILE = Runner/Info.plist;'
-          info_count = content.count(infoplist_anchor)
-          print(f'  INFOPLIST_FILE occurrences: {info_count}')
-          if count == 0 and info_count > 0:
-              injection = (
-                  infoplist_anchor + '\n'
-                  f'\t\t\t{signing_lines}'
-              )
-              content = content.replace(infoplist_anchor, injection)
-              print(f'  Injected signing block after INFOPLIST_FILE ({info_count} location(s))')
+          # Approach 2: inject after INFOPLIST_FILE via regex — handles both
+          # quoted ("Runner/Info.plist") and unquoted (Runner/Info.plist) paths
+          if not patched:
+              pat = re.compile(r'(INFOPLIST_FILE\s*=\s*[^;]+;)')
+              hits = pat.findall(content)
+              print(f'Approach 2 (INFOPLIST_FILE regex): {len(hits)} hit(s)')
+              if hits:
+                  content = pat.sub(
+                      lambda m: m.group(1) + '\n\t\t\t' + signing_block, content
+                  )
+                  patched = True
+                  print(f'  -> injected after {len(hits)} occurrence(s)')
 
-          # Ensure no leftover empty DEVELOPMENT_TEAM overrides our setting
+          # Approach 3: anchor on PRODUCT_BUNDLE_IDENTIFIER = com.blinkr.app
+          # Guaranteed present after the sed patch in the scaffold step above.
+          if not patched:
+              anchor = 'PRODUCT_BUNDLE_IDENTIFIER = com.blinkr.app;'
+              count3 = content.count(anchor)
+              print(f'Approach 3 ({anchor!r}): {count3} hit(s)')
+              if count3 > 0:
+                  content = content.replace(
+                      anchor, anchor + '\n\t\t\t' + signing_block
+                  )
+                  patched = True
+                  print(f'  -> injected after {count3} occurrence(s)')
+
+          if not patched:
+              print('ERROR: all three approaches failed — project.pbxproj NOT patched')
+
+          # Fix any remaining empty DEVELOPMENT_TEAM placeholders
           content = content.replace('DEVELOPMENT_TEAM = "";', f'DEVELOPMENT_TEAM = {team_id};')
 
           with open(project_path, 'w') as f:
               f.write(content)
 
-          print('project.pbxproj patched')
+          print(f'project.pbxproj patched={patched}')
           PYEOF
 
       - name: Build IPA (signed — TestFlight)
         if: env.SIGNING_AVAILABLE == 'true'
         run: |
           cd apps/mobile
-          # flutter build ios compiles Dart and writes dart-defines into DerivedData.
-          # project.pbxproj is patched above with CODE_SIGN_STYLE=Manual + UUID for
-          # the Runner target only. CLI overrides (DEVELOPMENT_TEAM, PROVISIONING_PROFILE)
-          # are passed as safety nets — they apply globally but SPM package targets use
-          # Automatic signing and ignore explicit PROVISIONING_PROFILE when not in
-          # Manual mode, so exit-65 is not triggered for those targets.
+          # Compile Dart; signing is deferred to xcodebuild archive below.
           flutter build ios --release --no-codesign \
             --dart-define-from-file=.env.dart-define
+          # Archive using project.pbxproj signing (patched above for Runner only).
+          # Only DEVELOPMENT_TEAM is passed on the CLI — CODE_SIGN_STYLE=Manual and
+          # PROVISIONING_PROFILE live in project.pbxproj for Runner's build configs.
+          # Passing PROVISIONING_PROFILE globally on the CLI conflicts with Automatic
+          # signing on SPM/CocoaPod package targets and triggers exit 65.
           xcodebuild \
             -workspace ios/Runner.xcworkspace \
             -scheme Runner \
             -configuration Release \
             archive \
             -archivePath /tmp/blinkr.xcarchive \
-            DEVELOPMENT_TEAM="$TEAM_ID" \
-            PROVISIONING_PROFILE="$PROFILE_UUID"
+            DEVELOPMENT_TEAM="$TEAM_ID"
           xcodebuild \
             -exportArchive \
             -archivePath /tmp/blinkr.xcarchive \
