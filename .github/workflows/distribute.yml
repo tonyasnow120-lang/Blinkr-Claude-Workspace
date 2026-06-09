@@ -210,21 +210,33 @@ jobs:
         run: |
           cd apps/mobile
           PROFILE_PATH="$HOME/Library/MobileDevice/Provisioning Profiles/profile.mobileprovision"
-          # Decode CMS-signed profile to a plain plist so PlistBuddy can read it
           security cms -D -i "$PROFILE_PATH" > /tmp/profile.plist
           TEAM_ID=$(/usr/libexec/PlistBuddy -c "Print TeamIdentifier:0" /tmp/profile.plist)
           PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print Name" /tmp/profile.plist)
           echo "Team: $TEAM_ID  Profile: $PROFILE_NAME"
-          # flutter create generates CODE_SIGN_STYLE = Automatic which requires an
-          # Xcode login. Switch every configuration to manual so CI can use the
-          # certificate we imported into the build keychain.
-          sed -i '' 's/CODE_SIGN_STYLE = Automatic/CODE_SIGN_STYLE = Manual/g' \
-            ios/Runner.xcodeproj/project.pbxproj
-          sed -i '' "s/DEVELOPMENT_TEAM = \"\"/DEVELOPMENT_TEAM = \"$TEAM_ID\"/g" \
-            ios/Runner.xcodeproj/project.pbxproj
-          sed -i '' 's/CODE_SIGN_IDENTITY = "iPhone Developer"/CODE_SIGN_IDENTITY = "Apple Distribution"/g' \
-            ios/Runner.xcodeproj/project.pbxproj
-          # Write ExportOptions.plist referencing the installed profile by name
+          # Use Python for reliable project.pbxproj modification.
+          # sed alone cannot insert new lines, so PROVISIONING_PROFILE_SPECIFIER
+          # was never added — Xcode fell back to automatic signing and failed.
+          python3 - "$TEAM_ID" "$PROFILE_NAME" <<'PYEOF'
+          import sys, re
+          team_id, profile_name = sys.argv[1], sys.argv[2]
+          path = 'ios/Runner.xcodeproj/project.pbxproj'
+          with open(path) as f:
+              c = f.read()
+          c = c.replace('CODE_SIGN_STYLE = Automatic', 'CODE_SIGN_STYLE = Manual')
+          c = c.replace('CODE_SIGN_IDENTITY = "iPhone Developer"', 'CODE_SIGN_IDENTITY = "Apple Distribution"')
+          c = re.sub(r'DEVELOPMENT_TEAM = "";', f'DEVELOPMENT_TEAM = "{team_id}";', c)
+          # Insert PROVISIONING_PROFILE_SPECIFIER after every DEVELOPMENT_TEAM line
+          c = re.sub(
+              f'(DEVELOPMENT_TEAM = "{re.escape(team_id)}";)',
+              f'\\1\n\t\t\t\tPROVISIONING_PROFILE_SPECIFIER = "{profile_name}";',
+              c
+          )
+          with open(path, 'w') as f:
+              f.write(c)
+          print("project.pbxproj patched")
+          PYEOF
+          # Write ExportOptions.plist for the flutter build ipa export step
           cat > ExportOptions.plist <<PLIST
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
