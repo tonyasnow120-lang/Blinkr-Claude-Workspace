@@ -193,24 +193,24 @@ jobs:
           PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print Name" /tmp/profile.plist)
           echo "Team: $TEAM_ID  Profile: $PROFILE_NAME"
           python3 - "$TEAM_ID" "$PROFILE_NAME" <<'PYEOF'
-import sys, re
-team_id, profile_name = sys.argv[1], sys.argv[2]
-path = 'ios/Runner.xcodeproj/project.pbxproj'
-with open(path) as f:
-    c = f.read()
-c = c.replace('CODE_SIGN_STYLE = Automatic', 'CODE_SIGN_STYLE = Manual')
-for old in ['"iPhone Developer"', '"Apple Development"', '"iOS Developer"', '""']:
-    c = c.replace(f'CODE_SIGN_IDENTITY = {old}', 'CODE_SIGN_IDENTITY = "Apple Distribution"')
-c = re.sub(r'DEVELOPMENT_TEAM = "";', f'DEVELOPMENT_TEAM = "{team_id}";', c)
-c = re.sub(
-    f'(DEVELOPMENT_TEAM = "{re.escape(team_id)}";)',
-    f'\\1\n\t\t\t\tPROVISIONING_PROFILE_SPECIFIER = "{profile_name}";',
-    c
-)
-with open(path, 'w') as f:
-    f.write(c)
-print("project.pbxproj patched")
-PYEOF
+          import sys, re
+          team_id, profile_name = sys.argv[1], sys.argv[2]
+          path = 'ios/Runner.xcodeproj/project.pbxproj'
+          with open(path) as f:
+              c = f.read()
+          c = c.replace('CODE_SIGN_STYLE = Automatic', 'CODE_SIGN_STYLE = Manual')
+          for old_id in ['"iPhone Developer"', '"Apple Development"', '"iOS Developer"', '""']:
+              c = c.replace(f'CODE_SIGN_IDENTITY = {old_id}', 'CODE_SIGN_IDENTITY = "Apple Distribution"')
+          c = re.sub(r'DEVELOPMENT_TEAM = "";', f'DEVELOPMENT_TEAM = "{team_id}";', c)
+          c = re.sub(
+              f'(DEVELOPMENT_TEAM = "{re.escape(team_id)}";)',
+              f'\\1\n\t\t\t\tPROVISIONING_PROFILE_SPECIFIER = "{profile_name}";',
+              c
+          )
+          with open(path, 'w') as f:
+              f.write(c)
+          print("project.pbxproj patched")
+          PYEOF
           echo "=== Signing settings in project.pbxproj after patch ==="
           grep -E "CODE_SIGN_STYLE|CODE_SIGN_IDENTITY|DEVELOPMENT_TEAM|PROVISIONING_PROFILE" \
             ios/Runner.xcodeproj/project.pbxproj | head -20
