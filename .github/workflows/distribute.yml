@@ -15,16 +15,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # AGP 8.x (Flutter 3.24 template) requires JDK 17. Pin it so the runner's
-      # default Java version cannot break the Gradle build.
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # Flutter 3.24 ships an Android template using Kotlin 1.8.22 + AGP 8.x,
-      # which matches the modern AndroidX dependencies. Flutter 3.22 used Kotlin
-      # 1.6 and produced a broken embedding (black screen on launch).
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.24.5'
@@ -33,30 +28,20 @@ jobs:
       - name: Scaffold missing Android platform files
         run: |
           cd apps/mobile
-          # Save custom files that flutter create would overwrite
           cp pubspec.yaml /tmp/pubspec.yaml
           cp android/app/src/main/AndroidManifest.xml /tmp/AndroidManifest.xml
           cp android/app/src/main/kotlin/com/blinkr/app/MainActivity.kt /tmp/MainActivity.kt
           cp android/app/src/main/res/xml/network_security_config.xml /tmp/network_security_config.xml
           cp android/app/proguard-rules.pro /tmp/proguard-rules.pro
-          # Generate all missing Gradle files, wrapper, icons, etc.
           flutter create --platforms android . --org com.blinkr
-          # Restore our custom files on top (flutter create overwrites these)
           cp /tmp/pubspec.yaml pubspec.yaml
-          rm -f pubspec.lock  # Force fresh resolution so dependency_overrides take effect
+          rm -f pubspec.lock
           cp /tmp/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
           cp /tmp/MainActivity.kt android/app/src/main/kotlin/com/blinkr/app/MainActivity.kt
           cp /tmp/network_security_config.xml android/app/src/main/res/xml/network_security_config.xml
           cp /tmp/proguard-rules.pro android/app/proguard-rules.pro
-          # flutter create names the app after the directory ('mobile') → fix applicationId/namespace
           sed -i 's/com\.blinkr\.mobile/com.blinkr.app/g' android/app/build.gradle
-          # Delete the stale MainActivity flutter create generated at the 'mobile'
-          # package path; ours lives at com/blinkr/app. Leaving both is a defect.
           rm -rf android/app/src/main/kotlin/com/blinkr/mobile
-          # R8 full mode treats missing optional classes (e.g. the Play Core
-          # deferred-component references in the Flutter embedding, which we do
-          # not use) as fatal. Relax to compat mode so they are warnings, not
-          # build failures. The proguard-rules.pro -dontwarn handles them too.
           echo "android.enableR8.fullMode=false" >> android/gradle.properties
 
       - name: Flutter pub get
@@ -138,20 +123,16 @@ jobs:
       - name: Scaffold missing iOS platform files
         run: |
           cd apps/mobile
-          # Save custom files that flutter create would overwrite
           cp pubspec.yaml /tmp/pubspec.yaml
           cp ios/Runner/Info.plist /tmp/Info.plist
           cp ios/Runner/Runner.entitlements /tmp/Runner.entitlements
           cp ios/Runner/PrivacyInfo.xcprivacy /tmp/PrivacyInfo.xcprivacy
-          # Generate all missing iOS platform files (Podfile, xcodeproj, storyboards, etc.)
           flutter create --platforms ios . --org com.blinkr
-          # Restore our custom files on top (flutter create overwrites these)
           cp /tmp/pubspec.yaml pubspec.yaml
           rm -f pubspec.lock
           cp /tmp/Info.plist ios/Runner/Info.plist
           cp /tmp/Runner.entitlements ios/Runner/Runner.entitlements
           cp /tmp/PrivacyInfo.xcprivacy ios/Runner/PrivacyInfo.xcprivacy
-          # flutter create names the app after the directory ('mobile') → fix bundle ID
           sed -i '' 's/com\.blinkr\.mobile/com.blinkr.app/g' ios/Runner.xcodeproj/project.pbxproj
 
       - name: Flutter pub get
@@ -182,28 +163,25 @@ jobs:
           BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
         run: |
-          # If signing secrets are not set, skip — unsigned build follows
           if [ -z "$BUILD_CERTIFICATE_BASE64" ] || [ -z "$BUILD_PROVISION_PROFILE_BASE64" ]; then
             echo "Signing secrets not configured — will do unsigned verification build"
             echo "SIGNING_AVAILABLE=false" >> "$GITHUB_ENV"
             exit 0
           fi
           echo "SIGNING_AVAILABLE=true" >> "$GITHUB_ENV"
-          # Create a temporary keychain so the agent certificate doesn't persist
           security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
           security default-keychain -s build.keychain
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
           security set-keychain-settings -lut 21600 build.keychain
-          # Add build keychain to the search list so Xcode can find the certificate
           security list-keychains -d user -s build.keychain $(security list-keychains -d user | xargs)
-          # Import distribution certificate
           echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o certificate.p12
           security import certificate.p12 -k build.keychain -P "$P12_PASSWORD" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" build.keychain
-          # Install provisioning profile
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode \
             -o ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
+          echo "=== Certificates imported into build.keychain ==="
+          security find-identity -v -p codesigning
 
       - name: Configure Xcode for manual signing
         if: env.SIGNING_AVAILABLE == 'true'
@@ -214,48 +192,49 @@ jobs:
           TEAM_ID=$(/usr/libexec/PlistBuddy -c "Print TeamIdentifier:0" /tmp/profile.plist)
           PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print Name" /tmp/profile.plist)
           echo "Team: $TEAM_ID  Profile: $PROFILE_NAME"
-          # Use Python for reliable project.pbxproj modification.
-          # sed alone cannot insert new lines, so PROVISIONING_PROFILE_SPECIFIER
-          # was never added — Xcode fell back to automatic signing and failed.
           python3 - "$TEAM_ID" "$PROFILE_NAME" <<'PYEOF'
-          import sys, re
-          team_id, profile_name = sys.argv[1], sys.argv[2]
-          path = 'ios/Runner.xcodeproj/project.pbxproj'
-          with open(path) as f:
-              c = f.read()
-          c = c.replace('CODE_SIGN_STYLE = Automatic', 'CODE_SIGN_STYLE = Manual')
-          c = c.replace('CODE_SIGN_IDENTITY = "iPhone Developer"', 'CODE_SIGN_IDENTITY = "Apple Distribution"')
-          c = re.sub(r'DEVELOPMENT_TEAM = "";', f'DEVELOPMENT_TEAM = "{team_id}";', c)
-          # Insert PROVISIONING_PROFILE_SPECIFIER after every DEVELOPMENT_TEAM line
-          c = re.sub(
-              f'(DEVELOPMENT_TEAM = "{re.escape(team_id)}";)',
-              f'\\1\n\t\t\t\tPROVISIONING_PROFILE_SPECIFIER = "{profile_name}";',
-              c
-          )
-          with open(path, 'w') as f:
-              f.write(c)
-          print("project.pbxproj patched")
-          PYEOF
-          # Write ExportOptions.plist for the flutter build ipa export step
+import sys, re
+team_id, profile_name = sys.argv[1], sys.argv[2]
+path = 'ios/Runner.xcodeproj/project.pbxproj'
+with open(path) as f:
+    c = f.read()
+c = c.replace('CODE_SIGN_STYLE = Automatic', 'CODE_SIGN_STYLE = Manual')
+for old in ['"iPhone Developer"', '"Apple Development"', '"iOS Developer"', '""']:
+    c = c.replace(f'CODE_SIGN_IDENTITY = {old}', 'CODE_SIGN_IDENTITY = "Apple Distribution"')
+c = re.sub(r'DEVELOPMENT_TEAM = "";', f'DEVELOPMENT_TEAM = "{team_id}";', c)
+c = re.sub(
+    f'(DEVELOPMENT_TEAM = "{re.escape(team_id)}";)',
+    f'\\1\n\t\t\t\tPROVISIONING_PROFILE_SPECIFIER = "{profile_name}";',
+    c
+)
+with open(path, 'w') as f:
+    f.write(c)
+print("project.pbxproj patched")
+PYEOF
+          echo "=== Signing settings in project.pbxproj after patch ==="
+          grep -E "CODE_SIGN_STYLE|CODE_SIGN_IDENTITY|DEVELOPMENT_TEAM|PROVISIONING_PROFILE" \
+            ios/Runner.xcodeproj/project.pbxproj | head -20
           cat > ExportOptions.plist <<PLIST
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key>
-              <string>app-store</string>
-              <key>teamID</key>
-              <string>${TEAM_ID}</string>
-              <key>signingStyle</key>
-              <string>manual</string>
-              <key>provisioningProfiles</key>
-              <dict>
-                  <key>com.blinkr.app</key>
-                  <string>${PROFILE_NAME}</string>
-              </dict>
-          </dict>
-          </plist>
-          PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>method</key>
+    <string>app-store</string>
+    <key>teamID</key>
+    <string>${TEAM_ID}</string>
+    <key>signingStyle</key>
+    <string>manual</string>
+    <key>provisioningProfiles</key>
+    <dict>
+        <key>com.blinkr.app</key>
+        <string>${PROFILE_NAME}</string>
+    </dict>
+</dict>
+</plist>
+PLIST
+          echo "TEAM_ID=$TEAM_ID" >> "$GITHUB_ENV"
+          echo "PROFILE_NAME=$PROFILE_NAME" >> "$GITHUB_ENV"
           echo "EXPORT_OPTIONS_PATH=$(pwd)/ExportOptions.plist" >> "$GITHUB_ENV"
 
       - name: Build IPA (signed — TestFlight)
