@@ -210,8 +210,10 @@ jobs:
         run: |
           cd apps/mobile
           PROFILE_PATH="$HOME/Library/MobileDevice/Provisioning Profiles/profile.mobileprovision"
-          TEAM_ID=$(security cms -D -i "$PROFILE_PATH" | /usr/libexec/PlistBuddy -c "Print TeamIdentifier:0" /dev/stdin)
-          PROFILE_NAME=$(security cms -D -i "$PROFILE_PATH" | /usr/libexec/PlistBuddy -c "Print Name" /dev/stdin)
+          # Decode CMS-signed profile to a plain plist so PlistBuddy can read it
+          security cms -D -i "$PROFILE_PATH" > /tmp/profile.plist
+          TEAM_ID=$(/usr/libexec/PlistBuddy -c "Print TeamIdentifier:0" /tmp/profile.plist)
+          PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print Name" /tmp/profile.plist)
           echo "Team: $TEAM_ID  Profile: $PROFILE_NAME"
           # flutter create generates CODE_SIGN_STYLE = Automatic which requires an
           # Xcode login. Switch every configuration to manual so CI can use the
