@@ -315,6 +315,22 @@ jobs:
 
           content = content.replace('DEVELOPMENT_TEAM = "";', f'DEVELOPMENT_TEAM = {team_id};')
 
+          # The PBXProject section also records signing style per-target via
+          # TargetAttributes -> <TARGET_ID> -> ProvisioningStyle = Automatic.
+          # Xcode's signing resolution honors THIS key independently of the
+          # per-configuration CODE_SIGN_STYLE patched above — leaving it as
+          # Automatic causes Xcode to ignore our manual signing settings and
+          # search for "iOS App Development" profiles ("No profiles for
+          # 'com.blinkr.app' were found... Automatic signing is disabled and
+          # unable to generate a profile"), even though CODE_SIGN_STYLE=Manual
+          # is set elsewhere.
+          attr_old = 'ProvisioningStyle = Automatic;'
+          attr_count = content.count(attr_old)
+          print(f'TargetAttributes ({attr_old!r}): {attr_count} hit(s)')
+          if attr_count > 0:
+              content = content.replace(attr_old, 'ProvisioningStyle = Manual;')
+              print(f'  -> replaced {attr_count} occurrence(s)')
+
           with open(project_path, 'w') as f:
               f.write(content)
 
