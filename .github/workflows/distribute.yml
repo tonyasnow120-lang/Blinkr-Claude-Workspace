@@ -223,7 +223,13 @@ jobs:
           TEAM_ID=$(/usr/libexec/PlistBuddy -c "Print TeamIdentifier:0" /tmp/profile.plist)
           PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print Name" /tmp/profile.plist)
           PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /tmp/profile.plist)
+          APP_ID=$(/usr/libexec/PlistBuddy -c "Print Entitlements:application-identifier" /tmp/profile.plist)
+          PLATFORMS=$(/usr/libexec/PlistBuddy -c "Print Platform" /tmp/profile.plist 2>/dev/null || echo "n/a")
+          PREFIX=$(/usr/libexec/PlistBuddy -c "Print ApplicationIdentifierPrefix:0" /tmp/profile.plist 2>/dev/null || echo "n/a")
           echo "Team: $TEAM_ID  Profile: $PROFILE_NAME  UUID: $PROFILE_UUID"
+          echo "AppID (entitlements): $APP_ID"
+          echo "ApplicationIdentifierPrefix: $PREFIX"
+          echo "Platform: $PLATFORMS"
           cat > ExportOptions.plist <<PLIST
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
