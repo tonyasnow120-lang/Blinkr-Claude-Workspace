@@ -247,103 +247,50 @@ jobs:
           echo "PROFILE_UUID=$PROFILE_UUID" >> "$GITHUB_ENV"
           echo "EXPORT_OPTIONS_PATH=$(pwd)/ExportOptions.plist" >> "$GITHUB_ENV"
 
-      - name: Patch project.pbxproj — manual signing for Runner only
-        if: env.SIGNING_AVAILABLE == 'true'
-        run: |
-          python3 - <<'PYEOF'
-          import os, re
-
-          project_path = 'apps/mobile/ios/Runner.xcodeproj/project.pbxproj'
-          team_id = os.environ.get('TEAM_ID', '')
-          profile_uuid = os.environ.get('PROFILE_UUID', '')
-
-          print(f'TEAM_ID={team_id!r}  PROFILE_UUID={profile_uuid!r}')
-
-          with open(project_path, 'r') as f:
-              content = f.read()
-
-          # Use UUID (not display name) for PROVISIONING_PROFILE — UUID lookup is
-          # unambiguous and immune to any display-name mismatch or special characters.
-          signing_block = '\n'.join([
-              'CODE_SIGN_IDENTITY = "Apple Distribution";',
-              '\t\t\tCODE_SIGN_STYLE = Manual;',
-              f'\t\t\tDEVELOPMENT_TEAM = {team_id};',
-              f'\t\t\tPROVISIONING_PROFILE = "{profile_uuid}";',
-          ])
-
-          patched = False
-
-          # Approach 1: replace existing CODE_SIGN_STYLE = Automatic
-          old = 'CODE_SIGN_STYLE = Automatic;'
-          count = content.count(old)
-          print(f'Approach 1 ({old!r}): {count} hit(s)')
-          if count > 0:
-              content = content.replace(old, signing_block)
-              patched = True
-              print(f'  -> replaced {count} occurrence(s)')
-
-          # Approach 2: inject after INFOPLIST_FILE via regex — handles both
-          # quoted ("Runner/Info.plist") and unquoted (Runner/Info.plist) paths
-          if not patched:
-              pat = re.compile(r'(INFOPLIST_FILE\s*=\s*[^;]+;)')
-              hits = pat.findall(content)
-              print(f'Approach 2 (INFOPLIST_FILE regex): {len(hits)} hit(s)')
-              if hits:
-                  content = pat.sub(
-                      lambda m: m.group(1) + '\n\t\t\t' + signing_block, content
-                  )
-                  patched = True
-                  print(f'  -> injected after {len(hits)} occurrence(s)')
-
-          # Approach 3: anchor on PRODUCT_BUNDLE_IDENTIFIER = com.blinkr.app
-          # Guaranteed present after the sed patch in the scaffold step above.
-          if not patched:
-              anchor = 'PRODUCT_BUNDLE_IDENTIFIER = com.blinkr.app;'
-              count3 = content.count(anchor)
-              print(f'Approach 3 ({anchor!r}): {count3} hit(s)')
-              if count3 > 0:
-                  content = content.replace(
-                      anchor, anchor + '\n\t\t\t' + signing_block
-                  )
-                  patched = True
-                  print(f'  -> injected after {count3} occurrence(s)')
-
-          if not patched:
-              print('ERROR: all three approaches failed — project.pbxproj NOT patched')
-
-          # Fix any remaining empty DEVELOPMENT_TEAM placeholders
-          content = content.replace('DEVELOPMENT_TEAM = "";', f'DEVELOPMENT_TEAM = {team_id};')
-
-          with open(project_path, 'w') as f:
-              f.write(content)
-
-          print(f'project.pbxproj patched={patched}')
-          PYEOF
-
       - name: Build IPA (signed — TestFlight)
         if: env.SIGNING_AVAILABLE == 'true'
+        env:
+          APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+          APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+          APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
         run: |
           cd apps/mobile
-          # Compile Dart; signing is deferred to xcodebuild archive below.
+          # Write the App Store Connect API key so xcodebuild can authenticate
+          # with the Developer Portal for -allowProvisioningUpdates.
+          AUTH_KEY_PATH="/tmp/AuthKey_${APPSTORE_API_KEY_ID}.p8"
+          echo "$APPSTORE_API_PRIVATE_KEY" > "$AUTH_KEY_PATH"
+
+          # Compile Dart; signing is deferred to the xcodebuild archive step.
           flutter build ios --release --no-codesign \
             --dart-define-from-file=.env.dart-define
-          # Archive using project.pbxproj signing (patched above for Runner only).
-          # Only DEVELOPMENT_TEAM is passed on the CLI — CODE_SIGN_STYLE=Manual and
-          # PROVISIONING_PROFILE live in project.pbxproj for Runner's build configs.
-          # Passing PROVISIONING_PROFILE globally on the CLI conflicts with Automatic
-          # signing on SPM/CocoaPod package targets and triggers exit 65.
+
+          # Archive. -allowProvisioningUpdates lets Xcode automatically select
+          # (or create) the correct App Store Distribution provisioning profile
+          # using the API key — no manual profile UUID/name lookup required.
+          # DEVELOPMENT_TEAM is still set explicitly so Xcode uses the right team.
           xcodebuild \
             -workspace ios/Runner.xcworkspace \
             -scheme Runner \
             -configuration Release \
             archive \
             -archivePath /tmp/blinkr.xcarchive \
-            DEVELOPMENT_TEAM="$TEAM_ID"
+            DEVELOPMENT_TEAM="$TEAM_ID" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$AUTH_KEY_PATH" \
+            -authenticationKeyID "$APPSTORE_API_KEY_ID" \
+            -authenticationKeyIssuerID "$APPSTORE_ISSUER_ID"
+
           xcodebuild \
             -exportArchive \
             -archivePath /tmp/blinkr.xcarchive \
             -exportOptionsPlist "$EXPORT_OPTIONS_PATH" \
-            -exportPath build/ios/ipa
+            -exportPath build/ios/ipa \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$AUTH_KEY_PATH" \
+            -authenticationKeyID "$APPSTORE_API_KEY_ID" \
+            -authenticationKeyIssuerID "$APPSTORE_ISSUER_ID"
+
+          rm -f "$AUTH_KEY_PATH"
 
       - name: Build IPA (unsigned — compilation verification only)
         if: env.SIGNING_AVAILABLE != 'true'
