@@ -205,11 +205,51 @@ jobs:
           echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode \
             -o ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
 
+      - name: Configure Xcode for manual signing
+        if: env.SIGNING_AVAILABLE == 'true'
+        run: |
+          cd apps/mobile
+          PROFILE_PATH="$HOME/Library/MobileDevice/Provisioning Profiles/profile.mobileprovision"
+          TEAM_ID=$(security cms -D -i "$PROFILE_PATH" | /usr/libexec/PlistBuddy -c "Print TeamIdentifier:0" /dev/stdin)
+          PROFILE_NAME=$(security cms -D -i "$PROFILE_PATH" | /usr/libexec/PlistBuddy -c "Print Name" /dev/stdin)
+          echo "Team: $TEAM_ID  Profile: $PROFILE_NAME"
+          # flutter create generates CODE_SIGN_STYLE = Automatic which requires an
+          # Xcode login. Switch every configuration to manual so CI can use the
+          # certificate we imported into the build keychain.
+          sed -i '' 's/CODE_SIGN_STYLE = Automatic/CODE_SIGN_STYLE = Manual/g' \
+            ios/Runner.xcodeproj/project.pbxproj
+          sed -i '' "s/DEVELOPMENT_TEAM = \"\"/DEVELOPMENT_TEAM = \"$TEAM_ID\"/g" \
+            ios/Runner.xcodeproj/project.pbxproj
+          sed -i '' 's/CODE_SIGN_IDENTITY = "iPhone Developer"/CODE_SIGN_IDENTITY = "Apple Distribution"/g' \
+            ios/Runner.xcodeproj/project.pbxproj
+          # Write ExportOptions.plist referencing the installed profile by name
+          cat > ExportOptions.plist <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>app-store</string>
+              <key>teamID</key>
+              <string>${TEAM_ID}</string>
+              <key>signingStyle</key>
+              <string>manual</string>
+              <key>provisioningProfiles</key>
+              <dict>
+                  <key>com.blinkr.app</key>
+                  <string>${PROFILE_NAME}</string>
+              </dict>
+          </dict>
+          </plist>
+          PLIST
+          echo "EXPORT_OPTIONS_PATH=$(pwd)/ExportOptions.plist" >> "$GITHUB_ENV"
+
       - name: Build IPA (signed — TestFlight)
         if: env.SIGNING_AVAILABLE == 'true'
         run: |
           cd apps/mobile
           flutter build ipa --release \
+            --export-options-plist="$EXPORT_OPTIONS_PATH" \
             --dart-define-from-file=.env.dart-define
 
       - name: Build IPA (unsigned — compilation verification only)
