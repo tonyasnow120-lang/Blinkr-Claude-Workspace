@@ -135,6 +135,27 @@ jobs:
           cp /tmp/PrivacyInfo.xcprivacy ios/Runner/PrivacyInfo.xcprivacy
           sed -i '' 's/com\.blinkr\.mobile/com.blinkr.app/g' ios/Runner.xcodeproj/project.pbxproj
 
+      - name: Patch Podfile — disable code signing for pod targets
+        run: |
+          python3 - <<'PYEOF'
+          podfile_path = 'apps/mobile/ios/Podfile'
+          with open(podfile_path, 'r') as f:
+              content = f.read()
+          old = 'flutter_additional_ios_build_settings(target)'
+          new_block = (
+              '\n      target.build_configurations.each do |config|\n'
+              "        config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'\n"
+              '      end'
+          )
+          if old in content:
+              content = content.replace(old, old + new_block, 1)
+              with open(podfile_path, 'w') as f:
+                  f.write(content)
+              print('Podfile patched — CODE_SIGNING_ALLOWED=NO for pod targets')
+          else:
+              print('WARNING: marker not found in Podfile, skipping patch')
+          PYEOF
+
       - name: Flutter pub get
         run: cd apps/mobile && flutter pub get
 
