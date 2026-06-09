@@ -183,7 +183,7 @@ jobs:
           echo "=== Certificates imported into build.keychain ==="
           security find-identity -v -p codesigning
 
-      - name: Configure Xcode for manual signing
+      - name: Write ExportOptions.plist
         if: env.SIGNING_AVAILABLE == 'true'
         run: |
           cd apps/mobile
@@ -192,28 +192,6 @@ jobs:
           TEAM_ID=$(/usr/libexec/PlistBuddy -c "Print TeamIdentifier:0" /tmp/profile.plist)
           PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print Name" /tmp/profile.plist)
           echo "Team: $TEAM_ID  Profile: $PROFILE_NAME"
-          python3 - "$TEAM_ID" "$PROFILE_NAME" <<'PYEOF'
-          import sys, re
-          team_id, profile_name = sys.argv[1], sys.argv[2]
-          path = 'ios/Runner.xcodeproj/project.pbxproj'
-          with open(path) as f:
-              c = f.read()
-          c = c.replace('CODE_SIGN_STYLE = Automatic', 'CODE_SIGN_STYLE = Manual')
-          for old_id in ['"iPhone Developer"', '"Apple Development"', '"iOS Developer"', '""']:
-              c = c.replace(f'CODE_SIGN_IDENTITY = {old_id}', 'CODE_SIGN_IDENTITY = "Apple Distribution"')
-          c = re.sub(r'DEVELOPMENT_TEAM = "";', f'DEVELOPMENT_TEAM = "{team_id}";', c)
-          c = re.sub(
-              f'(DEVELOPMENT_TEAM = "{re.escape(team_id)}";)',
-              f'\\1\n\t\t\t\tPROVISIONING_PROFILE_SPECIFIER = "{profile_name}";',
-              c
-          )
-          with open(path, 'w') as f:
-              f.write(c)
-          print("project.pbxproj patched")
-          PYEOF
-          echo "=== Signing settings in project.pbxproj after patch ==="
-          grep -E "CODE_SIGN_STYLE|CODE_SIGN_IDENTITY|DEVELOPMENT_TEAM|PROVISIONING_PROFILE" \
-            ios/Runner.xcodeproj/project.pbxproj | head -20
           cat > ExportOptions.plist <<PLIST
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -241,9 +219,27 @@ jobs:
         if: env.SIGNING_AVAILABLE == 'true'
         run: |
           cd apps/mobile
-          flutter build ipa --release \
-            --export-options-plist="$EXPORT_OPTIONS_PATH" \
+          # flutter build ios compiles Dart and sets up DerivedData without signing.
+          # Then xcodebuild archive passes signing params on the command line, which
+          # have the highest precedence and override any project.pbxproj settings.
+          # This also shows the real xcodebuild error instead of Flutter's generic message.
+          flutter build ios --release --no-codesign \
             --dart-define-from-file=.env.dart-define
+          xcodebuild \
+            -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            archive \
+            -archivePath /tmp/blinkr.xcarchive \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            "DEVELOPMENT_TEAM=$TEAM_ID" \
+            "PROVISIONING_PROFILE_SPECIFIER=$PROFILE_NAME"
+          xcodebuild \
+            -exportArchive \
+            -archivePath /tmp/blinkr.xcarchive \
+            -exportOptionsPlist "$EXPORT_OPTIONS_PATH" \
+            -exportPath build/ios/ipa
 
       - name: Build IPA (unsigned — compilation verification only)
         if: env.SIGNING_AVAILABLE != 'true'
