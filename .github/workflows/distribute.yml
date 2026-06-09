@@ -39,8 +39,11 @@ jobs:
           cp /tmp/MainActivity.kt android/app/src/main/kotlin/com/blinkr/app/MainActivity.kt
           cp /tmp/network_security_config.xml android/app/src/main/res/xml/network_security_config.xml
           cp /tmp/proguard-rules.pro android/app/proguard-rules.pro
-          sed -i 's/com\.blinkr\.mobile/com.blinkr.app/g' android/app/build.gradle
-          rm -rf android/app/src/main/kotlin/com/blinkr/mobile
+          GRADLE_FILE=$(ls android/app/build.gradle.kts android/app/build.gradle 2>/dev/null | head -1)
+          if [ -n "$GRADLE_FILE" ]; then
+            sed -i "s/com\.blinkr\.mobile/com.blinkr.app/g;s/com\.blinkr\.blinkr/com.blinkr.app/g" "$GRADLE_FILE"
+          fi
+          rm -rf android/app/src/main/kotlin/com/blinkr/mobile android/app/src/main/kotlin/com/blinkr/blinkr
           echo "android.enableR8.fullMode=false" >> android/gradle.properties
 
       - name: Flutter pub get
@@ -135,7 +138,7 @@ jobs:
           cp /tmp/Info.plist ios/Runner/Info.plist
           cp /tmp/Runner.entitlements ios/Runner/Runner.entitlements
           cp /tmp/PrivacyInfo.xcprivacy ios/Runner/PrivacyInfo.xcprivacy
-          sed -i '' 's/com\.blinkr\.mobile/com.blinkr.app/g' ios/Runner.xcodeproj/project.pbxproj
+          sed -i '' 's/com\.blinkr\.mobile/com.blinkr.app/g;s/com\.blinkr\.blinkr/com.blinkr.app/g' ios/Runner.xcodeproj/project.pbxproj
 
       - name: Patch Podfile — disable code signing for pod targets
         run: |
@@ -238,14 +241,51 @@ jobs:
           echo "PROFILE_NAME=$PROFILE_NAME" >> "$GITHUB_ENV"
           echo "EXPORT_OPTIONS_PATH=$(pwd)/ExportOptions.plist" >> "$GITHUB_ENV"
 
+      - name: Patch project.pbxproj — manual signing for Runner only
+        if: env.SIGNING_AVAILABLE == 'true'
+        run: |
+          python3 - <<'PYEOF'
+          import os
+
+          project_path = 'apps/mobile/ios/Runner.xcodeproj/project.pbxproj'
+          team_id = os.environ.get('TEAM_ID', '')
+          profile_name = os.environ.get('PROFILE_NAME', '')
+
+          with open(project_path, 'r') as f:
+              content = f.read()
+
+          # In a freshly generated Flutter iOS project, CODE_SIGN_STYLE = Automatic
+          # appears only in Runner target build configurations (Debug/Release/Profile).
+          # Replacing it globally injects Manual signing settings for Runner while
+          # leaving SPM package targets unaffected — SPM targets have no
+          # CODE_SIGN_STYLE entry in project.pbxproj so they never receive a
+          # provisioning profile and build cleanly as unsigned libraries.
+          old = 'CODE_SIGN_STYLE = Automatic;'
+          new = (
+              'CODE_SIGN_IDENTITY = "Apple Distribution";\n'
+              '\t\t\tCODE_SIGN_STYLE = Manual;\n'
+              f'\t\t\tDEVELOPMENT_TEAM = {team_id};\n'
+              f'\t\t\tPROVISIONING_PROFILE_SPECIFIER = "{profile_name}";'
+          )
+          count = content.count(old)
+          content = content.replace(old, new)
+          content = content.replace('DEVELOPMENT_TEAM = "";', f'DEVELOPMENT_TEAM = {team_id};')
+
+          with open(project_path, 'w') as f:
+              f.write(content)
+
+          print(f'Patched {count} CODE_SIGN_STYLE occurrence(s); team={team_id}; profile={profile_name}')
+          PYEOF
+
       - name: Build IPA (signed — TestFlight)
         if: env.SIGNING_AVAILABLE == 'true'
         run: |
           cd apps/mobile
-          # flutter build ios compiles Dart and sets up DerivedData without signing.
-          # Then xcodebuild archive passes signing params on the command line, which
-          # have the highest precedence and override any project.pbxproj settings.
-          # This also shows the real xcodebuild error instead of Flutter's generic message.
+          # flutter build ios compiles Dart and writes dart-defines into DerivedData.
+          # Signing settings are in project.pbxproj (Runner target only) — NOT on the
+          # xcodebuild command line. Passing them globally on the CLI would propagate
+          # to Swift Package Manager package targets, which don't support provisioning
+          # profiles and would fail with exit code 65.
           flutter build ios --release --no-codesign \
             --dart-define-from-file=.env.dart-define
           xcodebuild \
@@ -253,11 +293,7 @@ jobs:
             -scheme Runner \
             -configuration Release \
             archive \
-            -archivePath /tmp/blinkr.xcarchive \
-            CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
-            "DEVELOPMENT_TEAM=$TEAM_ID" \
-            "PROVISIONING_PROFILE_SPECIFIER=$PROFILE_NAME"
+            -archivePath /tmp/blinkr.xcarchive
           xcodebuild \
             -exportArchive \
             -archivePath /tmp/blinkr.xcarchive \
