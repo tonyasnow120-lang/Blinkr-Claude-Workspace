@@ -94,9 +94,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Any authenticated user landing on an auth entry screen — fresh
       // sign-in (login / magic-link callback) or returning cold start on
       // the welcome screen — goes through the success animation, which
-      // resolves home vs setup-profile while it plays.
-      if (isAuthenticated && (path == '/' || path == '/login' || path == '/auth/callback')) {
+      // resolves home vs setup-profile while it plays. Returning sessions
+      // get a shortened version of the animation.
+      if (isAuthenticated && (path == '/login' || path == '/auth/callback')) {
         return '/auth/success';
+      }
+      if (isAuthenticated && path == '/') {
+        return '/auth/success?returning=1';
       }
 
       return null;
@@ -127,7 +131,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       // and then routes to /home or /setup-profile.
       GoRoute(
         path: '/auth/success',
-        builder: (context, state) => const SignInSuccessScreen(),
+        builder: (context, state) => SignInSuccessScreen(
+          returning: state.uri.queryParameters['returning'] == '1',
+        ),
       ),
       // Deep link landing for magic link auth (blinkr://auth/callback#access_token=...)
       // supabase_flutter processes the URL fragment automatically; this route just

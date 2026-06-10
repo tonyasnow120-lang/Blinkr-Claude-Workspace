@@ -12,8 +12,13 @@ import '../../../core/api/api_endpoints.dart';
 /// concurrently, then routes to /home (existing profile) or /setup-profile
 /// (first sign-in). The exit fade lands on black, matching the background of
 /// both destinations, so the hand-off reads as one continuous transition.
+///
+/// [returning] marks a cold start with an existing session: the full sequence
+/// plays compressed to 1.5s so frequent opens don't feel slow.
 class SignInSuccessScreen extends ConsumerStatefulWidget {
-  const SignInSuccessScreen({super.key});
+  final bool returning;
+
+  const SignInSuccessScreen({super.key, this.returning = false});
 
   @override
   ConsumerState<SignInSuccessScreen> createState() =>
@@ -48,8 +53,11 @@ class _SignInSuccessScreenState extends ConsumerState<SignInSuccessScreen>
         vsync: this, duration: const Duration(seconds: 20))
       ..repeat();
 
+    // All stage intervals are fractions of this duration, so a shorter
+    // controller compresses the whole sequence proportionally.
+    final durationMs = widget.returning ? 1500 : 2600;
     _seqCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 2600));
+        vsync: this, duration: Duration(milliseconds: durationMs));
 
     _canvasOpacity = CurvedAnimation(
       parent: _seqCtrl,
@@ -90,8 +98,8 @@ class _SignInSuccessScreenState extends ConsumerState<SignInSuccessScreen>
 
     _seqCtrl.forward();
 
-    // Soft haptic as the checkmark completes.
-    Future.delayed(const Duration(milliseconds: 1300), () {
+    // Soft haptic as the checkmark completes (50% through the sequence).
+    Future.delayed(Duration(milliseconds: durationMs ~/ 2), () {
       if (mounted) HapticFeedback.lightImpact();
     });
 
