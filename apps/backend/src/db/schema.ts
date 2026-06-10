@@ -20,6 +20,21 @@ export const users = pgTable('users', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 })
 
+export const userPhotos = pgTable(
+  'user_photos',
+  {
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    url: text('url').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    userIdx: index('user_photos_user_id_idx').on(t.userId),
+  }),
+)
+
 export const userStats = pgTable('user_stats', {
   userId: uuid('user_id')
     .primaryKey()
@@ -114,6 +129,7 @@ export const blinkEvents = pgTable(
 )
 
 export type User = typeof users.$inferSelect
+export type UserPhoto = typeof userPhotos.$inferSelect
 export type UserStats = typeof userStats.$inferSelect
 export type Challenge = typeof challenges.$inferSelect
 export type Match = typeof matches.$inferSelect

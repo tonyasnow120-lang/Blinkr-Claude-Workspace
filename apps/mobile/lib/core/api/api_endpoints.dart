@@ -4,6 +4,8 @@ class ApiEndpoints {
 
   static const String me = '/v1/users/me';
   static const String myMatches = '/v1/users/me/matches';
+  static const String myPhotos = '/v1/users/me/photos';
+  static String deletePhoto(String id) => '/v1/users/me/photos/$id';
   static String userById(String id) => '/v1/users/$id';
 
   static const String createChallenge = '/v1/challenges';

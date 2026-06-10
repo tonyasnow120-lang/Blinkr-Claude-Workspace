@@ -26,6 +26,7 @@ dependencies:
   crypto: ^3.0.0
   audioplayers: ^6.1.0
   shared_preferences: ^2.2.0
+  image_picker: ^1.1.2
 
 # app_links is pulled in transitively by supabase_flutter (OAuth deep-link
 # callbacks). Version 6.4.1 "Updated Gradle settings" to read

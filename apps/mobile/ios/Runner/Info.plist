@@ -46,6 +46,9 @@
     <key>NSCameraUsageDescription</key>
     <string>Blinkr uses your camera to detect blinks during a staring contest.</string>
 
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Blinkr needs access to your photos to add them to your profile collage.</string>
+
     <!-- No IDFA used — ATT prompt not required. Confirmed: Firebase Analytics default
          config does not collect IDFA. See STORE_COMPLIANCE.md. (GAP-28) -->
 
