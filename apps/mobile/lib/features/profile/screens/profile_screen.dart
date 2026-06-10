@@ -29,7 +29,45 @@ class ProfileScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: profile.when(
+      // Primary post-login landing page: profile details up top, start
+      // challenge pinned below so it's reachable even while the profile
+      // request is still loading.
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(child: _buildProfileBody(profile)),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(40, 0, 40, 36),
+            child: SizedBox(
+              height: 52,
+              child: ElevatedButton(
+                onPressed: () => context.push('/home'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                child: const Text(
+                  'START CHALLENGE',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w400,
+                    letterSpacing: 4,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileBody(AsyncValue<Map<String, dynamic>> profile) {
+    return profile.when(
         loading: () =>
             const Center(child: CircularProgressIndicator(color: Colors.white)),
         error: (e, _) => Center(
@@ -109,8 +147,7 @@ class ProfileScreen extends ConsumerWidget {
             ),
           );
         },
-      ),
-    );
+      );
   }
 }
 

@@ -9,7 +9,7 @@ import '../../../core/api/api_endpoints.dart';
 
 /// Shown immediately after a session is established (Google, Apple, OTP or
 /// magic link). Plays the success animation while the profile lookup runs
-/// concurrently, then routes to /home (existing profile) or /setup-profile
+/// concurrently, then routes to /profile (existing profile) or /setup-profile
 /// (first sign-in). The exit fade lands on black, matching the background of
 /// both destinations, so the hand-off reads as one continuous transition.
 ///
@@ -116,10 +116,12 @@ class _SignInSuccessScreenState extends ConsumerState<SignInSuccessScreen>
       final profile = await api
           .getOrNull(ApiEndpoints.me)
           .timeout(const Duration(seconds: 5));
-      return profile != null ? '/home' : '/setup-profile';
+      // Existing users land on their profile page (the post-login hub);
+      // first sign-ins go set one up.
+      return profile != null ? '/profile' : '/setup-profile';
     } catch (_) {
-      // Backend unreachable — home handles the missing-profile case.
-      return '/home';
+      // Backend unreachable — profile screen shows its own error state.
+      return '/profile';
     }
   }
 

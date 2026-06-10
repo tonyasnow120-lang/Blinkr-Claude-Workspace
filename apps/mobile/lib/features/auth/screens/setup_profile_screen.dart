@@ -33,7 +33,8 @@ class _SetupProfileScreenState extends ConsumerState<SetupProfileScreen> {
 
     try {
       await ref.read(authServiceProvider).registerProfile(username: username);
-      if (mounted) context.go('/home');
+      // Profile page is the post-login hub; challenges start from there.
+      if (mounted) context.go('/profile');
     } catch (e) {
       setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
     } finally {
