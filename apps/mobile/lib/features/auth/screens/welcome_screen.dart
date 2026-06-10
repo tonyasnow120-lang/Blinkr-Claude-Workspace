@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/audio/background_music.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -193,6 +194,13 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 ),
               ),
             ),
+          ),
+
+          // Music toggle
+          const Positioned(
+            top: 8,
+            right: 8,
+            child: SafeArea(child: MusicToggleButton()),
           ),
         ],
       ),

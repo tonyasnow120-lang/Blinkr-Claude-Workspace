@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/audio/background_music.dart';
 import '../providers/challenge_provider.dart';
 
 class CreateChallengeScreen extends ConsumerStatefulWidget {
@@ -31,6 +32,7 @@ class _CreateChallengeScreenState
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
         title: const Text('Challenge'),
+        actions: const [MusicToggleButton()],
       ),
       body: SafeArea(
         child: Padding(

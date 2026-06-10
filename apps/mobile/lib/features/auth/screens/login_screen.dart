@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/audio/background_music.dart';
 import '../providers/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -161,30 +162,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         child: SafeArea(
           child: Column(
             children: [
-              // Back nav
+              // Back nav + music toggle
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton.icon(
-                    onPressed: () => context.pop(),
-                    icon: const Icon(Icons.arrow_back,
-                        color: Colors.white, size: 16),
-                    label: const Text(
-                      'BACK',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w300,
-                        letterSpacing: 3,
+                padding: const EdgeInsets.fromLTRB(20, 4, 12, 0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton.icon(
+                      onPressed: () => context.pop(),
+                      icon: const Icon(Icons.arrow_back,
+                          color: Colors.white, size: 16),
+                      label: const Text(
+                        'BACK',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w300,
+                          letterSpacing: 3,
+                        ),
+                      ),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.white.withAlpha(115),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 4, vertical: 8),
                       ),
                     ),
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.white.withAlpha(115),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 4, vertical: 8),
-                    ),
-                  ),
+                    const MusicToggleButton(),
+                  ],
                 ),
               ),
 

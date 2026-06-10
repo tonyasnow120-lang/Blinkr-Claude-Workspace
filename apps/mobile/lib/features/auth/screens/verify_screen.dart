@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/audio/background_music.dart';
 import '../providers/auth_provider.dart';
 
 class VerifyScreen extends ConsumerStatefulWidget {
@@ -71,6 +72,7 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
+        actions: const [MusicToggleButton()],
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 32),

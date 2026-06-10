@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/audio/background_music.dart';
 import '../providers/challenge_provider.dart';
 
 class JoinChallengeScreen extends ConsumerStatefulWidget {
@@ -64,6 +65,7 @@ class _JoinChallengeScreenState extends ConsumerState<JoinChallengeScreen> {
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
         title: const Text('Join Challenge'),
+        actions: const [MusicToggleButton()],
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 32),

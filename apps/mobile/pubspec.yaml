@@ -24,6 +24,8 @@ dependencies:
   google_sign_in: ^6.2.0
   sign_in_with_apple: ^6.1.0
   crypto: ^3.0.0
+  audioplayers: ^6.1.0
+  shared_preferences: ^2.2.0
 
 # app_links is pulled in transitively by supabase_flutter (OAuth deep-link
 # callbacks). Version 6.4.1 "Updated Gradle settings" to read
@@ -45,3 +47,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/audio/background_music.mp3

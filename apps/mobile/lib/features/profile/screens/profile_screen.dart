@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/audio/background_music.dart';
 import '../providers/profile_provider.dart';
 import '../../auth/providers/auth_provider.dart';
 
@@ -18,6 +19,7 @@ class ProfileScreen extends ConsumerWidget {
         foregroundColor: Colors.white,
         title: const Text('Profile'),
         actions: [
+          const MusicToggleButton(),
           TextButton(
             onPressed: () async {
               await ref.read(authServiceProvider).signOut();

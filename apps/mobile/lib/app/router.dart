@@ -54,6 +54,129 @@ class _GoRouterRefreshStream extends ChangeNotifier {
   }
 }
 
+/// Transition vocabulary — all on black, so cross-fades read as one
+/// continuous surface rather than two pages swapping.
+///
+/// Fade + slight upward rise: auth flow and primary destinations. Mirrors
+/// the entrance animations the screens themselves use.
+CustomTransitionPage<void> _fadeRise(GoRouterState state, Widget child) =>
+    CustomTransitionPage<void>(
+      key: state.pageKey,
+      child: child,
+      transitionDuration: const Duration(milliseconds: 450),
+      reverseTransitionDuration: const Duration(milliseconds: 300),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+        );
+        return FadeTransition(
+          opacity: curved,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 0.035),
+              end: Offset.zero,
+            ).animate(curved),
+            child: child,
+          ),
+        );
+      },
+    );
+
+/// Horizontal push with parallax: stepping deeper into the challenge flow.
+/// Incoming page slides in from the right while the outgoing page drifts
+/// left at quarter speed.
+CustomTransitionPage<void> _slidePush(GoRouterState state, Widget child) =>
+    CustomTransitionPage<void>(
+      key: state.pageKey,
+      child: child,
+      transitionDuration: const Duration(milliseconds: 400),
+      reverseTransitionDuration: const Duration(milliseconds: 350),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        final inCurve = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+        );
+        final outCurve = CurvedAnimation(
+          parent: secondaryAnimation,
+          curve: Curves.easeInOutCubic,
+        );
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: Offset.zero,
+            end: const Offset(-0.25, 0),
+          ).animate(outCurve),
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(1, 0),
+              end: Offset.zero,
+            ).animate(inCurve),
+            child: FadeTransition(opacity: inCurve, child: child),
+          ),
+        );
+      },
+    );
+
+/// Rise from the bottom: profile reads as an overlay sheet.
+CustomTransitionPage<void> _slideUp(GoRouterState state, Widget child) =>
+    CustomTransitionPage<void>(
+      key: state.pageKey,
+      child: child,
+      transitionDuration: const Duration(milliseconds: 420),
+      reverseTransitionDuration: const Duration(milliseconds: 320),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+        );
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0, 0.12),
+            end: Offset.zero,
+          ).animate(curved),
+          child: FadeTransition(opacity: curved, child: child),
+        );
+      },
+    );
+
+/// Quick plain fade: game-critical handoffs (countdown, contest) where a
+/// long transition would eat reaction time, plus the callback spinner.
+CustomTransitionPage<void> _quickFade(GoRouterState state, Widget child) =>
+    CustomTransitionPage<void>(
+      key: state.pageKey,
+      child: child,
+      transitionDuration: const Duration(milliseconds: 200),
+      reverseTransitionDuration: const Duration(milliseconds: 200),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+          FadeTransition(opacity: animation, child: child),
+    );
+
+/// Fade + scale-up reveal: the result screen lands with weight.
+CustomTransitionPage<void> _fadeScale(GoRouterState state, Widget child) =>
+    CustomTransitionPage<void>(
+      key: state.pageKey,
+      child: child,
+      transitionDuration: const Duration(milliseconds: 500),
+      reverseTransitionDuration: const Duration(milliseconds: 300),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+        );
+        return FadeTransition(
+          opacity: curved,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.94, end: 1.0).animate(curved),
+            child: child,
+          ),
+        );
+      },
+    );
+
 final routerProvider = Provider<GoRouter>((ref) {
   debugPrint('BLINKR: routerProvider initializing');
   final refresh = _GoRouterRefreshStream(
@@ -108,31 +231,37 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(
         path: '/',
-        builder: (context, state) => const WelcomeScreen(),
+        pageBuilder: (context, state) =>
+            _fadeRise(state, const WelcomeScreen()),
       ),
       GoRoute(
         path: '/login',
-        builder: (context, state) => const LoginScreen(),
+        pageBuilder: (context, state) =>
+            _fadeRise(state, const LoginScreen()),
       ),
       GoRoute(
         path: '/verify',
-        builder: (context, state) =>
-            VerifyScreen(email: state.extra as String),
+        pageBuilder: (context, state) =>
+            _fadeRise(state, VerifyScreen(email: state.extra as String)),
       ),
       GoRoute(
         path: '/home',
-        builder: (context, state) => const HomeScreen(),
+        pageBuilder: (context, state) => _fadeRise(state, const HomeScreen()),
       ),
       GoRoute(
         path: '/setup-profile',
-        builder: (context, state) => const SetupProfileScreen(),
+        pageBuilder: (context, state) =>
+            _fadeRise(state, const SetupProfileScreen()),
       ),
       // Post-sign-in success animation; resolves profile state while playing
       // and then routes to /home or /setup-profile.
       GoRoute(
         path: '/auth/success',
-        builder: (context, state) => SignInSuccessScreen(
-          returning: state.uri.queryParameters['returning'] == '1',
+        pageBuilder: (context, state) => _quickFade(
+          state,
+          SignInSuccessScreen(
+            returning: state.uri.queryParameters['returning'] == '1',
+          ),
         ),
       ),
       // Deep link landing for magic link auth (blinkr://auth/callback#access_token=...)
@@ -140,15 +269,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       // shows a spinner while the session is established, then redirect kicks in.
       GoRoute(
         path: '/auth/callback',
-        builder: (context, state) => const _AuthCallbackScreen(),
+        pageBuilder: (context, state) =>
+            _quickFade(state, const _AuthCallbackScreen()),
       ),
       GoRoute(
         path: '/challenge/create',
-        builder: (context, state) => const CreateChallengeScreen(),
+        pageBuilder: (context, state) =>
+            _slidePush(state, const CreateChallengeScreen()),
       ),
       GoRoute(
         path: '/challenge/join',
-        builder: (context, state) => const JoinChallengeScreen(),
+        pageBuilder: (context, state) =>
+            _slidePush(state, const JoinChallengeScreen()),
       ),
       // HTTPS Universal Link: https://blinkr.app/match/:code (GAP-9, primary)
       // Custom scheme blinkr://match/:code kept as fallback (see AndroidManifest.xml)
@@ -160,42 +292,55 @@ final routerProvider = Provider<GoRouter>((ref) {
           if (!_codePattern.hasMatch(code)) return '/home';
           return null;
         },
-        builder: (context, state) =>
-            JoinChallengeScreen(code: state.pathParameters['code']),
+        pageBuilder: (context, state) => _slidePush(
+          state,
+          JoinChallengeScreen(code: state.pathParameters['code']),
+        ),
       ),
       GoRoute(
         path: '/match/:id/lobby',
-        builder: (context, state) => LobbyScreen(
-          matchId: state.pathParameters['id']!,
-          matchData: state.extra as Map<String, dynamic>? ?? {},
+        pageBuilder: (context, state) => _slidePush(
+          state,
+          LobbyScreen(
+            matchId: state.pathParameters['id']!,
+            matchData: state.extra as Map<String, dynamic>? ?? {},
+          ),
         ),
       ),
       GoRoute(
         path: '/match/:id/countdown',
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final extra = state.extra as Map<String, dynamic>?;
           final startsAt = extra?['startsAt'] != null
               ? DateTime.parse(extra!['startsAt'] as String)
               : DateTime.now().add(const Duration(seconds: 3));
-          return CountdownScreen(
-            matchId: state.pathParameters['id']!,
-            startsAt: startsAt,
+          return _quickFade(
+            state,
+            CountdownScreen(
+              matchId: state.pathParameters['id']!,
+              startsAt: startsAt,
+            ),
           );
         },
       ),
       GoRoute(
         path: '/match/:id/contest',
-        builder: (context, state) =>
-            ContestScreen(matchId: state.pathParameters['id']!),
+        pageBuilder: (context, state) => _quickFade(
+          state,
+          ContestScreen(matchId: state.pathParameters['id']!),
+        ),
       ),
       GoRoute(
         path: '/match/:id/result',
-        builder: (context, state) =>
-            ResultScreen(matchId: state.pathParameters['id']!),
+        pageBuilder: (context, state) => _fadeScale(
+          state,
+          ResultScreen(matchId: state.pathParameters['id']!),
+        ),
       ),
       GoRoute(
         path: '/profile',
-        builder: (context, state) => const ProfileScreen(),
+        pageBuilder: (context, state) =>
+            _slideUp(state, const ProfileScreen()),
       ),
     ],
   );

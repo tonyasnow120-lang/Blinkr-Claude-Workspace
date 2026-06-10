@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/match_provider.dart';
 import '../widgets/win_animation.dart';
 import '../../../core/security/screen_security.dart';
+import '../../../core/audio/background_music.dart';
 
 class ResultScreen extends ConsumerStatefulWidget {
   final String matchId;
@@ -92,6 +93,11 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
                 ],
               ),
             ),
+          ),
+          const Positioned(
+            top: 8,
+            right: 8,
+            child: SafeArea(child: MusicToggleButton()),
           ),
         ],
       ),

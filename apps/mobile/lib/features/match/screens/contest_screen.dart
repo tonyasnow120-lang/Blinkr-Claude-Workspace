@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../providers/match_provider.dart';
 import '../widgets/camera_feed.dart';
 import '../../../core/security/screen_security.dart';
+import '../../../core/audio/background_music.dart';
 
 class ContestScreen extends ConsumerStatefulWidget {
   final String matchId;
@@ -101,6 +102,12 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
                   child: const Text('Quit', style: TextStyle(color: Colors.white54)),
                 ),
               ),
+            ),
+            // Quit sits top-right, so the music toggle takes top-left.
+            const Positioned(
+              top: 8,
+              left: 8,
+              child: MusicToggleButton(),
             ),
           ],
         ),

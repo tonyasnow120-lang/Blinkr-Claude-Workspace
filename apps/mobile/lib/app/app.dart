@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'router.dart';
+import '../core/audio/background_music.dart';
 import '../core/security/app_lifecycle_observer.dart';
 
 class BlinkrApp extends ConsumerWidget {
@@ -37,9 +38,34 @@ class BlinkrApp extends ConsumerWidget {
           ),
         ),
         routerConfig: router,
+        builder: (context, child) =>
+            _MusicBootstrap(child: child ?? const SizedBox.shrink()),
       ),
     );
   }
+}
+
+/// Starts the looping background music once the first frame is up, so audio
+/// init can never delay or break startup.
+class _MusicBootstrap extends ConsumerStatefulWidget {
+  final Widget child;
+  const _MusicBootstrap({required this.child});
+
+  @override
+  ConsumerState<_MusicBootstrap> createState() => _MusicBootstrapState();
+}
+
+class _MusicBootstrapState extends ConsumerState<_MusicBootstrap> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(backgroundMusicProvider).start();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 class _ErrorApp extends StatelessWidget {
