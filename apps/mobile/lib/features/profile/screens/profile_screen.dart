@@ -27,6 +27,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
   late final Animation<double> _collageSlide;
 
   bool _uploading = false;
+  bool _uploadingAvatar = false;
 
   @override
   void initState() {
@@ -104,6 +105,32 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
       }
     } finally {
       if (mounted) setState(() => _uploading = false);
+    }
+  }
+
+  Future<void> _pickAndUploadAvatar() async {
+    if (_uploadingAvatar) return;
+
+    final picker = ImagePicker();
+    final file = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+      maxWidth: 800,
+    );
+    if (file == null) return;
+
+    setState(() => _uploadingAvatar = true);
+    try {
+      await ref.read(photoServiceProvider).uploadAvatar(file);
+      ref.invalidate(profileProvider);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Upload failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _uploadingAvatar = false);
     }
   }
 
@@ -234,6 +261,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                     _AnimatedAvatar(
                       rotation: _auraCtrl,
                       avatarUrl: user?['avatar_url'] as String?,
+                      uploading: _uploadingAvatar,
+                      onAddPhoto: _pickAndUploadAvatar,
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -334,31 +363,66 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
 class _AnimatedAvatar extends StatelessWidget {
   final Animation<double> rotation;
   final String? avatarUrl;
+  final bool uploading;
+  final VoidCallback onAddPhoto;
 
-  const _AnimatedAvatar({required this.rotation, this.avatarUrl});
+  const _AnimatedAvatar({
+    required this.rotation,
+    this.avatarUrl,
+    required this.uploading,
+    required this.onAddPhoto,
+  });
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: 92,
       height: 92,
-      child: AnimatedBuilder(
-        animation: rotation,
-        builder: (_, child) => CustomPaint(
-          painter: _AvatarAuraPainter(rotation: rotation.value),
-          child: child,
-        ),
-        child: Center(
-          child: CircleAvatar(
-            radius: 36,
-            backgroundColor: Colors.white12,
-            backgroundImage:
-                avatarUrl != null ? NetworkImage(avatarUrl!) : null,
-            child: avatarUrl == null
-                ? const Icon(Icons.person, color: Colors.white, size: 36)
-                : null,
+      child: Stack(
+        children: [
+          AnimatedBuilder(
+            animation: rotation,
+            builder: (_, child) => CustomPaint(
+              painter: _AvatarAuraPainter(rotation: rotation.value),
+              child: child,
+            ),
+            child: Center(
+              child: CircleAvatar(
+                radius: 36,
+                backgroundColor: Colors.white12,
+                backgroundImage:
+                    avatarUrl != null ? NetworkImage(avatarUrl!) : null,
+                child: avatarUrl == null
+                    ? const Icon(Icons.person, color: Colors.white, size: 36)
+                    : null,
+              ),
+            ),
           ),
-        ),
+          // Small "+" badge to set/replace the profile picture
+          Positioned(
+            right: 4,
+            bottom: 4,
+            child: Material(
+              color: Colors.white,
+              shape: const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: uploading ? null : onAddPhoto,
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: uploading
+                      ? const Padding(
+                          padding: EdgeInsets.all(5),
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.black),
+                        )
+                      : const Icon(Icons.add, color: Colors.black, size: 16),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
