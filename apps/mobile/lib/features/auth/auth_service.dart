@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -43,7 +44,8 @@ class AuthService {
     }
   }
 
-  /// Signs in with Apple using the native system sheet (iOS) or web flow (Android).
+  /// Signs in with Apple using the native system sheet (iOS) or Supabase's
+  /// browser-based OAuth flow (Android, which has no native Apple ID API).
   ///
   /// Trust boundary: Identity token validation is delegated to Supabase Auth.
   /// Supabase validates Apple identity tokens against Apple's JWKS endpoint
@@ -51,6 +53,18 @@ class AuthService {
   /// The SHA-256 hashed nonce is sent to Apple; the raw nonce is passed to
   /// Supabase for server-side verification. (GAP-3, GAP-4)
   Future<void> signInWithApple() async {
+    if (!Platform.isIOS) {
+      // sign_in_with_apple has no native Android implementation; its web
+      // fallback requires a Services ID + backend redirect endpoint that
+      // isn't configured. Supabase's OAuth flow handles Apple sign-in via
+      // the system browser, redirecting back through the existing deep link.
+      await _supabase.auth.signInWithOAuth(
+        OAuthProvider.apple,
+        redirectTo: 'blinkr://auth/callback',
+      );
+      return;
+    }
+
     final rawNonce = _generateNonce();
     final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
 
@@ -62,9 +76,14 @@ class AuthService {
       nonce: hashedNonce,
     );
 
+    final identityToken = credential.identityToken;
+    if (identityToken == null) {
+      throw const AuthException('Apple did not return an identity token.');
+    }
+
     await _supabase.auth.signInWithIdToken(
       provider: OAuthProvider.apple,
-      idToken: credential.identityToken!,
+      idToken: identityToken,
       nonce: rawNonce,
     );
   }

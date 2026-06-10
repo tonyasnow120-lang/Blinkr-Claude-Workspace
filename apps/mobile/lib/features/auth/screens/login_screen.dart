@@ -330,13 +330,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
                           // Social buttons
                           _SocialButton(
-                            icon: '🍎',
+                            icon: const Icon(Icons.apple,
+                                color: Colors.white, size: 18),
                             label: 'APPLE',
                             onTap: _signInWithApple,
                           ),
                           const SizedBox(height: 12),
                           _SocialButton(
-                            icon: 'G',
+                            icon: const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CustomPaint(painter: _GoogleLogoPainter()),
+                            ),
                             label: 'GOOGLE',
                             onTap: _signInWithGoogle,
                           ),
@@ -529,7 +534,7 @@ class _EmailFieldState extends State<_EmailField>
 
 // ── Social sign-in button ─────────────────────────────────────────────────────
 class _SocialButton extends StatelessWidget {
-  final String icon;
+  final Widget icon;
   final String label;
   final VoidCallback? onTap;
 
@@ -551,7 +556,7 @@ class _SocialButton extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(icon, style: const TextStyle(fontSize: 14)),
+              icon,
               const SizedBox(width: 10),
               Text(
                 label,
@@ -565,6 +570,56 @@ class _SocialButton extends StatelessWidget {
           ),
         ),
       );
+}
+
+/// Renders the official Google "G" logo as four colored arcs plus the blue
+/// crossbar, avoiding the need to bundle an image asset.
+class _GoogleLogoPainter extends CustomPainter {
+  const _GoogleLogoPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final strokeWidth = size.width * 0.22;
+    final rect = Rect.fromCircle(
+      center: center,
+      radius: size.width / 2 - strokeWidth / 2,
+    );
+
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth;
+
+    const gap = 0.05;
+    const quarter = math.pi / 2;
+
+    paint.color = const Color(0xFF4285F4); // blue
+    canvas.drawArc(rect, -quarter + gap, quarter - gap * 2, false, paint);
+
+    paint.color = const Color(0xFF34A853); // green
+    canvas.drawArc(rect, gap, quarter - gap * 2, false, paint);
+
+    paint.color = const Color(0xFFFBBC05); // yellow
+    canvas.drawArc(rect, quarter + gap, quarter - gap * 2, false, paint);
+
+    paint.color = const Color(0xFFEA4335); // red
+    canvas.drawArc(rect, math.pi + gap, quarter - gap * 2, false, paint);
+
+    // Blue crossbar — the horizontal stroke of the "G"
+    final barPaint = Paint()..color = const Color(0xFF4285F4);
+    canvas.drawRect(
+      Rect.fromLTWH(
+        center.dx - strokeWidth * 0.1,
+        center.dy - strokeWidth / 2,
+        size.width / 2 - center.dx + strokeWidth * 0.1,
+        strokeWidth,
+      ),
+      barPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _GoogleLogoPainter oldDelegate) => false;
 }
 
 // ── Blinking cursor ───────────────────────────────────────────────────────────
