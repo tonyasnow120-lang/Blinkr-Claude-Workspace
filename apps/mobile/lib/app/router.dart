@@ -91,14 +91,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Redirect unauthenticated users away from protected routes (C2)
       if (!isAuthenticated && !isPublic) return '/';
 
-      // A session established while on the login screen or the magic-link
-      // callback means the user just signed in — route through the success
-      // animation. A session already present on the welcome screen is a
-      // returning cold start: straight to home, no replay.
-      if (isAuthenticated && (path == '/login' || path == '/auth/callback')) {
+      // Any authenticated user landing on an auth entry screen — fresh
+      // sign-in (login / magic-link callback) or returning cold start on
+      // the welcome screen — goes through the success animation, which
+      // resolves home vs setup-profile while it plays.
+      if (isAuthenticated && (path == '/' || path == '/login' || path == '/auth/callback')) {
         return '/auth/success';
       }
-      if (isAuthenticated && path == '/') return '/home';
 
       return null;
     },
