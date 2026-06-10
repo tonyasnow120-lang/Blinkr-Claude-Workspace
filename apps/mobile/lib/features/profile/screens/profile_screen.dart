@@ -260,7 +260,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                   children: [
                     _AnimatedAvatar(
                       rotation: _auraCtrl,
-                      avatarUrl: user?['avatar_url'] as String?,
+                      // Drizzle serializes columns with camelCase keys
+                      avatarUrl: (user?['avatarUrl'] ??
+                          user?['avatar_url']) as String?,
                       uploading: _uploadingAvatar,
                       onAddPhoto: _pickAndUploadAvatar,
                     ),
@@ -270,9 +272,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            user?['display_name'] as String? ??
-                                user?['username'] as String? ??
-                                '',
+                            (user?['displayName'] ??
+                                user?['display_name'] ??
+                                user?['username'] ??
+                                '') as String,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 20,
@@ -323,10 +326,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                               value: _toInt(stats['losses'])),
                           _StatTile(
                               label: 'Streak',
-                              value: _toInt(stats['current_streak'])),
+                              value: _toInt(stats['currentStreak'] ??
+                                  stats['current_streak'])),
                           _StatTile(
                               label: 'Best',
-                              value: _toInt(stats['longest_streak'])),
+                              value: _toInt(stats['longestStreak'] ??
+                                  stats['longest_streak'])),
                         ],
                       ),
                     ],

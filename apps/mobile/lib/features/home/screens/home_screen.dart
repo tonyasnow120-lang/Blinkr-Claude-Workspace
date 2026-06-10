@@ -110,8 +110,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final displayName = profile.maybeWhen(
       data: (data) {
         final user = data['users'] as Map<String, dynamic>?;
-        return user?['display_name'] as String? ??
-            user?['username'] as String?;
+        // Drizzle serializes columns with camelCase keys
+        return (user?['displayName'] ??
+            user?['display_name'] ??
+            user?['username']) as String?;
       },
       orElse: () => null,
     );
@@ -389,7 +391,7 @@ class _StatsStrip extends StatelessWidget {
       children: [
         item('WINS', stats['wins']),
         divider(),
-        item('STREAK', stats['current_streak']),
+        item('STREAK', stats['currentStreak'] ?? stats['current_streak']),
         divider(),
         item('LOSSES', stats['losses']),
       ],
