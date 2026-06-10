@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -33,10 +34,34 @@ class _AuthCallbackScreen extends StatelessWidget {
   }
 }
 
+/// Bridges a Stream to a Listenable so GoRouter re-runs its redirect
+/// whenever Supabase auth state changes. Without this, signing in via
+/// Google/Apple (or a magic link) establishes a session but the router
+/// never re-evaluates — the user stays parked on /login until some other
+/// navigation event (e.g. pressing back) finally triggers the redirect.
+class _GoRouterRefreshStream extends ChangeNotifier {
+  late final StreamSubscription<dynamic> _subscription;
+
+  _GoRouterRefreshStream(Stream<dynamic> stream) {
+    _subscription = stream.listen((_) => notifyListeners());
+  }
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
   debugPrint('BLINKR: routerProvider initializing');
+  final refresh = _GoRouterRefreshStream(
+    Supabase.instance.client.auth.onAuthStateChange,
+  );
+  ref.onDispose(refresh.dispose);
   return GoRouter(
     initialLocation: '/',
+    refreshListenable: refresh,
     errorBuilder: (context, state) {
       debugPrint('BLINKR: router errorBuilder: ${state.error}');
       return Scaffold(
