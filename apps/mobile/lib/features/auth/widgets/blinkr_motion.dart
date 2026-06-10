@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 /// The animated "watching eye" graphic shared by the auth screens — a
 /// blinking eye surrounded by two slowly-rotating dial rings and an
