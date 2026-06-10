@@ -373,9 +373,14 @@ jobs:
           # in the "conflicting signing" error output which showed Xcode found the
           # profile by name. UUID-based PROVISIONING_PROFILE is deprecated in Xcode 14+
           # and silently ignored in Xcode 26, causing "no profiles found".
+          # CODE_SIGN_ENTITLEMENTS is not set by flutter create, so without it
+          # Runner.entitlements is silently ignored and the signed app ships
+          # with no applesignin entitlement (Apple Sign In fails with
+          # ASAuthorizationError 1000).
           signing_block = '\n'.join([
               'CODE_SIGN_IDENTITY = "Apple Distribution";',
               '\t\t\tCODE_SIGN_STYLE = Manual;',
+              '\t\t\tCODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;',
               f'\t\t\tDEVELOPMENT_TEAM = {team_id};',
               f'\t\t\tPROVISIONING_PROFILE_SPECIFIER = "{profile_name}";',
           ])

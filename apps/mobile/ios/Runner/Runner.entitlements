@@ -8,10 +8,13 @@
 -->
 <plist version="1.0">
 <dict>
-    <key>com.apple.developer.associated-domains</key>
-    <array>
-        <string>applinks:blinkr.app</string>
-    </array>
+    <!-- Universal Links (associated-domains) removed for now: the
+         provisioning profile must carry every entitlement listed here or
+         codesign fails the whole build. blinkr.app universal links aren't
+         operational yet (auth uses the blinkr:// custom scheme). Re-add
+         com.apple.developer.applesignin's sibling key
+         com.apple.developer.associated-domains = [applinks:blinkr.app]
+         once the domain + App ID capability + profile are configured. -->
     <key>com.apple.developer.applesignin</key>
     <array>
         <string>Default</string>
