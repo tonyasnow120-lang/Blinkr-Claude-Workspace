@@ -49,8 +49,21 @@
     <!-- No IDFA used — ATT prompt not required. Confirmed: Firebase Analytics default
          config does not collect IDFA. See STORE_COMPLIANCE.md. (GAP-28) -->
 
+    <key>LSRequiresIPhoneOS</key>
+    <true/>
     <key>UILaunchStoryboardName</key>
     <string>LaunchScreen</string>
+    <!-- CRITICAL: Main.storyboard instantiates the FlutterViewController.
+         Without this key iOS creates a window with no root view controller —
+         a permanent black screen with no error, and Dart never runs. This
+         plist is copied over the flutter-create-generated one in CI, so it
+         must carry every key the Flutter template provides. -->
+    <key>UIMainStoryboardFile</key>
+    <string>Main</string>
+    <key>CADisableMinimumFrameDurationOnPhone</key>
+    <true/>
+    <key>UIApplicationSupportsIndirectInputEvents</key>
+    <true/>
     <key>UISupportedInterfaceOrientations</key>
     <array>
         <string>UIInterfaceOrientationPortrait</string>
