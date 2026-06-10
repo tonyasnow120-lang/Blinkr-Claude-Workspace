@@ -54,6 +54,8 @@ jobs:
         run: cd apps/mobile && flutter pub run build_runner build --delete-conflicting-outputs
 
       - name: Write dart-define file
+        env:
+          GOOGLE_WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
         run: |
           cat > apps/mobile/.env.dart-define <<EOF
           {
@@ -64,6 +66,12 @@ jobs:
             "GOOGLE_WEB_CLIENT_ID": "${{ secrets.GOOGLE_WEB_CLIENT_ID }}"
           }
           EOF
+          # Diagnostic: client IDs are public identifiers; print only the
+          # prefix to confirm the secret holds the WEB client (…-936…) and
+          # not the Android client (…-bnb…) — the wrong type causes Google
+          # Sign-In DEVELOPER_ERROR (code 10).
+          echo "GOOGLE_WEB_CLIENT_ID prefix: ${GOOGLE_WEB_CLIENT_ID:0:18}"
+          echo "GOOGLE_WEB_CLIENT_ID length: ${#GOOGLE_WEB_CLIENT_ID}"
 
       - name: Set up Android release signing
         env:
