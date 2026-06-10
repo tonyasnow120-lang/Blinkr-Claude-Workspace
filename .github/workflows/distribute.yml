@@ -82,9 +82,88 @@ jobs:
           storeFile=app/blinkr-release.keystore
           EOF
             echo "Release keystore configured"
+            # Fingerprints are public info — print them so the SHA-1 can be
+            # registered in Firebase console (required for Google Sign-In;
+            # an unregistered SHA-1 causes ApiException code 10).
+            echo "=== Release signing certificate fingerprints ==="
+            keytool -list -v \
+              -keystore apps/mobile/android/app/blinkr-release.keystore \
+              -storepass "$ANDROID_KEYSTORE_PASSWORD" \
+              -alias "$ANDROID_KEY_ALIAS" 2>/dev/null \
+              | grep -E "SHA1:|SHA256:" || true
           else
             echo "No keystore secret — using debug signing"
           fi
+
+      - name: Patch build.gradle.kts — sign release builds with release keystore
+        run: |
+          python3 - <<'PYEOF'
+          # The flutter-create-generated build.gradle.kts signs release builds
+          # with the DEBUG signing config (the template's known TODO). The
+          # runner's debug keystore is auto-generated with a random key every
+          # run, so the APK's signing SHA-1 changes per build and can never be
+          # registered with Google — guaranteeing Google Sign-In error code 10
+          # (DEVELOPER_ERROR). Wire up key.properties so release builds are
+          # signed with the stable release keystore instead.
+          gradle_path = 'apps/mobile/android/app/build.gradle.kts'
+          with open(gradle_path, 'r') as f:
+              content = f.read()
+
+          # Kotlin DSL only allows import statements before the plugins {}
+          # block, so imports go at the very top while the property-loading
+          # vals are inserted just before the android {} block.
+          imports = '\n'.join([
+              'import java.util.Properties',
+              'import java.io.FileInputStream',
+              '',
+              '',
+          ])
+
+          props_loader = '\n'.join([
+              'val keystorePropertiesFile = rootProject.file("key.properties")',
+              'val keystoreProperties = Properties()',
+              'if (keystorePropertiesFile.exists()) {',
+              '    keystoreProperties.load(FileInputStream(keystorePropertiesFile))',
+              '}',
+              '',
+              '',
+          ])
+
+          signing_block = '\n'.join([
+              '    signingConfigs {',
+              '        if (keystorePropertiesFile.exists()) {',
+              '            create("release") {',
+              '                keyAlias = keystoreProperties["keyAlias"] as String',
+              '                keyPassword = keystoreProperties["keyPassword"] as String',
+              '                storeFile = rootProject.file(keystoreProperties["storeFile"] as String)',
+              '                storePassword = keystoreProperties["storePassword"] as String',
+              '            }',
+              '        }',
+              '    }',
+              '',
+              '',
+          ])
+
+          content = imports + content
+
+          anchor_android = 'android {'
+          assert anchor_android in content, 'android block not found'
+          content = content.replace(anchor_android, props_loader + anchor_android, 1)
+
+          anchor_buildtypes = '    buildTypes {'
+          assert anchor_buildtypes in content, 'buildTypes block not found'
+          content = content.replace(anchor_buildtypes, signing_block + anchor_buildtypes, 1)
+
+          old_sign = 'signingConfig = signingConfigs.getByName("debug")'
+          new_sign = ('signingConfig = if (keystorePropertiesFile.exists()) '
+                      'signingConfigs.getByName("release") else signingConfigs.getByName("debug")')
+          assert old_sign in content, 'debug signingConfig assignment not found'
+          content = content.replace(old_sign, new_sign, 1)
+
+          with open(gradle_path, 'w') as f:
+              f.write(content)
+          print('build.gradle.kts patched — release builds use release keystore when key.properties exists')
+          PYEOF
 
       - name: Place google-services.json
         run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > apps/mobile/android/app/google-services.json
@@ -94,6 +173,15 @@ jobs:
           cd apps/mobile
           flutter build apk --release \
             --dart-define-from-file=.env.dart-define
+
+      - name: Verify APK signing certificate
+        run: |
+          BUILD_TOOLS=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          echo "=== APK is signed with ==="
+          "$BUILD_TOOLS/apksigner" verify --print-certs \
+            apps/mobile/build/app/outputs/apk/release/app-release.apk \
+            | grep -E "SHA-1|SHA-256" || true
+
 
       - name: Upload APK as workflow artifact
         uses: actions/upload-artifact@v4
