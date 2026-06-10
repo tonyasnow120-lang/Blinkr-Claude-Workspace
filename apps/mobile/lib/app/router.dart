@@ -16,6 +16,7 @@ import '../features/match/screens/countdown_screen.dart';
 import '../features/match/screens/contest_screen.dart';
 import '../features/match/screens/result_screen.dart';
 import '../features/profile/screens/profile_screen.dart';
+import '../features/legal/screens/legal_screen.dart';
 
 // Validates challenge codes: 8 uppercase alphanumeric chars, no O/0/I/1 (M9, GAP-9)
 final _codePattern = RegExp(r'^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$');
@@ -209,7 +210,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final path = state.matchedLocation;
 
       // Public paths available without authentication
-      final isPublic = path == '/' || path == '/login' || path.startsWith('/verify') || path == '/auth/callback';
+      final isPublic = path == '/' || path == '/login' || path.startsWith('/verify') || path == '/auth/callback' || path.startsWith('/legal/');
 
       // Redirect unauthenticated users away from protected routes (C2)
       if (!isAuthenticated && !isPublic) return '/';
@@ -341,6 +342,21 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/profile',
         pageBuilder: (context, state) =>
             _slideUp(state, const ProfileScreen()),
+      ),
+      // Legal documents — public, linked from the login screen footer.
+      GoRoute(
+        path: '/legal/terms',
+        pageBuilder: (context, state) => _slideUp(
+          state,
+          const LegalScreen(document: LegalDocument.terms),
+        ),
+      ),
+      GoRoute(
+        path: '/legal/privacy',
+        pageBuilder: (context, state) => _slideUp(
+          state,
+          const LegalScreen(document: LegalDocument.privacy),
+        ),
       ),
     ],
   );

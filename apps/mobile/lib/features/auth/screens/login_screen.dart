@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -37,6 +38,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   bool _emailValid = false;
   bool _loading    = false;
   String? _error;
+
+  // Footer legal links
+  late final TapGestureRecognizer _termsTap;
+  late final TapGestureRecognizer _privacyTap;
 
   @override
   void initState() {
@@ -91,6 +96,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     });
 
     _emailCtrl.addListener(_onEmailChanged);
+
+    _termsTap = TapGestureRecognizer()
+      ..onTap = () => context.push('/legal/terms');
+    _privacyTap = TapGestureRecognizer()
+      ..onTap = () => context.push('/legal/privacy');
   }
 
   void _onEmailChanged() {
@@ -108,6 +118,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     _entranceCtrl.dispose();
     _emailCtrl.dispose();
     _focusNode.dispose();
+    _termsTap.dispose();
+    _privacyTap.dispose();
     super.dispose();
   }
 
@@ -408,16 +420,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             letterSpacing: 1.5,
                             height: 1.8,
                           ),
-                          children: const [
-                            TextSpan(text: 'By continuing you agree to our\n'),
+                          children: [
+                            const TextSpan(
+                                text: 'By continuing you agree to our\n'),
                             TextSpan(
                               text: 'Terms of Service',
-                              style: TextStyle(color: Color(0x66FFFFFF)),
+                              style: const TextStyle(
+                                color: Color(0x66FFFFFF),
+                                decoration: TextDecoration.underline,
+                                decorationColor: Color(0x33FFFFFF),
+                              ),
+                              recognizer: _termsTap,
                             ),
-                            TextSpan(text: '   ·   '),
+                            const TextSpan(text: '   ·   '),
                             TextSpan(
                               text: 'Privacy Policy',
-                              style: TextStyle(color: Color(0x66FFFFFF)),
+                              style: const TextStyle(
+                                color: Color(0x66FFFFFF),
+                                decoration: TextDecoration.underline,
+                                decorationColor: Color(0x33FFFFFF),
+                              ),
+                              recognizer: _privacyTap,
                             ),
                           ],
                         ),
