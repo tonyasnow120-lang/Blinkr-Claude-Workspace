@@ -7,6 +7,7 @@ import '../features/auth/screens/welcome_screen.dart';
 import '../features/auth/screens/login_screen.dart';
 import '../features/auth/screens/verify_screen.dart';
 import '../features/auth/screens/setup_profile_screen.dart';
+import '../features/auth/screens/sign_in_success_screen.dart';
 import '../features/home/screens/home_screen.dart';
 import '../features/challenge/screens/create_challenge_screen.dart';
 import '../features/challenge/screens/join_challenge_screen.dart';
@@ -90,8 +91,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Redirect unauthenticated users away from protected routes (C2)
       if (!isAuthenticated && !isPublic) return '/';
 
-      // Redirect authenticated users away from auth screens (but allow setup-profile)
-      if (isAuthenticated && (path == '/' || path == '/login')) return '/home';
+      // A session established while on the login screen or the magic-link
+      // callback means the user just signed in — route through the success
+      // animation. A session already present on the welcome screen is a
+      // returning cold start: straight to home, no replay.
+      if (isAuthenticated && (path == '/login' || path == '/auth/callback')) {
+        return '/auth/success';
+      }
+      if (isAuthenticated && path == '/') return '/home';
 
       return null;
     },
@@ -116,6 +123,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/setup-profile',
         builder: (context, state) => const SetupProfileScreen(),
+      ),
+      // Post-sign-in success animation; resolves profile state while playing
+      // and then routes to /home or /setup-profile.
+      GoRoute(
+        path: '/auth/success',
+        builder: (context, state) => const SignInSuccessScreen(),
       ),
       // Deep link landing for magic link auth (blinkr://auth/callback#access_token=...)
       // supabase_flutter processes the URL fragment automatically; this route just

@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/auth_provider.dart';
-import '../../../core/api/api_endpoints.dart';
 
 class VerifyScreen extends ConsumerStatefulWidget {
   final String email;
@@ -33,15 +32,9 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
   }
 
   Future<void> _navigateAfterLogin() async {
-    if (!mounted) return;
-    try {
-      final api = ref.read(apiClientProvider);
-      final profile = await api.getOrNull(ApiEndpoints.me);
-      if (!mounted) return;
-      context.go(profile != null ? '/home' : '/setup-profile');
-    } catch (_) {
-      if (mounted) context.go('/home');
-    }
+    // The success screen resolves the profile (home vs setup-profile) while
+    // its animation plays, so all sign-in paths share one transition.
+    if (mounted) context.go('/auth/success');
   }
 
   @override
