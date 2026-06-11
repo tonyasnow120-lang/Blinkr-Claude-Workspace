@@ -10,12 +10,16 @@ class ProximityState {
   final bool busy;
   final List<Map<String, dynamic>> nearby;
   final MatchmakingError? error;
+  final double? myLat;
+  final double? myLng;
 
   const ProximityState({
     this.visible = false,
     this.busy = false,
     this.nearby = const [],
     this.error,
+    this.myLat,
+    this.myLng,
   });
 
   ProximityState copyWith({
@@ -23,12 +27,16 @@ class ProximityState {
     bool? busy,
     List<Map<String, dynamic>>? nearby,
     MatchmakingError? error,
+    double? myLat,
+    double? myLng,
   }) =>
       ProximityState(
         visible: visible ?? this.visible,
         busy: busy ?? this.busy,
         nearby: nearby ?? this.nearby,
         error: error,
+        myLat: myLat ?? this.myLat,
+        myLng: myLng ?? this.myLng,
       );
 }
 
@@ -69,7 +77,12 @@ class ProximityNotifier extends StateNotifier<ProximityState> {
         radiusMeters: radiusMeters,
       );
       if (!mounted) return;
-      state = ProximityState(visible: true, nearby: nearby);
+      state = ProximityState(
+        visible: true,
+        nearby: nearby,
+        myLat: position.latitude,
+        myLng: position.longitude,
+      );
 
       _heartbeat?.cancel();
       _heartbeat = Timer.periodic(_heartbeatInterval, (_) => _tick());
@@ -93,7 +106,11 @@ class ProximityNotifier extends StateNotifier<ProximityState> {
         radiusMeters: radiusMeters,
       );
       if (mounted && state.visible) {
-        state = state.copyWith(nearby: nearby);
+        state = state.copyWith(
+          nearby: nearby,
+          myLat: position.latitude,
+          myLng: position.longitude,
+        );
       }
     } catch (_) {
       // Transient heartbeat failures are tolerated; server-side staleness

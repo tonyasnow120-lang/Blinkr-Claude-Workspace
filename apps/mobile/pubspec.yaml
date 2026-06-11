@@ -34,6 +34,8 @@ dependencies:
   flutter_contacts: ^1.1.9+2   # Feature 2 — contact discovery (hashed)
   permission_handler: ^11.3.1  # Features 2/4 — rationale-first permission flows
   geolocator: ^13.0.2          # Feature 5 — GPS radius matching
+  flutter_map: ^7.0.2          # Feature 5 — interactive nearby-players map
+  latlong2: ^0.9.1             # Feature 5 — LatLng + bearing math for map markers
 
 # app_links is pulled in transitively by supabase_flutter (OAuth deep-link
 # callbacks). Version 6.4.1 "Updated Gradle settings" to read

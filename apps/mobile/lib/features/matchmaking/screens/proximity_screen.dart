@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/audio/background_music.dart';
 import '../providers/proximity_provider.dart';
 import '../widgets/player_tile.dart';
+import '../widgets/proximity_map.dart';
 
 /// GPS radius matching (Feature 5). A visibility toggle gates everything:
 /// location is shared only while it's on, heartbeats every 30s, expires
@@ -19,6 +20,7 @@ class ProximityScreen extends ConsumerStatefulWidget {
 class _ProximityScreenState extends ConsumerState<ProximityScreen> {
   static const _disclosureSeenKey = 'proximity_disclosure_seen_v1';
   bool? _disclosureSeen;
+  bool _showMap = true;
 
   @override
   void initState() {
@@ -101,11 +103,17 @@ class _ProximityScreenState extends ConsumerState<ProximityScreen> {
         foregroundColor: Colors.white,
         title: const Text('Nearby'),
         actions: [
-          if (state.visible)
+          if (state.visible) ...[
+            IconButton(
+              icon: Icon(_showMap ? Icons.list : Icons.map_outlined),
+              tooltip: _showMap ? 'Show list' : 'Show map',
+              onPressed: () => setState(() => _showMap = !_showMap),
+            ),
             IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: notifier.refresh,
             ),
+          ],
           const MusicToggleButton(),
         ],
       ),
@@ -162,7 +170,17 @@ class _ProximityScreenState extends ConsumerState<ProximityScreen> {
                                       height: 1.5),
                                 ),
                               )
-                            : state.nearby.isEmpty
+                            : _showMap && state.myLat != null && state.myLng != null
+                                ? Padding(
+                                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                                    child: ProximityMap(
+                                      myLat: state.myLat!,
+                                      myLng: state.myLng!,
+                                      nearby: state.nearby,
+                                      onChallenge: _challenge,
+                                    ),
+                                  )
+                                : state.nearby.isEmpty
                                 ? Center(
                                     child: Text(
                                       'Nobody nearby right now.\nThey need this screen open too!',
