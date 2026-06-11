@@ -13,6 +13,7 @@ import { friendRoutes } from './routes/friends.js'
 import { contactRoutes } from './routes/contacts.js'
 import { proximityRoutes } from './routes/proximity.js'
 import { wellKnownRoutes } from './routes/wellKnown.js'
+import { runMigrations } from './db/migrate.js'
 import { AppError } from './lib/errors.js'
 import { logSecurityEvent } from './services/securityLogger.js'
 
@@ -136,6 +137,10 @@ await app.register(contactRoutes, { prefix: '/v1' })
 await app.register(proximityRoutes, { prefix: '/v1' })
 
 app.get('/health', async () => ({ status: 'ok' }))
+
+// Apply idempotent SQL migrations before accepting traffic — the schema
+// must match what the Drizzle models select or every query 500s.
+await runMigrations(app.log)
 
 const port = Number(process.env.PORT ?? 3000)
 await app.listen({ port, host: '0.0.0.0' })

@@ -12,5 +12,6 @@ ENV NODE_ENV=production
 COPY package.json ./
 RUN npm install --omit=dev --legacy-peer-deps
 COPY --from=build /app/dist ./dist
+COPY db ./db
 EXPOSE 3000
 CMD ["node", "dist/server.js"]
