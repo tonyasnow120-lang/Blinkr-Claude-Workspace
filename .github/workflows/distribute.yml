@@ -270,6 +270,42 @@ jobs:
       - name: Flutter pub get
         run: cd apps/mobile && flutter pub get
 
+      - name: Patch flutter_contacts — fix instant-launch crash on iOS
+        run: |
+          python3 - <<'PYEOF'
+          import glob
+          import os
+
+          pattern = os.path.expanduser(
+              '~/.pub-cache/hosted/pub.dev/flutter_contacts-*/ios/Classes/SwiftFlutterContactsPlugin.swift'
+          )
+          paths = glob.glob(pattern)
+          assert paths, f'flutter_contacts source not found at {pattern}'
+
+          # flutter_contacts 1.1.9+2's register(with:) force-unwraps
+          # UIApplication.shared.delegate!.window!!.rootViewController! to
+          # build the plugin instance. Registration happens via the
+          # implicit-engine callback during FlutterViewController's
+          # awakeFromNib (storyboard-based launch) — at that point
+          # window.rootViewController hasn't been assigned yet, so the
+          # force-unwrap crashes the app on every launch (SIGTRAP,
+          # "Unexpectedly found nil while unwrapping an Optional value").
+          # rootViewController is only used to present the external
+          # view/edit/pick/insert contact UI, none of which this app uses,
+          # so a placeholder is safe when the real one isn't available yet.
+          old = 'let rootViewController = UIApplication.shared.delegate!.window!!.rootViewController!'
+          new = 'let rootViewController = UIApplication.shared.delegate?.window??.rootViewController ?? UIViewController()'
+
+          for path in paths:
+              with open(path) as f:
+                  content = f.read()
+              assert old in content, f'expected line not found in {path}'
+              content = content.replace(old, new, 1)
+              with open(path, 'w') as f:
+                  f.write(content)
+              print(f'Patched {path}')
+          PYEOF
+
       - name: Generate Dart code (freezed, json_serializable)
         run: cd apps/mobile && flutter pub run build_runner build --delete-conflicting-outputs
 
