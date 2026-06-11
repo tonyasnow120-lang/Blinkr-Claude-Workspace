@@ -74,7 +74,7 @@ class _JoinChallengeScreenState extends ConsumerState<JoinChallengeScreen> {
           children: [
             const SizedBox(height: 40),
             const Text(
-              'Enter the 6-letter code',
+              'Enter the 9-letter code',
               style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
@@ -84,18 +84,18 @@ class _JoinChallengeScreenState extends ConsumerState<JoinChallengeScreen> {
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 28,
-                letterSpacing: 8,
+                fontSize: 24,
+                letterSpacing: 5,
                 fontWeight: FontWeight.bold,
               ),
-              maxLength: 6,
+              maxLength: 9,
               decoration: InputDecoration(
                 counterText: '',
-                hintText: 'XXXXXX',
+                hintText: 'XXXXXXXXX',
                 hintStyle: TextStyle(
                   color: Colors.white.withOpacity(0.3),
-                  letterSpacing: 8,
-                  fontSize: 28,
+                  letterSpacing: 5,
+                  fontSize: 24,
                 ),
                 filled: true,
                 fillColor: Colors.white.withOpacity(0.1),

@@ -1,12 +1,20 @@
 import type { FastifyInstance } from 'fastify'
+import { z } from 'zod'
 import { eq, and, isNull } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { challenges, matches, users } from '../db/schema.js'
 import { createChallenge, getChallengeByCode, markChallengeUsed } from '../services/challengeService.js'
 import { createMatch } from '../services/matchService.js'
 import * as livekitService from '../services/livekitService.js'
+import * as notificationService from '../services/notificationService.js'
+import { broadcastEvent, challengeTopic } from '../services/realtimeService.js'
 import { Errors } from '../lib/errors.js'
 import { logSecurityEvent } from '../services/securityLogger.js'
+
+const CreateChallengeSchema = z.object({
+  kind: z.enum(['link', 'qr', 'friend', 'contact', 'proximity']).default('link'),
+  opponentId: z.string().uuid().optional(),
+})
 
 // Primary deep link scheme — HTTPS Universal Link (GAP-9)
 // blinkr:// custom scheme kept as fallback for backward compat
@@ -20,12 +28,47 @@ export async function challengeRoutes(app: FastifyInstance) {
 
   app.post('/challenges', async (request, reply) => {
     const challengerId = (request.user as { sub: string }).sub
-    const challenge = await createChallenge(db, challengerId)
+    const { kind, opponentId } = CreateChallengeSchema.parse(request.body ?? {})
+
+    if (opponentId === challengerId) {
+      throw Errors.validation('You cannot challenge yourself')
+    }
+
+    const challenge = await createChallenge(db, challengerId, kind, opponentId)
+
+    // Targeted challenge (friend/contact/proximity): push-notify the opponent.
+    // Best-effort — the challenge stands even if the push fails or the
+    // opponent has no FCM token registered.
+    if (opponentId) {
+      const [challenger] = await db
+        .select({ displayName: users.displayName, username: users.username })
+        .from(users)
+        .where(eq(users.id, challengerId))
+        .limit(1)
+      const [opponent] = await db
+        .select({ fcmToken: users.fcmToken })
+        .from(users)
+        .where(eq(users.id, opponentId))
+        .limit(1)
+
+      if (opponent?.fcmToken) {
+        notificationService
+          .sendMatchInvite(
+            opponent.fcmToken,
+            challenger?.displayName ?? challenger?.username ?? 'Someone',
+            challenge.code,
+          )
+          .catch((err) =>
+            request.log.warn({ err: err?.message }, 'Match invite push failed'),
+          )
+      }
+    }
 
     return reply.code(201).send({
       data: {
         id: challenge.id,
         code: challenge.code,
+        kind: challenge.kind,
         deepLink: `${HTTPS_BASE_URL}/match/${challenge.code}`,
         deepLinkFallback: `blinkr://match/${challenge.code}`,
         expiresAt: challenge.expiresAt,
@@ -92,6 +135,16 @@ export async function challengeRoutes(app: FastifyInstance) {
     if (challenge.challengerId === acceptorId) {
       throw Errors.validation('You cannot accept your own challenge')
     }
+    // Targeted challenges (friend/contact/proximity) may only be accepted
+    // by the invited opponent.
+    if (challenge.opponentId && challenge.opponentId !== acceptorId) {
+      logSecurityEvent(request.log, 'idor_attempt', {
+        userId: acceptorId,
+        challengeId: challenge.id,
+        reason: 'accept_not_invited_opponent',
+      })
+      throw Errors.forbidden()
+    }
 
     // Atomically mark the challenge as used — prevents double-accept race conditions (GAP-11)
     const claimed = await markChallengeUsed(db, challenge.id)
@@ -134,6 +187,15 @@ export async function challengeRoutes(app: FastifyInstance) {
       roomName,
       acceptorId,
       acceptorUser?.displayName ?? acceptorUser?.username ?? acceptorId,
+    )
+
+    // Wake the waiting challenger (link/QR share screens subscribe to this
+    // topic). Payload carries only the matchId — the challenger fetches
+    // their own LiveKit token over authenticated HTTP, never via broadcast.
+    broadcastEvent(challengeTopic(challenge.id), 'challenge.accepted', {
+      matchId: match.id,
+    }).catch((err) =>
+      request.log.warn({ err: err?.message }, 'challenge.accepted broadcast failed'),
     )
 
     return reply.send({

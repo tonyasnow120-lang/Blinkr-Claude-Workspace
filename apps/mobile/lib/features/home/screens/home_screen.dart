@@ -279,6 +279,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                             ),
                           ),
                         ),
+                        const SizedBox(height: 20),
+                        // Matchmaking shortcuts: friends, contacts, QR, nearby
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: const [
+                            _MatchmakingShortcut(
+                              icon: Icons.people_outline,
+                              label: 'FRIENDS',
+                              route: '/friends',
+                            ),
+                            _MatchmakingShortcut(
+                              icon: Icons.contacts_outlined,
+                              label: 'CONTACTS',
+                              route: '/contacts',
+                            ),
+                            _MatchmakingShortcut(
+                              icon: Icons.qr_code_2,
+                              label: 'QR',
+                              route: '/qr',
+                            ),
+                            _MatchmakingShortcut(
+                              icon: Icons.near_me_outlined,
+                              label: 'NEARBY',
+                              route: '/nearby',
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -588,4 +615,44 @@ class _WatchingEyePainter extends CustomPainter {
       old.pulse != pulse ||
       old.blink != blink ||
       old.wander != wander;
+}
+
+// ── Matchmaking shortcut chip ─────────────────────────────────────────────────
+class _MatchmakingShortcut extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String route;
+
+  const _MatchmakingShortcut({
+    required this.icon,
+    required this.label,
+    required this.route,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () => context.push(route),
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: Colors.white.withAlpha(180), size: 22),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: Colors.white.withAlpha(115),
+                fontSize: 8,
+                fontWeight: FontWeight.w300,
+                letterSpacing: 2,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

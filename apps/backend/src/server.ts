@@ -9,6 +9,9 @@ import { authRoutes } from './routes/auth.js'
 import { userRoutes } from './routes/users.js'
 import { challengeRoutes } from './routes/challenges.js'
 import { matchRoutes } from './routes/matches.js'
+import { friendRoutes } from './routes/friends.js'
+import { contactRoutes } from './routes/contacts.js'
+import { proximityRoutes } from './routes/proximity.js'
 import { wellKnownRoutes } from './routes/wellKnown.js'
 import { AppError } from './lib/errors.js'
 import { logSecurityEvent } from './services/securityLogger.js'
@@ -128,6 +131,9 @@ await app.register(authRoutes, { prefix: '/v1' })
 await app.register(userRoutes, { prefix: '/v1' })
 await app.register(challengeRoutes, { prefix: '/v1' })
 await app.register(matchRoutes, { prefix: '/v1' })
+await app.register(friendRoutes, { prefix: '/v1' })
+await app.register(contactRoutes, { prefix: '/v1' })
+await app.register(proximityRoutes, { prefix: '/v1' })
 
 app.get('/health', async () => ({ status: 'ok' }))
 

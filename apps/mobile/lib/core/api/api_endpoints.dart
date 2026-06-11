@@ -14,7 +14,22 @@ class ApiEndpoints {
   static String cancelChallenge(String code) => '/v1/challenges/$code';
 
   static String matchById(String id) => '/v1/matches/$id';
+  static String matchToken(String id) => '/v1/matches/$id/token';
   static String matchReady(String id) => '/v1/matches/$id/ready';
   static String matchBlink(String id) => '/v1/matches/$id/blink';
   static String matchAbandon(String id) => '/v1/matches/$id/abandon';
+
+  // Matchmaking
+  static const String userSearch = '/v1/users/search';
+  static const String friends = '/v1/friends';
+  static const String friendRequests = '/v1/friends/requests';
+  static String acceptFriendRequest(String id) => '/v1/friends/requests/$id/accept';
+  static String declineFriendRequest(String id) => '/v1/friends/requests/$id/decline';
+  static String blockUser(String userId) => '/v1/friends/$userId/block';
+  static String unfriend(String userId) => '/v1/friends/$userId';
+  static const String contactsMatch = '/v1/contacts/match';
+  static const String contactsPhoneHash = '/v1/contacts/phone-hash';
+  static const String contactsDiscovery = '/v1/contacts/discovery';
+  static const String proximityLocation = '/v1/proximity/location';
+  static const String proximityNearby = '/v1/proximity/nearby';
 }

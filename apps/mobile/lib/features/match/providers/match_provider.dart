@@ -30,12 +30,14 @@ class MatchState {
   final DateTime? countdownStartsAt;
   final MatchResult? result;
   final String? error;
+  final bool opponentReady;
 
   const MatchState({
     this.phase = MatchPhase.lobby,
     this.countdownStartsAt,
     this.result,
     this.error,
+    this.opponentReady = false,
   });
 
   MatchState copyWith({
@@ -43,12 +45,14 @@ class MatchState {
     DateTime? countdownStartsAt,
     MatchResult? result,
     String? error,
+    bool? opponentReady,
   }) =>
       MatchState(
         phase: phase ?? this.phase,
         countdownStartsAt: countdownStartsAt ?? this.countdownStartsAt,
         result: result ?? this.result,
         error: error,
+        opponentReady: opponentReady ?? this.opponentReady,
       );
 }
 
@@ -76,6 +80,12 @@ class MatchNotifier extends StateNotifier<MatchState> {
     _supabase.subscribeToMatch(
       matchId: matchId,
       onOpponentJoined: (_) {},
+      onPlayerReady: (payload) {
+        final myId = Supabase.instance.client.auth.currentUser?.id;
+        if (payload['userId'] != null && payload['userId'] != myId) {
+          state = state.copyWith(opponentReady: true);
+        }
+      },
       onCountdownStart: (payload) {
         final startsAt = DateTime.parse(payload['startsAt'] as String);
         state = state.copyWith(

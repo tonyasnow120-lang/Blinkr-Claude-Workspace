@@ -2,6 +2,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Matchmaking: QR scanning (Feature 4) — camera is also used by blink detection -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <!-- Matchmaking: contact discovery via on-device hashing (Feature 2) -->
+    <uses-permission android:name="android.permission.READ_CONTACTS"/>
+    <!-- Matchmaking: opt-in nearby player discovery (Feature 5) -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
 
     <application
         android:label="Blinkr"

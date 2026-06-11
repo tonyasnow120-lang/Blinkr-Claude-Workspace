@@ -44,10 +44,16 @@
     </array>
 
     <key>NSCameraUsageDescription</key>
-    <string>Blinkr uses your camera to detect blinks during a staring contest.</string>
+    <string>Blinkr uses your camera to detect blinks during a staring contest and to scan challenge QR codes.</string>
 
     <key>NSPhotoLibraryUsageDescription</key>
     <string>Blinkr needs access to your photos to add them to your profile collage.</string>
+
+    <key>NSContactsUsageDescription</key>
+    <string>Blinkr checks which of your contacts already play, using scrambled (hashed) phone numbers — real numbers never leave your phone.</string>
+
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Blinkr uses your location only while "nearby players" visibility is on, to show players around you. Others see your distance, never your position.</string>
 
     <!-- No IDFA used — ATT prompt not required. Confirmed: Firebase Analytics default
          config does not collect IDFA. See STORE_COMPLIANCE.md. (GAP-28) -->

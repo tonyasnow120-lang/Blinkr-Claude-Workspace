@@ -17,9 +17,17 @@ import '../features/match/screens/contest_screen.dart';
 import '../features/match/screens/result_screen.dart';
 import '../features/profile/screens/profile_screen.dart';
 import '../features/legal/screens/legal_screen.dart';
+import '../features/matchmaking/screens/friends_list_screen.dart';
+import '../features/matchmaking/screens/user_search_screen.dart';
+import '../features/matchmaking/screens/contacts_match_screen.dart';
+import '../features/matchmaking/screens/qr_match_screen.dart';
+import '../features/matchmaking/screens/qr_scanner_screen.dart';
+import '../features/matchmaking/screens/proximity_screen.dart';
 
-// Validates challenge codes: 8 uppercase alphanumeric chars, no O/0/I/1 (M9, GAP-9)
-final _codePattern = RegExp(r'^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$');
+// Validates challenge codes: 9 uppercase alphanumeric chars, no O/0/I/1
+// (M9, GAP-9). Length must match the backend's shortCode generator (9 chars
+// from a 32-char alphabet = 45 bits of entropy).
+final _codePattern = RegExp(r'^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{9}$');
 
 /// Shown while supabase_flutter processes the magic link deep link.
 /// The auth state listener in the router's redirect fires once the session
@@ -275,13 +283,55 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/challenge/create',
-        pageBuilder: (context, state) =>
-            _slidePush(state, const CreateChallengeScreen()),
+        pageBuilder: (context, state) {
+          // extra (optional): { kind, opponentId, opponentName } for
+          // targeted friend/contact/proximity invites. Default: link share.
+          final extra = state.extra as Map<String, dynamic>?;
+          return _slidePush(
+            state,
+            CreateChallengeScreen(
+              kind: extra?['kind'] as String? ?? 'link',
+              opponentId: extra?['opponentId'] as String?,
+              opponentName: extra?['opponentName'] as String?,
+            ),
+          );
+        },
       ),
       GoRoute(
         path: '/challenge/join',
         pageBuilder: (context, state) =>
             _slidePush(state, const JoinChallengeScreen()),
+      ),
+      // Matchmaking (Features 2-5)
+      GoRoute(
+        path: '/friends',
+        pageBuilder: (context, state) =>
+            _slidePush(state, const FriendsListScreen()),
+      ),
+      GoRoute(
+        path: '/friends/search',
+        pageBuilder: (context, state) =>
+            _slidePush(state, const UserSearchScreen()),
+      ),
+      GoRoute(
+        path: '/contacts',
+        pageBuilder: (context, state) =>
+            _slidePush(state, const ContactsMatchScreen()),
+      ),
+      GoRoute(
+        path: '/qr',
+        pageBuilder: (context, state) =>
+            _slidePush(state, const QrMatchScreen()),
+      ),
+      GoRoute(
+        path: '/qr/scan',
+        pageBuilder: (context, state) =>
+            _quickFade(state, const QrScannerScreen()),
+      ),
+      GoRoute(
+        path: '/nearby',
+        pageBuilder: (context, state) =>
+            _slidePush(state, const ProximityScreen()),
       ),
       // HTTPS Universal Link: https://blinkr.app/match/:code (GAP-9, primary)
       // Custom scheme blinkr://match/:code kept as fallback (see AndroidManifest.xml)
