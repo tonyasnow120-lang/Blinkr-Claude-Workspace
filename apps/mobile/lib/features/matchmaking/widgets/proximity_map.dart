@@ -74,22 +74,32 @@ class ProximityMap extends StatelessWidget {
               ),
             ),
             children: [
-              TileLayer(
-                urlTemplate:
-                    'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-                subdomains: const ['a', 'b', 'c', 'd'],
-                userAgentPackageName: 'com.blinkr.app',
+              ColorFiltered(
+                // Brighten + boost contrast on the dark basemap so streets,
+                // labels and water stand out more clearly against the UI.
+                colorFilter: const ColorFilter.matrix(<double>[
+                  1.6, 0, 0, 0, 25,
+                  0, 1.6, 0, 0, 25,
+                  0, 0, 1.6, 0, 25,
+                  0, 0, 0, 1, 0,
+                ]),
+                child: TileLayer(
+                  urlTemplate:
+                      'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+                  subdomains: const ['a', 'b', 'c', 'd'],
+                  userAgentPackageName: 'com.blinkr.app',
+                ),
               ),
-              // Faint radius ring so "nearby" feels grounded in real distance.
+              // Radius ring so "nearby" feels grounded in real distance.
               CircleLayer(
                 circles: [
                   CircleMarker(
                     point: me,
                     radius: 500,
                     useRadiusInMeter: true,
-                    color: Colors.white.withOpacity(0.04),
-                    borderColor: Colors.white.withOpacity(0.15),
-                    borderStrokeWidth: 1,
+                    color: Colors.white.withOpacity(0.06),
+                    borderColor: Colors.white.withOpacity(0.35),
+                    borderStrokeWidth: 1.5,
                   ),
                 ],
               ),
@@ -208,7 +218,10 @@ class _PlayerMarker extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.white.withOpacity(0.15),
-              border: Border.all(color: Colors.white, width: 1.5),
+              border: Border.all(color: Colors.white, width: 2),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.6), blurRadius: 4),
+              ],
               image: avatarUrl != null
                   ? DecorationImage(image: NetworkImage(avatarUrl), fit: BoxFit.cover)
                   : null,
@@ -226,7 +239,7 @@ class _PlayerMarker extends StatelessWidget {
             margin: const EdgeInsets.only(top: 2),
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.6),
+              color: Colors.black.withOpacity(0.75),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(

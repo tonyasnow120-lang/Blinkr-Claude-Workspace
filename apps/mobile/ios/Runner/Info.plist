@@ -55,6 +55,12 @@
     <key>NSLocationWhenInUseUsageDescription</key>
     <string>Blinkr uses your location only while "nearby players" visibility is on, to show players around you. Others see your distance, never your position.</string>
 
+    <!-- Required because the geolocator plugin references the "Always"
+         location API even though Blinkr only ever requests when-in-use
+         access (fixes ITMS-90683). -->
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>Blinkr uses your location only while "nearby players" visibility is on, to show players around you. Others see your distance, never your position.</string>
+
     <!-- No IDFA used — ATT prompt not required. Confirmed: Firebase Analytics default
          config does not collect IDFA. See STORE_COMPLIANCE.md. (GAP-28) -->
 
