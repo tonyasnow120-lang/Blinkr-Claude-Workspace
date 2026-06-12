@@ -9,6 +9,7 @@ class ApiEndpoints {
   static String userById(String id) => '/v1/users/$id';
 
   static const String createChallenge = '/v1/challenges';
+  static const String incomingChallenge = '/v1/challenges/incoming';
   static String challengeByCode(String code) => '/v1/challenges/$code';
   static String acceptChallenge(String code) => '/v1/challenges/$code/accept';
   static String cancelChallenge(String code) => '/v1/challenges/$code';

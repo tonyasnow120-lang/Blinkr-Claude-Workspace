@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
 import '../../../core/api/api_endpoints.dart';
+import '../../../shared/widgets/line_eye.dart';
 
 /// Shown immediately after a session is established (Google, Apple, OTP or
 /// magic link). Plays the success animation while the profile lookup runs
@@ -228,122 +228,12 @@ class _SuccessEyePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    _drawRings(canvas, center, size);
-    _drawPulse(canvas, center, size);
-    _drawEye(canvas, center, size);
-  }
-
-  void _drawRings(Canvas canvas, Offset center, Size size) {
-    final innerR = size.width * 0.198;
-    final outerR = size.width * 0.284;
-    final p = Paint()
-      ..strokeWidth = 1.5
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
-
-    canvas.save();
-    canvas.translate(center.dx, center.dy);
-    canvas.rotate(rotation * math.pi * 2);
-    for (int i = 0; i < 24; i++) {
-      final a = i * math.pi / 12;
-      final isMajor = i % 6 == 0;
-      p.color = Colors.white.withAlpha(isMajor ? 115 : 26);
-      final len = isMajor ? 9.0 : 4.0;
-      canvas.drawLine(
-        Offset(math.cos(a) * (innerR - len), math.sin(a) * (innerR - len)),
-        Offset(math.cos(a) * innerR, math.sin(a) * innerR),
-        p,
-      );
-    }
-    canvas.restore();
-
-    canvas.save();
-    canvas.translate(center.dx, center.dy);
-    canvas.rotate(-rotation * math.pi * 2 * 0.6);
-    for (int i = 0; i < 36; i++) {
-      final a = i * math.pi / 18;
-      final isLong = i % 3 == 0;
-      p.color = Colors.white.withAlpha(isLong ? 51 : 13);
-      final len = isLong ? 8.0 : 4.0;
-      canvas.drawLine(
-        Offset(math.cos(a) * (outerR - len), math.sin(a) * (outerR - len)),
-        Offset(math.cos(a) * outerR, math.sin(a) * outerR),
-        p,
-      );
-    }
-    canvas.restore();
-  }
-
-  void _drawPulse(Canvas canvas, Offset center, Size size) {
-    if (pulse <= 0.001 || pulse >= 0.999) return;
-    final baseR = size.width * 0.194;
-    final alpha = ((1 - pulse) * 110).round();
-    if (alpha <= 0) return;
-    canvas.drawCircle(
-      center,
-      baseR * (0.9 + pulse * 1.9),
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 0.7
-        ..color = Colors.white.withAlpha(alpha),
-    );
-  }
-
-  void _drawEye(Canvas canvas, Offset center, Size size) {
-    final eyeW = size.width * 0.31;
-    final eyeH = eyeW * 0.44;
-
-    final eyePath = Path()
-      ..moveTo(center.dx - eyeW / 2, center.dy)
-      ..quadraticBezierTo(
-          center.dx, center.dy - eyeH, center.dx + eyeW / 2, center.dy)
-      ..quadraticBezierTo(
-          center.dx, center.dy + eyeH, center.dx - eyeW / 2, center.dy)
-      ..close();
-
-    canvas.save();
-    canvas.clipPath(eyePath);
-
-    final irisR = eyeH * 0.88;
-    final stroke = Paint()..style = PaintingStyle.stroke;
-
-    stroke.strokeWidth = 1.1;
-    stroke.color = Colors.white.withAlpha(230);
-    canvas.drawCircle(center, irisR, stroke);
-
-    stroke.strokeWidth = 0.5;
-    stroke.color = Colors.white.withAlpha(76);
-    canvas.drawCircle(center, irisR * 0.7, stroke);
-
-    // Checkmark replaces the pupil — drawn progressively via path trim.
-    if (checkTrim > 0.001) {
-      final check = Path()
-        ..moveTo(center.dx - irisR * 0.42, center.dy + irisR * 0.02)
-        ..lineTo(center.dx - irisR * 0.10, center.dy + irisR * 0.34)
-        ..lineTo(center.dx + irisR * 0.46, center.dy - irisR * 0.30);
-
-      for (final metric in check.computeMetrics()) {
-        canvas.drawPath(
-          metric.extractPath(0, metric.length * checkTrim),
-          Paint()
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 2.0
-            ..strokeCap = StrokeCap.round
-            ..strokeJoin = StrokeJoin.round
-            ..color = Colors.white,
-        );
-      }
-    }
-
-    canvas.restore();
-
-    canvas.drawPath(
-      eyePath,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.2
-        ..color = Colors.white,
-    );
+    final base = size.width * 0.5;
+    LineEye.drawRings(canvas, center, base,
+        rotation: rotation, arcRotation: -rotation * 0.6);
+    LineEye.drawPulseRings(canvas, center, base, pulse);
+    LineEye.drawEye(canvas, center, base,
+        blink: 0, checkmark: true, checkTrim: checkTrim);
   }
 
   @override

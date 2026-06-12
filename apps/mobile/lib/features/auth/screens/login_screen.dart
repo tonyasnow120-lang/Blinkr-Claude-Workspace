@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/audio/background_music.dart';
+import '../../../shared/widgets/watching_eye.dart';
 import '../providers/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -19,10 +20,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     with TickerProviderStateMixin {
 
   // Animation controllers
-  late final AnimationController _pulseCtrl;
-  late final AnimationController _rotCtrl;
-  late final AnimationController _arcCtrl;
-  late final AnimationController _blinkCtrl;
   late final AnimationController _entranceCtrl;
 
   late final Animation<double> _headerOpacity;
@@ -46,22 +43,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   @override
   void initState() {
     super.initState();
-
-    _pulseCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 2500))
-      ..repeat();
-
-    _rotCtrl = AnimationController(
-        vsync: this, duration: const Duration(seconds: 20))
-      ..repeat();
-
-    _arcCtrl = AnimationController(
-        vsync: this, duration: const Duration(seconds: 32))
-      ..repeat();
-
-    _blinkCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 4000))
-      ..repeat();
 
     _entranceCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 1600));
@@ -111,10 +92,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
   @override
   void dispose() {
-    _pulseCtrl.dispose();
-    _rotCtrl.dispose();
-    _arcCtrl.dispose();
-    _blinkCtrl.dispose();
     _entranceCtrl.dispose();
     _emailCtrl.dispose();
     _focusNode.dispose();
@@ -164,7 +141,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   @override
   Widget build(BuildContext context) {
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
-    final size = MediaQuery.sizeOf(context);
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -205,23 +181,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               ),
 
               // Eye + rings
-              SizedBox(
-                width: size.width,
-                height: 200,
-                child: AnimatedBuilder(
-                  animation: Listenable.merge(
-                      [_pulseCtrl, _rotCtrl, _arcCtrl, _blinkCtrl]),
-                  builder: (_, __) => CustomPaint(
-                    size: Size(size.width, 200),
-                    painter: _LoginEyePainter(
-                      pulse: _pulseCtrl.value,
-                      rotation: _rotCtrl.value,
-                      arcRotation: _arcCtrl.value,
-                      blink: _blinkCtrl.value,
-                    ),
-                  ),
-                ),
-              ),
+              const WatchingEye(height: 200),
 
               // Wordmark
               AnimatedBuilder(
@@ -683,172 +643,3 @@ class _BlinkingCursorState extends State<_BlinkingCursor>
       );
 }
 
-// ── CustomPainter — smaller eye + rings for login page ────────────────────────
-class _LoginEyePainter extends CustomPainter {
-  final double pulse;
-  final double rotation;
-  final double arcRotation;
-  final double blink;
-
-  const _LoginEyePainter({
-    required this.pulse,
-    required this.rotation,
-    required this.arcRotation,
-    required this.blink,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    _drawRings(canvas, center, size);
-    _drawPulseRings(canvas, center, size);
-    _drawEye(canvas, center, size);
-  }
-
-  void _drawRings(Canvas canvas, Offset center, Size size) {
-    final innerR = size.width * 0.198;
-    final outerR = size.width * 0.284;
-    final p = Paint()
-      ..strokeWidth = 1.5
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
-
-    canvas.save();
-    canvas.translate(center.dx, center.dy);
-    canvas.rotate(rotation * math.pi * 2);
-    for (int i = 0; i < 24; i++) {
-      final a = i * math.pi / 12;
-      final isMajor = i % 6 == 0;
-      p.color = Colors.white.withAlpha(isMajor ? 115 : 26);
-      final len = isMajor ? 9.0 : 4.0;
-      canvas.drawLine(
-        Offset(math.cos(a) * (innerR - len), math.sin(a) * (innerR - len)),
-        Offset(math.cos(a) * innerR, math.sin(a) * innerR),
-        p,
-      );
-    }
-    canvas.restore();
-
-    canvas.save();
-    canvas.translate(center.dx, center.dy);
-    canvas.rotate(-arcRotation * math.pi * 2);
-    for (int i = 0; i < 36; i++) {
-      final a = i * math.pi / 18;
-      final isLong = i % 3 == 0;
-      p.color = Colors.white.withAlpha(isLong ? 51 : 13);
-      final len = isLong ? 8.0 : 4.0;
-      canvas.drawLine(
-        Offset(math.cos(a) * (outerR - len), math.sin(a) * (outerR - len)),
-        Offset(math.cos(a) * outerR, math.sin(a) * outerR),
-        p,
-      );
-    }
-    canvas.restore();
-  }
-
-  void _drawPulseRings(Canvas canvas, Offset center, Size size) {
-    final baseR = size.width * 0.194;
-    final p = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.5;
-    for (int i = 0; i < 3; i++) {
-      final t = (pulse + i / 3.0) % 1.0;
-      final scale = 0.08 + t * 2.85;
-      final alpha = t < 0.15
-          ? ((t / 0.15) * 128).round()
-          : ((1 - t) * 128).round();
-      if (alpha <= 0) continue;
-      p.color = Colors.white.withAlpha(alpha);
-      canvas.drawCircle(center, baseR * scale, p);
-    }
-  }
-
-  void _drawEye(Canvas canvas, Offset center, Size size) {
-    final eyeW = size.width * 0.31;
-    final eyeH = eyeW * 0.44;
-
-    double lidT = 0.0;
-    final t = blink;
-    if (t >= 0.30 && t <= 0.38) {
-      final bt = (t - 0.30) / 0.08;
-      lidT = bt < 0.5 ? bt * 2 : (1 - bt) * 2;
-    } else if (t >= 0.42 && t <= 0.48) {
-      final bt = (t - 0.42) / 0.06;
-      lidT = bt < 0.5 ? bt * 2 : (1 - bt) * 2;
-    }
-
-    final eyePath = Path()
-      ..moveTo(center.dx - eyeW / 2, center.dy)
-      ..quadraticBezierTo(
-          center.dx, center.dy - eyeH, center.dx + eyeW / 2, center.dy)
-      ..quadraticBezierTo(
-          center.dx, center.dy + eyeH, center.dx - eyeW / 2, center.dy)
-      ..close();
-
-    canvas.save();
-    canvas.clipPath(eyePath);
-
-    final irisR = eyeH * 0.88;
-    final stroke = Paint()..style = PaintingStyle.stroke;
-
-    stroke.strokeWidth = 1.1;
-    stroke.color = Colors.white.withAlpha(230);
-    canvas.drawCircle(center, irisR, stroke);
-
-    stroke.strokeWidth = 0.5;
-    stroke.color = Colors.white.withAlpha(76);
-    canvas.drawCircle(center, irisR * 0.7, stroke);
-
-    canvas.drawCircle(center, irisR * 0.44, Paint()..color = Colors.white);
-    canvas.drawCircle(
-      Offset(center.dx + irisR * 0.27, center.dy - irisR * 0.3),
-      irisR * 0.17,
-      Paint()..color = Colors.black.withAlpha(140),
-    );
-
-    if (lidT > 0.001) {
-      final lid = Paint()..color = Colors.black;
-      final offset = eyeH * lidT;
-      final pad = eyeW * 0.06;
-
-      final upper = Path()
-        ..moveTo(center.dx - eyeW / 2 - pad, center.dy)
-        ..quadraticBezierTo(center.dx, center.dy - eyeH,
-            center.dx + eyeW / 2 + pad, center.dy)
-        ..lineTo(center.dx + eyeW / 2 + pad, center.dy - eyeH * 3)
-        ..lineTo(center.dx - eyeW / 2 - pad, center.dy - eyeH * 3)
-        ..close();
-
-      final lower = Path()
-        ..moveTo(center.dx - eyeW / 2 - pad, center.dy)
-        ..quadraticBezierTo(center.dx, center.dy + eyeH,
-            center.dx + eyeW / 2 + pad, center.dy)
-        ..lineTo(center.dx + eyeW / 2 + pad, center.dy + eyeH * 3)
-        ..lineTo(center.dx - eyeW / 2 - pad, center.dy + eyeH * 3)
-        ..close();
-
-      canvas.save();
-      canvas.translate(0, offset);
-      canvas.drawPath(upper, lid);
-      canvas.restore();
-
-      canvas.save();
-      canvas.translate(0, -offset);
-      canvas.drawPath(lower, lid);
-      canvas.restore();
-    }
-
-    canvas.restore();
-
-    canvas.drawPath(
-      eyePath,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.2
-        ..color = Colors.white,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_LoginEyePainter old) => true;
-}

@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/audio/background_music.dart';
+import '../../../shared/widgets/watching_eye.dart';
 import '../../profile/providers/profile_provider.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -16,11 +16,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with TickerProviderStateMixin {
-  late final AnimationController _rotCtrl;
-  late final AnimationController _arcCtrl;
-  late final AnimationController _pulseCtrl;
-  late final AnimationController _blinkCtrl;
-  late final AnimationController _wanderCtrl;
   late final AnimationController _entranceCtrl;
 
   late final Animation<double> _headerOpacity;
@@ -33,27 +28,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   void initState() {
     super.initState();
-
-    _rotCtrl = AnimationController(
-        vsync: this, duration: const Duration(seconds: 20))
-      ..repeat();
-
-    _arcCtrl = AnimationController(
-        vsync: this, duration: const Duration(seconds: 32))
-      ..repeat();
-
-    _pulseCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 2500))
-      ..repeat();
-
-    _blinkCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 4600))
-      ..repeat();
-
-    // Slow Lissajous wander — the iris drifts around, sizing you up.
-    _wanderCtrl = AnimationController(
-        vsync: this, duration: const Duration(seconds: 11))
-      ..repeat();
 
     _entranceCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 1600));
@@ -92,11 +66,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   @override
   void dispose() {
-    _rotCtrl.dispose();
-    _arcCtrl.dispose();
-    _pulseCtrl.dispose();
-    _blinkCtrl.dispose();
-    _wanderCtrl.dispose();
     _entranceCtrl.dispose();
     super.dispose();
   }
@@ -193,23 +162,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               // The eye, staring back
               Opacity(
                 opacity: _eyeOpacity.value,
-                child: SizedBox(
-                  height: 230,
-                  child: AnimatedBuilder(
-                    animation: Listenable.merge(
-                        [_rotCtrl, _arcCtrl, _pulseCtrl, _blinkCtrl, _wanderCtrl]),
-                    builder: (_, __) => CustomPaint(
-                      size: Size(size.width, 230),
-                      painter: _WatchingEyePainter(
-                        rotation: _rotCtrl.value,
-                        arcRotation: _arcCtrl.value,
-                        pulse: _pulseCtrl.value,
-                        blink: _blinkCtrl.value,
-                        wander: _wanderCtrl.value,
-                      ),
-                    ),
-                  ),
-                ),
+                child: const WatchingEye(height: 230),
               ),
 
               // Live record strip
@@ -422,237 +375,6 @@ class _StatsStrip extends StatelessWidget {
         divider(),
         item('LOSSES', stats['losses']),
       ],
-    );
-  }
-}
-
-/// The welcome screen's eye, but alive: the iris wanders on a slow Lissajous
-/// path as if sizing up its next opponent, with an occasional double-blink.
-class _WatchingEyePainter extends CustomPainter {
-  final double rotation;
-  final double arcRotation;
-  final double pulse;
-  final double blink;
-  final double wander;
-
-  const _WatchingEyePainter({
-    required this.rotation,
-    required this.arcRotation,
-    required this.pulse,
-    required this.blink,
-    required this.wander,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final base = size.height; // rings sized off canvas height, not screen width
-    _drawRings(canvas, center, base);
-    _drawPulseRings(canvas, center, base);
-    _drawEye(canvas, center, base);
-  }
-
-  void _drawRings(Canvas canvas, Offset center, double base) {
-    final innerR = base * 0.36;
-    final outerR = base * 0.485;
-    final p = Paint()
-      ..strokeWidth = 1.5
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
-
-    canvas.save();
-    canvas.translate(center.dx, center.dy);
-    canvas.rotate(rotation * math.pi * 2);
-    for (int i = 0; i < 24; i++) {
-      final a = i * math.pi / 12;
-      final isMajor = i % 6 == 0;
-      p.color = Colors.white.withAlpha(isMajor ? 115 : 26);
-      final len = isMajor ? 10.0 : 5.0;
-      canvas.drawLine(
-        Offset(math.cos(a) * (innerR - len), math.sin(a) * (innerR - len)),
-        Offset(math.cos(a) * innerR, math.sin(a) * innerR),
-        p,
-      );
-    }
-    canvas.restore();
-
-    canvas.save();
-    canvas.translate(center.dx, center.dy);
-    canvas.rotate(-arcRotation * math.pi * 2);
-    for (int i = 0; i < 36; i++) {
-      final a = i * math.pi / 18;
-      final isLong = i % 3 == 0;
-      p.color = Colors.white.withAlpha(isLong ? 51 : 13);
-      final len = isLong ? 8.0 : 4.0;
-      canvas.drawLine(
-        Offset(math.cos(a) * (outerR - len), math.sin(a) * (outerR - len)),
-        Offset(math.cos(a) * outerR, math.sin(a) * outerR),
-        p,
-      );
-    }
-    canvas.restore();
-  }
-
-  void _drawPulseRings(Canvas canvas, Offset center, double base) {
-    final baseR = base * 0.39;
-    final p = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.5;
-    for (int i = 0; i < 3; i++) {
-      final t = (pulse + i / 3.0) % 1.0;
-      final scale = 0.08 + t * 2.4;
-      final alpha =
-          t < 0.15 ? ((t / 0.15) * 128).round() : ((1 - t) * 128).round();
-      if (alpha <= 0) continue;
-      p.color = Colors.white.withAlpha(alpha);
-      canvas.drawCircle(center, baseR * scale, p);
-    }
-  }
-
-  void _drawEye(Canvas canvas, Offset center, double base) {
-    final eyeW = base * 0.62;
-    final eyeH = eyeW * 0.44;
-
-    // Double-blink envelope (same cadence family as the welcome screen)
-    double lidT = 0.0;
-    final t = blink;
-    if (t >= 0.30 && t <= 0.38) {
-      final bt = (t - 0.30) / 0.08;
-      lidT = bt < 0.5 ? bt * 2 : (1 - bt) * 2;
-    } else if (t >= 0.43 && t <= 0.49) {
-      final bt = (t - 0.43) / 0.06;
-      lidT = bt < 0.5 ? bt * 2 : (1 - bt) * 2;
-    }
-
-    final eyePath = Path()
-      ..moveTo(center.dx - eyeW / 2, center.dy)
-      ..quadraticBezierTo(
-          center.dx, center.dy - eyeH, center.dx + eyeW / 2, center.dy)
-      ..quadraticBezierTo(
-          center.dx, center.dy + eyeH, center.dx - eyeW / 2, center.dy)
-      ..close();
-
-    canvas.save();
-    canvas.clipPath(eyePath);
-
-    final irisR = eyeH * 0.88;
-
-    // Lissajous wander, eased to zero while blinking so the eye re-centers
-    final wa = wander * math.pi * 2;
-    final gaze = Offset(
-      math.sin(wa) * math.cos(wa * 0.7),
-      math.sin(wa * 1.3) * 0.45,
-    ) * (irisR * 0.28 * (1.0 - lidT));
-    final irisCenter = center + gaze;
-
-    final strokePaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.1
-      ..color = Colors.white.withAlpha(230);
-
-    canvas.drawCircle(irisCenter, irisR, strokePaint);
-
-    strokePaint.color = Colors.white.withAlpha(76);
-    strokePaint.strokeWidth = 0.5;
-    canvas.drawCircle(irisCenter, irisR * 0.7, strokePaint);
-
-    canvas.drawCircle(
-        irisCenter, irisR * 0.44, Paint()..color = Colors.white);
-
-    canvas.drawCircle(
-      Offset(irisCenter.dx + irisR * 0.27, irisCenter.dy - irisR * 0.3),
-      irisR * 0.17,
-      Paint()..color = Colors.black.withAlpha(140),
-    );
-
-    if (lidT > 0.001) {
-      final lidPaint = Paint()..color = Colors.black;
-      final lidOffset = eyeH * lidT;
-      final pad = eyeW * 0.05;
-
-      final upperLid = Path()
-        ..moveTo(center.dx - eyeW / 2 - pad, center.dy)
-        ..quadraticBezierTo(
-            center.dx, center.dy - eyeH, center.dx + eyeW / 2 + pad, center.dy)
-        ..lineTo(center.dx + eyeW / 2 + pad, center.dy - eyeH * 2.5)
-        ..lineTo(center.dx - eyeW / 2 - pad, center.dy - eyeH * 2.5)
-        ..close();
-
-      canvas.save();
-      canvas.translate(0, lidOffset);
-      canvas.drawPath(upperLid, lidPaint);
-      canvas.restore();
-
-      final lowerLid = Path()
-        ..moveTo(center.dx - eyeW / 2 - pad, center.dy)
-        ..quadraticBezierTo(
-            center.dx, center.dy + eyeH, center.dx + eyeW / 2 + pad, center.dy)
-        ..lineTo(center.dx + eyeW / 2 + pad, center.dy + eyeH * 2.5)
-        ..lineTo(center.dx - eyeW / 2 - pad, center.dy + eyeH * 2.5)
-        ..close();
-
-      canvas.save();
-      canvas.translate(0, -lidOffset);
-      canvas.drawPath(lowerLid, lidPaint);
-      canvas.restore();
-    }
-
-    canvas.restore();
-
-    canvas.drawPath(
-      eyePath,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.2
-        ..color = Colors.white,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_WatchingEyePainter old) =>
-      old.rotation != rotation ||
-      old.arcRotation != arcRotation ||
-      old.pulse != pulse ||
-      old.blink != blink ||
-      old.wander != wander;
-}
-
-// ── Matchmaking shortcut chip ─────────────────────────────────────────────────
-class _MatchmakingShortcut extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String route;
-
-  const _MatchmakingShortcut({
-    required this.icon,
-    required this.label,
-    required this.route,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () => context.push(route),
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: Colors.white.withAlpha(180), size: 22),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              style: TextStyle(
-                color: Colors.white.withAlpha(115),
-                fontSize: 8,
-                fontWeight: FontWeight.w300,
-                letterSpacing: 2,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

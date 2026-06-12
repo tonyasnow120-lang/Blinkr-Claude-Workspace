@@ -97,7 +97,7 @@ class _ChallengeInviteListener extends ConsumerWidget {
                 ref.read(challengeInviteProvider.notifier).dismiss();
                 Navigator.of(context).pop();
               },
-              child: const Text('Dismiss'),
+              child: const Text('Deny'),
             ),
             FilledButton(
               onPressed: () {

@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
-import { eq, and, isNull } from 'drizzle-orm'
+import { eq, and, isNull, desc, gt } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { challenges, matches, users } from '../db/schema.js'
 import { createChallenge, getChallengeByCode, markChallengeUsed } from '../services/challengeService.js'
@@ -82,6 +82,48 @@ export async function challengeRoutes(app: FastifyInstance) {
         deepLink: `${HTTPS_BASE_URL}/match/${challenge.code}`,
         deepLinkFallback: `blinkr://match/${challenge.code}`,
         expiresAt: challenge.expiresAt,
+      },
+    })
+  })
+
+  // Polling fallback to the `challenge.invite` Realtime broadcast — lets the
+  // challenged player's app pick up a pending targeted challenge
+  // (friend/contact/proximity) even if the broadcast was missed.
+  app.get('/challenges/incoming', async (request, reply) => {
+    const userId = (request.user as { sub: string }).sub
+
+    const [challenge] = await db
+      .select({
+        code: challenges.code,
+        kind: challenges.kind,
+        challengerId: challenges.challengerId,
+      })
+      .from(challenges)
+      .where(
+        and(
+          eq(challenges.opponentId, userId),
+          eq(challenges.status, 'pending'),
+          gt(challenges.expiresAt, new Date()),
+        ),
+      )
+      .orderBy(desc(challenges.createdAt))
+      .limit(1)
+
+    if (!challenge) {
+      return reply.send({ data: null })
+    }
+
+    const [challenger] = await db
+      .select({ displayName: users.displayName, username: users.username })
+      .from(users)
+      .where(eq(users.id, challenge.challengerId))
+      .limit(1)
+
+    return reply.send({
+      data: {
+        code: challenge.code,
+        kind: challenge.kind,
+        challengerName: challenger?.displayName ?? challenger?.username ?? 'Someone',
       },
     })
   })

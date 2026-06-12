@@ -40,6 +40,14 @@ class MatchmakingService {
     return response['data'] as Map<String, dynamic>;
   }
 
+  /// Polling fallback to the `challenge.invite` Realtime broadcast — returns
+  /// the most recent pending targeted challenge (friend/contact/proximity)
+  /// addressed to this user, or null if there is none.
+  Future<Map<String, dynamic>?> getIncomingChallenge() async {
+    final response = await _api.get(ApiEndpoints.incomingChallenge);
+    return response['data'] as Map<String, dynamic>?;
+  }
+
   // ── Friends (Feature 3) ───────────────────────────────────────────────
 
   Future<List<Map<String, dynamic>>> searchUsers(String query) async {

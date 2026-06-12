@@ -1,8 +1,8 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/audio/background_music.dart';
+import '../../../shared/widgets/line_eye.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -259,167 +259,11 @@ class _SplashPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, eyeCenterY);
-    _drawRings(canvas, center, size);
-    _drawPulseRings(canvas, center, size);
-    _drawEye(canvas, center, size);
-  }
-
-  void _drawRings(Canvas canvas, Offset center, Size size) {
-    final innerR = size.width * 0.335;
-    final outerR = size.width * 0.487;
-    final p = Paint()
-      ..strokeWidth = 1.5
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
-
-    // inner clockwise
-    canvas.save();
-    canvas.translate(center.dx, center.dy);
-    canvas.rotate(rotation * math.pi * 2);
-    for (int i = 0; i < 24; i++) {
-      final a = i * math.pi / 12;
-      final isMajor = i % 6 == 0;
-      p.color = Colors.white.withAlpha(isMajor ? 128 : 31);
-      final len = isMajor ? 12.0 : 6.0;
-      canvas.drawLine(
-        Offset(math.cos(a) * (innerR - len), math.sin(a) * (innerR - len)),
-        Offset(math.cos(a) * innerR, math.sin(a) * innerR),
-        p,
-      );
-    }
-    canvas.restore();
-
-    // outer counter-clockwise
-    canvas.save();
-    canvas.translate(center.dx, center.dy);
-    canvas.rotate(-arcRotation * math.pi * 2);
-    for (int i = 0; i < 36; i++) {
-      final a = i * math.pi / 18;
-      final isLong = i % 3 == 0;
-      p.color = Colors.white.withAlpha(isLong ? 56 : 13);
-      final len = isLong ? 10.0 : 5.0;
-      canvas.drawLine(
-        Offset(math.cos(a) * (outerR - len), math.sin(a) * (outerR - len)),
-        Offset(math.cos(a) * outerR, math.sin(a) * outerR),
-        p,
-      );
-    }
-    canvas.restore();
-  }
-
-  void _drawPulseRings(Canvas canvas, Offset center, Size size) {
-    final baseR = size.width * 0.365;
-    final p = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.5;
-    for (int i = 0; i < 3; i++) {
-      final t = (pulse + i / 3.0) % 1.0;
-      final scale = 0.08 + t * 2.85;
-      final alpha = t < 0.15
-          ? ((t / 0.15) * 153).round()
-          : ((1 - t) * 153).round();
-      if (alpha <= 0) continue;
-      p.color = Colors.white.withAlpha(alpha);
-      canvas.drawCircle(center, baseR * scale, p);
-    }
-  }
-
-  void _drawEye(Canvas canvas, Offset center, Size size) {
-    final eyeW = size.width * 0.285;
-    final eyeH = eyeW * 0.44;
-
-    // Double-blink envelope: two blink events per cycle
-    double lidT = 0.0;
-    final t = blink;
-    if (t >= 0.28 && t <= 0.37) {
-      final bt = (t - 0.28) / 0.09;
-      lidT = bt < 0.5 ? bt * 2 : (1 - bt) * 2;
-    } else if (t >= 0.42 && t <= 0.48) {
-      final bt = (t - 0.42) / 0.06;
-      lidT = bt < 0.5 ? bt * 2 : (1 - bt) * 2;
-    }
-
-    final eyePath = Path()
-      ..moveTo(center.dx - eyeW / 2, center.dy)
-      ..quadraticBezierTo(
-          center.dx, center.dy - eyeH, center.dx + eyeW / 2, center.dy)
-      ..quadraticBezierTo(
-          center.dx, center.dy + eyeH, center.dx - eyeW / 2, center.dy)
-      ..close();
-
-    canvas.save();
-    canvas.clipPath(eyePath);
-
-    final irisScale = 1.0 - lidT * 0.08;
-    final irisR = eyeH * 0.88;
-
-    canvas.save();
-    canvas.translate(center.dx, center.dy);
-    canvas.scale(irisScale, irisScale);
-    canvas.translate(-center.dx, -center.dy);
-
-    final strokePaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.1
-      ..color = Colors.white.withAlpha(230);
-
-    canvas.drawCircle(center, irisR, strokePaint);
-
-    strokePaint.color = Colors.white.withAlpha(76);
-    strokePaint.strokeWidth = 0.5;
-    canvas.drawCircle(center, irisR * 0.7, strokePaint);
-
-    canvas.drawCircle(center, irisR * 0.44, Paint()..color = Colors.white);
-
-    canvas.drawCircle(
-      Offset(center.dx + irisR * 0.27, center.dy - irisR * 0.3),
-      irisR * 0.17,
-      Paint()..color = Colors.black.withAlpha(140),
-    );
-
-    canvas.restore();
-
-    if (lidT > 0.001) {
-      final lidPaint = Paint()..color = Colors.black;
-      final lidOffset = eyeH * lidT;
-      final pad = eyeW * 0.05;
-
-      final upperLid = Path()
-        ..moveTo(center.dx - eyeW / 2 - pad, center.dy)
-        ..quadraticBezierTo(
-            center.dx, center.dy - eyeH, center.dx + eyeW / 2 + pad, center.dy)
-        ..lineTo(center.dx + eyeW / 2 + pad, center.dy - eyeH * 2.5)
-        ..lineTo(center.dx - eyeW / 2 - pad, center.dy - eyeH * 2.5)
-        ..close();
-
-      canvas.save();
-      canvas.translate(0, lidOffset);
-      canvas.drawPath(upperLid, lidPaint);
-      canvas.restore();
-
-      final lowerLid = Path()
-        ..moveTo(center.dx - eyeW / 2 - pad, center.dy)
-        ..quadraticBezierTo(
-            center.dx, center.dy + eyeH, center.dx + eyeW / 2 + pad, center.dy)
-        ..lineTo(center.dx + eyeW / 2 + pad, center.dy + eyeH * 2.5)
-        ..lineTo(center.dx - eyeW / 2 - pad, center.dy + eyeH * 2.5)
-        ..close();
-
-      canvas.save();
-      canvas.translate(0, -lidOffset);
-      canvas.drawPath(lowerLid, lidPaint);
-      canvas.restore();
-    }
-
-    canvas.restore();
-
-    canvas.drawPath(
-      eyePath,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.2
-        ..color = Colors.white,
-    );
+    final base = size.width;
+    LineEye.drawRings(canvas, center, base,
+        rotation: rotation, arcRotation: arcRotation);
+    LineEye.drawPulseRings(canvas, center, base, pulse);
+    LineEye.drawEye(canvas, center, base, blink: blink);
   }
 
   @override
