@@ -228,10 +228,13 @@ export async function challengeRoutes(app: FastifyInstance) {
       throw Errors.forbidden()
     }
 
+    // Only cancel while still pending — avoids clobbering a challenge that
+    // was accepted concurrently (e.g. QR auto-regeneration racing a
+    // last-second scan).
     await db
       .update(challenges)
       .set({ status: 'cancelled' })
-      .where(eq(challenges.id, challenge.id))
+      .where(and(eq(challenges.id, challenge.id), eq(challenges.status, 'pending')))
 
     return reply.send({ data: { cancelled: true } })
   })

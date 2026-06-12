@@ -61,6 +61,45 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
     }
   }
 
+  Future<void> _confirmLeave() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1C1C1E),
+        title: const Text('Leave lobby?',
+            style: TextStyle(color: Colors.white)),
+        content: const Text(
+          'If your opponent hasn\'t joined yet, leaving will cancel this match.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Stay'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Leave', style: TextStyle(color: Colors.redAccent)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      // Sets phase to MatchPhase.abandoned, which the ref.listen below
+      // routes to the result screen ("Match abandoned").
+      await ref
+          .read(matchNotifierProvider(widget.matchId).notifier)
+          .abandon();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+        ));
+      }
+    }
+  }
+
   Widget _playerColumn(Map<String, dynamic>? user, {required bool ready}) {
     final name =
         (user?['displayName'] ?? user?['username'] ?? '…') as String;
@@ -140,6 +179,11 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          tooltip: 'Leave lobby',
+          onPressed: _confirmLeave,
+        ),
         actions: const [MusicToggleButton()],
       ),
       body: SafeArea(

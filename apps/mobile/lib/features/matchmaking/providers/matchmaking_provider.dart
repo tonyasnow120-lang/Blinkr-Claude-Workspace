@@ -47,7 +47,13 @@ class MatchmakingState {
 /// fetched over authenticated HTTP, never received via broadcast.
 class MatchmakingNotifier extends StateNotifier<MatchmakingState> {
   final MatchmakingService _service;
-  RealtimeChannel? _channel;
+
+  /// Realtime channels for every challenge created this session. QR
+  /// regeneration creates a new challenge/channel without tearing down the
+  /// previous one — a `challenge.accepted` broadcast for a code that was
+  /// accepted right as it expired client-side can still arrive on the old
+  /// channel, and must still resolve to the lobby.
+  final List<RealtimeChannel> _channels = [];
   bool _resolved = false;
 
   MatchmakingNotifier(this._service) : super(const MatchmakingState());
@@ -56,8 +62,9 @@ class MatchmakingNotifier extends StateNotifier<MatchmakingState> {
     String kind = 'link',
     String? opponentId,
   }) async {
-    // Re-creating (e.g. QR regeneration) cancels the previous pending code.
-    await _teardown(cancelPending: true);
+    // Re-creating (e.g. QR regeneration) cancels the previous pending code,
+    // but keeps listening on its realtime channel (see _channels above).
+    await _cancelPending();
     _resolved = false;
     state = const MatchmakingState(phase: MatchmakingPhase.creating);
 
@@ -78,7 +85,7 @@ class MatchmakingNotifier extends StateNotifier<MatchmakingState> {
   }
 
   void _subscribe(String challengeId) {
-    _channel = Supabase.instance.client.channel('challenge:$challengeId')
+    final channel = Supabase.instance.client.channel('challenge:$challengeId')
       ..onBroadcast(
         event: 'challenge.accepted',
         callback: (payload) {
@@ -87,6 +94,7 @@ class MatchmakingNotifier extends StateNotifier<MatchmakingState> {
         },
       )
       ..subscribe();
+    _channels.add(channel);
   }
 
   Future<void> _onAccepted(String matchId) async {
@@ -113,28 +121,32 @@ class MatchmakingNotifier extends StateNotifier<MatchmakingState> {
   /// Cancels the pending challenge (player navigated away before an
   /// opponent joined). Safe to call from screen dispose.
   Future<void> cancel() async {
-    await _teardown(cancelPending: true);
+    await _cancelPending();
+    await _removeChannels();
     if (mounted) state = const MatchmakingState();
   }
 
-  Future<void> _teardown({required bool cancelPending}) async {
-    final channel = _channel;
-    _channel = null;
-    if (channel != null) {
-      await Supabase.instance.client.removeChannel(channel);
-    }
+  /// Best-effort cancel of the current pending code (also expires
+  /// server-side via TTL). Does not remove realtime channels — see
+  /// _channels.
+  Future<void> _cancelPending() async {
     final code = state.code;
-    if (cancelPending &&
-        code != null &&
-        state.phase == MatchmakingPhase.waiting) {
-      // Best-effort: code also expires server-side via TTL.
+    if (code != null && state.phase == MatchmakingPhase.waiting) {
       unawaited(_service.cancelChallenge(code).catchError((_) {}));
     }
   }
 
+  Future<void> _removeChannels() async {
+    for (final channel in _channels) {
+      await Supabase.instance.client.removeChannel(channel);
+    }
+    _channels.clear();
+  }
+
   @override
   void dispose() {
-    _teardown(cancelPending: true);
+    _cancelPending();
+    _removeChannels();
     super.dispose();
   }
 }

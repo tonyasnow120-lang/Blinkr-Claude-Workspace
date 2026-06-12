@@ -5,7 +5,7 @@ import { generateShortCode } from '../lib/shortCode.js'
 import { Errors } from '../lib/errors.js'
 
 const CHALLENGE_TTL_MINUTES = 15 // GAP-11: 15-minute TTL
-const QR_TTL_SECONDS = 60 // QR codes are scanned in person — short-lived
+const QR_TTL_SECONDS = 90 // QR codes are scanned in person — short-lived
 
 export type ChallengeKind = 'link' | 'qr' | 'friend' | 'contact' | 'proximity'
 
