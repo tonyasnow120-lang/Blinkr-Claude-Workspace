@@ -249,3 +249,60 @@ class LineEye {
     canvas.drawPath(path, paint);
   }
 }
+
+/// Icon-sized static rendering of the line-art eye for buttons and markers —
+/// same almond/iris/pupil proportions as [LineEye.drawEye], but monochrome in
+/// a configurable [color] so it works on light backgrounds too.
+class LineEyeIcon extends StatelessWidget {
+  final double size;
+  final Color color;
+
+  const LineEyeIcon({super.key, this.size = 18, this.color = Colors.white});
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: Size(size, size * 0.5),
+      painter: _LineEyeIconPainter(color),
+    );
+  }
+}
+
+class _LineEyeIconPainter extends CustomPainter {
+  final Color color;
+
+  _LineEyeIconPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final eyeW = size.width;
+    final eyeH = eyeW * 0.44;
+
+    final eyePath = Path()
+      ..moveTo(center.dx - eyeW / 2, center.dy)
+      ..quadraticBezierTo(
+          center.dx, center.dy - eyeH, center.dx + eyeW / 2, center.dy)
+      ..quadraticBezierTo(
+          center.dx, center.dy + eyeH, center.dx - eyeW / 2, center.dy)
+      ..close();
+
+    final stroke = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.width * 0.06
+      ..color = color;
+
+    final irisR = eyeH * 0.88;
+    canvas.save();
+    canvas.clipPath(eyePath);
+    canvas.drawCircle(center, irisR, stroke);
+    canvas.drawCircle(center, irisR * 0.44, Paint()..color = color);
+    canvas.restore();
+
+    canvas.drawPath(eyePath, stroke);
+  }
+
+  @override
+  bool shouldRepaint(_LineEyeIconPainter oldDelegate) =>
+      oldDelegate.color != color;
+}

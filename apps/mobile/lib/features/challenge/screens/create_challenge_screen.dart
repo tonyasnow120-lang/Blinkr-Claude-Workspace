@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../core/audio/background_music.dart';
+import '../../../shared/widgets/line_eye.dart';
 import '../../matchmaking/providers/matchmaking_provider.dart';
 
 /// Challenger-side waiting screen for every matchmaking flow.
@@ -107,7 +108,7 @@ class _CreateChallengeScreenState
                   ],
                 )
               else if (targeted) ...[
-                const Icon(Icons.visibility, color: Colors.white, size: 56),
+                const LineEyeIcon(size: 56, color: Colors.white),
                 const SizedBox(height: 24),
                 Text(
                   'Challenge sent to ${widget.opponentName ?? 'your opponent'}',

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../shared/widgets/line_eye.dart';
 
 /// Standard player row used across matchmaking lists: avatar, name,
 /// optional subtitle (record / distance), and a trailing action.
@@ -46,7 +47,7 @@ class PlayerTile extends StatelessWidget {
   }
 }
 
-/// The standard "Challenge 👁️" pill button.
+/// The standard "Challenge" pill button with the line-art eye icon.
 class ChallengeButton extends StatelessWidget {
   final VoidCallback onPressed;
 
@@ -62,7 +63,14 @@ class ChallengeButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
-      child: const Text('Challenge 👁️', style: TextStyle(fontSize: 13)),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('Challenge', style: TextStyle(fontSize: 13)),
+          SizedBox(width: 6),
+          LineEyeIcon(size: 15, color: Colors.black),
+        ],
+      ),
     );
   }
 }

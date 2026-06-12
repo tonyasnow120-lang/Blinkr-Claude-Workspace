@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/match_provider.dart';
 import '../widgets/camera_feed.dart';
+import '../../../shared/widgets/line_eye.dart';
 import '../../../core/api/api_endpoints.dart';
 import '../../../core/audio/background_music.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -264,9 +265,18 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
-                    "I'm Ready 👁️",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        "I'm Ready",
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 18),
+                      ),
+                      SizedBox(width: 10),
+                      LineEyeIcon(size: 22, color: Colors.black),
+                    ],
                   ),
                 )
               else

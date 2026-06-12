@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'player_tile.dart';
+import '../../../shared/widgets/line_eye.dart';
 
 /// Interactive map for the Nearby screen. The backend only ever returns
 /// distance to other players (never their coordinates — see
@@ -191,7 +192,11 @@ class _SelfMarker extends StatelessWidget {
           BoxShadow(color: Colors.white.withOpacity(0.5), blurRadius: 8, spreadRadius: 2),
         ],
       ),
-      child: const Icon(Icons.remove_red_eye, size: 14, color: Colors.black),
+      child: const SizedBox(
+        width: 18,
+        height: 18,
+        child: Center(child: LineEyeIcon(size: 13, color: Colors.black)),
+      ),
     );
   }
 }
