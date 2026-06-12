@@ -29,6 +29,11 @@ import '../features/matchmaking/screens/proximity_screen.dart';
 // from a 32-char alphabet = 45 bits of entropy).
 final _codePattern = RegExp(r'^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{9}$');
 
+/// Root navigator key — lets app-wide listeners (e.g. incoming challenge
+/// invite dialogs) push routes / show dialogs without a screen-local
+/// BuildContext.
+final rootNavigatorKey = GlobalKey<NavigatorState>();
+
 /// Shown while supabase_flutter processes the magic link deep link.
 /// The auth state listener in the router's redirect fires once the session
 /// is established and navigates to /home automatically.
@@ -193,6 +198,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
   ref.onDispose(refresh.dispose);
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/',
     refreshListenable: refresh,
     errorBuilder: (context, state) {

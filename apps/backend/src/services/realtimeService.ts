@@ -37,3 +37,7 @@ export function matchTopic(matchId: string): string {
 export function challengeTopic(challengeId: string): string {
   return `challenge:${challengeId}`
 }
+
+export function userTopic(userId: string): string {
+  return `user:${userId}`
+}

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'router.dart';
 import '../core/audio/background_music.dart';
 import '../core/security/app_lifecycle_observer.dart';
+import '../features/matchmaking/providers/challenge_invite_provider.dart';
 
 class BlinkrApp extends ConsumerWidget {
   const BlinkrApp({super.key});
@@ -38,8 +39,9 @@ class BlinkrApp extends ConsumerWidget {
           ),
         ),
         routerConfig: router,
-        builder: (context, child) =>
-            _MusicBootstrap(child: child ?? const SizedBox.shrink()),
+        builder: (context, child) => _ChallengeInviteListener(
+          child: _MusicBootstrap(child: child ?? const SizedBox.shrink()),
+        ),
       ),
     );
   }
@@ -66,6 +68,51 @@ class _MusicBootstrapState extends ConsumerState<_MusicBootstrap> {
 
   @override
   Widget build(BuildContext context) => widget.child;
+}
+
+/// Listens for incoming targeted challenges (friend/contact/proximity) and
+/// shows an accept/dismiss dialog over whatever screen is currently active.
+class _ChallengeInviteListener extends ConsumerWidget {
+  final Widget child;
+  const _ChallengeInviteListener({required this.child});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen<ChallengeInvite?>(challengeInviteProvider, (prev, next) {
+      if (next == null) return;
+      final dialogContext = rootNavigatorKey.currentContext;
+      if (dialogContext == null) return;
+      showDialog<void>(
+        context: dialogContext,
+        builder: (context) => AlertDialog(
+          backgroundColor: const Color(0xFF1C1C1E),
+          title: const Text('Challenge!', style: TextStyle(color: Colors.white)),
+          content: Text(
+            '${next.challengerName} wants to blink against you.',
+            style: const TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                ref.read(challengeInviteProvider.notifier).dismiss();
+                Navigator.of(context).pop();
+              },
+              child: const Text('Dismiss'),
+            ),
+            FilledButton(
+              onPressed: () {
+                ref.read(challengeInviteProvider.notifier).dismiss();
+                Navigator.of(context).pop();
+                dialogContext.push('/match/${next.code}');
+              },
+              child: const Text('Accept'),
+            ),
+          ],
+        ),
+      );
+    });
+    return child;
+  }
 }
 
 class _ErrorApp extends StatelessWidget {

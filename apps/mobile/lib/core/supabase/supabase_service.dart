@@ -50,4 +50,25 @@ class SupabaseService {
   void unsubscribeFromMatch(String matchId) {
     _client.removeChannel(matchChannel(matchId));
   }
+
+  RealtimeChannel userChannel(String userId) =>
+      _client.channel('user:$userId');
+
+  /// Notifies this user of incoming targeted challenges (friend/contact/
+  /// proximity) while the app is running.
+  void subscribeToUserInvites({
+    required String userId,
+    required void Function(Map<String, dynamic> payload) onChallengeInvite,
+  }) {
+    userChannel(userId)
+        .onBroadcast(
+          event: 'challenge.invite',
+          callback: (payload) => onChallengeInvite(payload),
+        )
+        .subscribe();
+  }
+
+  void unsubscribeFromUserInvites(String userId) {
+    _client.removeChannel(userChannel(userId));
+  }
 }

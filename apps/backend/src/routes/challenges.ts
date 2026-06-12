@@ -7,7 +7,7 @@ import { createChallenge, getChallengeByCode, markChallengeUsed } from '../servi
 import { createMatch } from '../services/matchService.js'
 import * as livekitService from '../services/livekitService.js'
 import * as notificationService from '../services/notificationService.js'
-import { broadcastEvent, challengeTopic } from '../services/realtimeService.js'
+import { broadcastEvent, challengeTopic, userTopic } from '../services/realtimeService.js'
 import { Errors } from '../lib/errors.js'
 import { logSecurityEvent } from '../services/securityLogger.js'
 
@@ -62,6 +62,16 @@ export async function challengeRoutes(app: FastifyInstance) {
             request.log.warn({ err: err?.message }, 'Match invite push failed'),
           )
       }
+
+      // In-app invite: shown immediately if the opponent's app is running,
+      // independent of (and in addition to) the push notification above.
+      broadcastEvent(userTopic(opponentId), 'challenge.invite', {
+        code: challenge.code,
+        kind: challenge.kind,
+        challengerName: challenger?.displayName ?? challenger?.username ?? 'Someone',
+      }).catch((err) =>
+        request.log.warn({ err: err?.message }, 'Challenge invite broadcast failed'),
+      )
     }
 
     return reply.code(201).send({
