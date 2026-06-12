@@ -100,11 +100,26 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
                   const SizedBox(height: 12),
                   SizedBox(
                     height: 160,
-                    child: CameraFeed(
-                      blinkDetector: notifier.blinkDetector,
-                      localVideoTrack: matchState.videoConnected
-                          ? notifier.livekit.localVideoTrack
-                          : null,
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: CameraFeed(
+                            blinkDetector: notifier.blinkDetector,
+                            localVideoTrack: matchState.videoConnected
+                                ? notifier.livekit.localVideoTrack
+                                : null,
+                            cameraPosition: matchState.cameraPosition,
+                          ),
+                        ),
+                        if (matchState.videoConnected)
+                          Positioned(
+                            right: 8,
+                            bottom: 8,
+                            child: _CameraSwitchButton(
+                              onPressed: () => notifier.switchCamera(),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ],
@@ -192,6 +207,32 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Switches which camera (front/back) is shown to the opponent. The front
+/// camera keeps running for blink detection regardless of which is selected.
+class _CameraSwitchButton extends StatelessWidget {
+  final VoidCallback onPressed;
+
+  const _CameraSwitchButton({required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onPressed,
+      customBorder: const CircleBorder(),
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.black.withOpacity(0.4),
+          border: Border.all(color: Colors.white24),
+        ),
+        child: const Icon(Icons.cameraswitch, color: Colors.white, size: 18),
       ),
     );
   }

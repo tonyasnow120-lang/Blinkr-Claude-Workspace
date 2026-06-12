@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/api/api_endpoints.dart';
+import 'package:livekit_client/livekit_client.dart' as livekit;
 import '../../../core/blink_detection/blink_detector.dart';
 import '../../../core/blink_detection/blink_event.dart';
 import '../../../core/blink_detection/face_tracking_service.dart';
@@ -43,6 +44,7 @@ class MatchState {
   final String? error;
   final bool opponentReady;
   final bool videoConnected;
+  final livekit.CameraPosition cameraPosition;
 
   const MatchState({
     this.phase = MatchPhase.lobby,
@@ -51,6 +53,7 @@ class MatchState {
     this.error,
     this.opponentReady = false,
     this.videoConnected = false,
+    this.cameraPosition = livekit.CameraPosition.front,
   });
 
   MatchState copyWith({
@@ -60,6 +63,7 @@ class MatchState {
     String? error,
     bool? opponentReady,
     bool? videoConnected,
+    livekit.CameraPosition? cameraPosition,
   }) =>
       MatchState(
         phase: phase ?? this.phase,
@@ -68,6 +72,7 @@ class MatchState {
         error: error,
         opponentReady: opponentReady ?? this.opponentReady,
         videoConnected: videoConnected ?? this.videoConnected,
+        cameraPosition: cameraPosition ?? this.cameraPosition,
       );
 }
 
@@ -119,12 +124,23 @@ class MatchNotifier extends StateNotifier<MatchState> {
     }
   }
 
-  /// Starts polling the local camera track for blinks. No-op when video
-  /// isn't connected — blink detection requires the LiveKit camera track.
+  /// Starts polling the front-facing camera track for blinks. No-op when
+  /// video isn't connected — blink detection requires a LiveKit camera
+  /// track. Safe to call again after [switchCamera] to repoint at the
+  /// dedicated front-facing capture.
   void _startFaceTracking() {
-    final track = _livekit.localVideoTrack;
+    final track = _livekit.blinkDetectionTrack;
     if (track == null) return;
     (_faceTracking ??= FaceTrackingService(_blinkDetector)).start(track);
+  }
+
+  /// Toggles which camera is published to the opponent between front and
+  /// back. The front camera keeps running for blink detection either way.
+  Future<void> switchCamera() async {
+    await _livekit.switchCamera();
+    if (!mounted) return;
+    state = state.copyWith(cameraPosition: _livekit.cameraPosition);
+    if (state.phase == MatchPhase.live) _startFaceTracking();
   }
 
   void _subscribeToRealtime() {

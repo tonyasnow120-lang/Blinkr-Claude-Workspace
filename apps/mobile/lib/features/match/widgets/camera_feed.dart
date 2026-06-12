@@ -8,8 +8,14 @@ class CameraFeed extends StatelessWidget {
   // ignore: unused_field
   final BlinkDetector blinkDetector;
   final livekit.LocalVideoTrack? localVideoTrack;
+  final livekit.CameraPosition cameraPosition;
 
-  const CameraFeed({super.key, required this.blinkDetector, this.localVideoTrack});
+  const CameraFeed({
+    super.key,
+    required this.blinkDetector,
+    this.localVideoTrack,
+    this.cameraPosition = livekit.CameraPosition.front,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +27,11 @@ class CameraFeed extends StatelessWidget {
         child: track != null
             ? livekit.VideoTrackRenderer(
                 track,
-                mirrorMode: livekit.VideoViewMirrorMode.mirror,
+                // Mirror the front camera so it behaves like a selfie
+                // preview; the back camera should render unmirrored.
+                mirrorMode: cameraPosition == livekit.CameraPosition.front
+                    ? livekit.VideoViewMirrorMode.mirror
+                    : livekit.VideoViewMirrorMode.off,
               )
             : const Center(
                 child: Icon(Icons.videocam_off, color: Colors.white54, size: 48),
