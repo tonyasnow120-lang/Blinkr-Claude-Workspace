@@ -5,6 +5,7 @@ import '../../../core/api/api_client.dart';
 import '../../../core/api/api_endpoints.dart';
 import '../../../core/blink_detection/blink_detector.dart';
 import '../../../core/blink_detection/blink_event.dart';
+import '../../../core/blink_detection/face_tracking_service.dart';
 import '../../../core/livekit/livekit_service.dart';
 import '../../../core/supabase/supabase_service.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -76,6 +77,7 @@ class MatchNotifier extends StateNotifier<MatchState> {
   final SupabaseService _supabase;
   final LiveKitService _livekit;
   final BlinkDetector _blinkDetector = BlinkDetector();
+  FaceTrackingService? _faceTracking;
   StreamSubscription<BlinkEvent>? _blinkSub;
   final StreamController<PowerUpEvent> _powerUpController =
       StreamController<PowerUpEvent>.broadcast();
@@ -106,10 +108,23 @@ class MatchNotifier extends StateNotifier<MatchState> {
         url: data['livekitUrl'] as String,
         token: data['livekitToken'] as String,
       );
-      if (mounted) state = state.copyWith(videoConnected: true);
+      if (mounted) {
+        state = state.copyWith(videoConnected: true);
+        // If the match went live before the video connected (slow token
+        // fetch), start face tracking now that a camera track exists.
+        if (state.phase == MatchPhase.live) _startFaceTracking();
+      }
     } catch (e) {
       // Video is best-effort — the match still works without it.
     }
+  }
+
+  /// Starts polling the local camera track for blinks. No-op when video
+  /// isn't connected — blink detection requires the LiveKit camera track.
+  void _startFaceTracking() {
+    final track = _livekit.localVideoTrack;
+    if (track == null) return;
+    (_faceTracking ??= FaceTrackingService(_blinkDetector)).start(track);
   }
 
   void _subscribeToRealtime() {
@@ -140,6 +155,7 @@ class MatchNotifier extends StateNotifier<MatchState> {
       onLive: (_) {
         state = state.copyWith(phase: MatchPhase.live);
         _startBlinkDetection();
+        _startFaceTracking();
       },
       onResult: (payload) {
         state = state.copyWith(
@@ -151,10 +167,12 @@ class MatchNotifier extends StateNotifier<MatchState> {
             durationMs: payload['durationMs'] as int?,
           ),
         );
+        _faceTracking?.stop();
         _blinkSub?.cancel();
       },
       onAbandoned: (_) {
         state = state.copyWith(phase: MatchPhase.abandoned);
+        _faceTracking?.stop();
         _blinkSub?.cancel();
       },
     );
@@ -192,6 +210,7 @@ class MatchNotifier extends StateNotifier<MatchState> {
 
   @override
   void dispose() {
+    _faceTracking?.dispose();
     _blinkSub?.cancel();
     _blinkDetector.dispose();
     _powerUpController.close();

@@ -242,8 +242,10 @@ jobs:
           cp /tmp/PrivacyInfo.xcprivacy ios/Runner/PrivacyInfo.xcprivacy
           # Fix bundle ID — flutter create uses directory name ('mobile') or pubspec
           # name ('blinkr'), neither of which is our registered bundle ID.
+          # Also raise the deployment target: google_mlkit_face_detection's
+          # MLKitFaceDetection pod requires iOS 15.5.
           sed -i '' \
-            's/com\.blinkr\.mobile/com.blinkr.app/g;s/com\.blinkr\.blinkr/com.blinkr.app/g' \
+            's/com\.blinkr\.mobile/com.blinkr.app/g;s/com\.blinkr\.blinkr/com.blinkr.app/g;s/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 15.5;/g' \
             ios/Runner.xcodeproj/project.pbxproj
 
       - name: Patch Podfile — disable code signing for CocoaPod targets
@@ -252,17 +254,31 @@ jobs:
           podfile_path = 'apps/mobile/ios/Podfile'
           with open(podfile_path, 'r') as f:
               content = f.read()
+
+          # google_mlkit_face_detection's MLKitFaceDetection pod requires
+          # iOS 15.5 — uncomment and raise the template's platform line.
+          old_platform = "# platform :ios, '12.0'"
+          new_platform = "platform :ios, '15.5'"
+          if old_platform in content:
+              content = content.replace(old_platform, new_platform, 1)
+          elif new_platform not in content:
+              # Newer Flutter templates may use a different default — replace
+              # any commented platform line.
+              import re
+              content = re.sub(r"# platform :ios, '[0-9.]+'", new_platform, content, count=1)
+
           marker = 'flutter_additional_ios_build_settings(target)'
           patch = (
               '\n      target.build_configurations.each do |config|\n'
               "        config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'\n"
+              "        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.5'\n"
               '      end'
           )
           if marker in content:
               content = content.replace(marker, marker + patch, 1)
               with open(podfile_path, 'w') as f:
                   f.write(content)
-              print('Podfile patched — CODE_SIGNING_ALLOWED=NO for pod targets')
+              print('Podfile patched — signing off + iOS 15.5 for pod targets')
           else:
               print('WARNING: Podfile marker not found, skipping')
           PYEOF

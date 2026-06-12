@@ -26,6 +26,10 @@ dependencies:
   crypto: ^3.0.0
   audioplayers: ^6.1.0
   livekit_client: ^2.3.0       # Live video/audio between matched players
+  flutter_webrtc: any          # Version governed by livekit_client; declared
+                               # for direct MediaStreamTrack.captureFrame() use
+  google_mlkit_face_detection: ^0.13.0  # On-device blink detection — eye-open
+                                        # probability (docs/FACE_TRACKING_SCOPE.md)
   shared_preferences: ^2.2.0
   image_picker: ^1.1.2
   # Matchmaking
