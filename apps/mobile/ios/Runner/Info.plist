@@ -44,7 +44,10 @@
     </array>
 
     <key>NSCameraUsageDescription</key>
-    <string>Blinkr uses your camera to detect blinks during a staring contest and to scan challenge QR codes.</string>
+    <string>Blinkr uses your camera to detect blinks during a staring contest, show live video to your opponent, and scan challenge QR codes.</string>
+
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Blinkr uses your microphone for live audio with your opponent during a match.</string>
 
     <key>NSPhotoLibraryUsageDescription</key>
     <string>Blinkr needs access to your photos to add them to your profile collage.</string>

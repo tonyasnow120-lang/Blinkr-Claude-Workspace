@@ -31,6 +31,7 @@ class MatchState {
   final MatchResult? result;
   final String? error;
   final bool opponentReady;
+  final bool videoConnected;
 
   const MatchState({
     this.phase = MatchPhase.lobby,
@@ -38,6 +39,7 @@ class MatchState {
     this.result,
     this.error,
     this.opponentReady = false,
+    this.videoConnected = false,
   });
 
   MatchState copyWith({
@@ -46,6 +48,7 @@ class MatchState {
     MatchResult? result,
     String? error,
     bool? opponentReady,
+    bool? videoConnected,
   }) =>
       MatchState(
         phase: phase ?? this.phase,
@@ -53,6 +56,7 @@ class MatchState {
         result: result ?? this.result,
         error: error,
         opponentReady: opponentReady ?? this.opponentReady,
+        videoConnected: videoConnected ?? this.videoConnected,
       );
 }
 
@@ -74,6 +78,23 @@ class MatchNotifier extends StateNotifier<MatchState> {
         _livekit = livekit,
         super(const MatchState()) {
     _subscribeToRealtime();
+    _connectVideo();
+  }
+
+  LiveKitService get livekit => _livekit;
+
+  Future<void> _connectVideo() async {
+    try {
+      final res = await _api.post(ApiEndpoints.matchToken(matchId));
+      final data = res['data'] as Map<String, dynamic>;
+      await _livekit.connect(
+        url: data['livekitUrl'] as String,
+        token: data['livekitToken'] as String,
+      );
+      if (mounted) state = state.copyWith(videoConnected: true);
+    } catch (e) {
+      // Video is best-effort — the match still works without it.
+    }
   }
 
   void _subscribeToRealtime() {

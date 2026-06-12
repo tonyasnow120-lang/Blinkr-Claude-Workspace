@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/match_provider.dart';
 import '../widgets/camera_feed.dart';
+import '../widgets/remote_video_feed.dart';
 import '../../../core/security/screen_security.dart';
 import '../../../core/audio/background_music.dart';
 
@@ -32,6 +33,8 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
   @override
   Widget build(BuildContext context) {
     final notifier = ref.read(matchNotifierProvider(widget.matchId).notifier);
+    final matchState = ref.watch(matchNotifierProvider(widget.matchId));
+    final room = notifier.livekit.room;
 
     ref.listen(matchNotifierProvider(widget.matchId), (prev, next) {
       if (next.phase == MatchPhase.result || next.phase == MatchPhase.abandoned) {
@@ -52,22 +55,28 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
                   Expanded(
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        color: Colors.grey[900],
-                        // TODO: mount RemoteVideoFeed(room: livekitRoom) here
-                        child: const Center(
-                          child: Text(
-                            'Opponent',
-                            style: TextStyle(color: Colors.white54),
-                          ),
-                        ),
-                      ),
+                      child: matchState.videoConnected && room != null
+                          ? RemoteVideoFeed(room: room)
+                          : Container(
+                              color: Colors.grey[900],
+                              child: const Center(
+                                child: Text(
+                                  'Opponent',
+                                  style: TextStyle(color: Colors.white54),
+                                ),
+                              ),
+                            ),
                     ),
                   ),
                   const SizedBox(height: 12),
                   SizedBox(
                     height: 160,
-                    child: CameraFeed(blinkDetector: notifier.blinkDetector),
+                    child: CameraFeed(
+                      blinkDetector: notifier.blinkDetector,
+                      localVideoTrack: matchState.videoConnected
+                          ? notifier.livekit.localVideoTrack
+                          : null,
+                    ),
                   ),
                 ],
               ),

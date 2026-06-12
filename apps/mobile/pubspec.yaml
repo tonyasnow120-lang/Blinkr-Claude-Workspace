@@ -25,6 +25,7 @@ dependencies:
   sign_in_with_apple: ^6.1.0
   crypto: ^3.0.0
   audioplayers: ^6.1.0
+  livekit_client: ^2.3.0       # Live video/audio between matched players
   shared_preferences: ^2.2.0
   image_picker: ^1.1.2
   # Matchmaking
