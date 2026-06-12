@@ -25,6 +25,14 @@ class MatchmakingService {
   Future<void> cancelChallenge(String code) =>
       _api.delete(ApiEndpoints.cancelChallenge(code));
 
+  /// Polled as a fallback to the `challenge.accepted` Realtime broadcast —
+  /// returns the challenge's current status and, once accepted, the
+  /// resulting matchId.
+  Future<Map<String, dynamic>> getChallenge(String code) async {
+    final response = await _api.get(ApiEndpoints.challengeByCode(code));
+    return response['data'] as Map<String, dynamic>;
+  }
+
   /// The challenger's own LiveKit credentials, fetched over authenticated
   /// HTTP after the `challenge.accepted` Realtime event delivers a matchId.
   Future<Map<String, dynamic>> getMatchToken(String matchId) async {

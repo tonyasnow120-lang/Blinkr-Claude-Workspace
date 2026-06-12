@@ -56,6 +56,10 @@ class MatchmakingNotifier extends StateNotifier<MatchmakingState> {
   final List<RealtimeChannel> _channels = [];
   bool _resolved = false;
 
+  /// Fallback to the `challenge.accepted` Realtime broadcast — polls the
+  /// challenge's status in case the broadcast is missed or never delivered.
+  Timer? _pollTimer;
+
   MatchmakingNotifier(this._service) : super(const MatchmakingState());
 
   Future<void> createChallenge({
@@ -65,6 +69,7 @@ class MatchmakingNotifier extends StateNotifier<MatchmakingState> {
     // Re-creating (e.g. QR regeneration) cancels the previous pending code,
     // but keeps listening on its realtime channel (see _channels above).
     await _cancelPending();
+    _pollTimer?.cancel();
     _resolved = false;
     state = const MatchmakingState(phase: MatchmakingPhase.creating);
 
@@ -76,12 +81,36 @@ class MatchmakingNotifier extends StateNotifier<MatchmakingState> {
         phase: MatchmakingPhase.waiting,
         challenge: challenge,
       );
+      _startPolling(challenge['code'] as String);
     } catch (e) {
       state = MatchmakingState(
         phase: MatchmakingPhase.error,
         error: MatchmakingError.from(e),
       );
     }
+  }
+
+  /// Polls `GET /challenges/:code` every few seconds as a fallback in case
+  /// the `challenge.accepted` Realtime broadcast is dropped or never
+  /// received (e.g. channel subscription issues).
+  void _startPolling(String code) {
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) async {
+      if (_resolved) {
+        _pollTimer?.cancel();
+        return;
+      }
+      try {
+        final result = await _service.getChallenge(code);
+        final matchId = result['matchId'] as String?;
+        if (result['status'] == 'accepted' && matchId != null) {
+          _pollTimer?.cancel();
+          _onAccepted(matchId);
+        }
+      } catch (_) {
+        // Best-effort — keep polling, the realtime broadcast may still land.
+      }
+    });
   }
 
   void _subscribe(String challengeId) {
@@ -121,6 +150,7 @@ class MatchmakingNotifier extends StateNotifier<MatchmakingState> {
   /// Cancels the pending challenge (player navigated away before an
   /// opponent joined). Safe to call from screen dispose.
   Future<void> cancel() async {
+    _pollTimer?.cancel();
     await _cancelPending();
     await _removeChannels();
     if (mounted) state = const MatchmakingState();
@@ -145,6 +175,7 @@ class MatchmakingNotifier extends StateNotifier<MatchmakingState> {
 
   @override
   void dispose() {
+    _pollTimer?.cancel();
     _cancelPending();
     _removeChannels();
     super.dispose();

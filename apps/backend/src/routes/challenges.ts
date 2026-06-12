@@ -124,11 +124,24 @@ export async function challengeRoutes(app: FastifyInstance) {
       })
     }
 
-    // Full details for participants
+    // Full details for participants. When accepted, include the resulting
+    // match id so the challenger can poll for it as a fallback to the
+    // realtime challenge.accepted broadcast.
+    let matchId: string | undefined
+    if (challenge.status === 'accepted') {
+      const [match] = await db
+        .select({ id: matches.id })
+        .from(matches)
+        .where(eq(matches.challengeId, challenge.id))
+        .limit(1)
+      matchId = match?.id
+    }
+
     return reply.send({
       data: {
         ...challenge,
         challenger,
+        matchId,
       },
     })
   })
