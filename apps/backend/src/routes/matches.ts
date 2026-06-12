@@ -128,15 +128,21 @@ export async function matchRoutes(app: FastifyInstance) {
 
     // Record this player's ready flag, then atomically flip to countdown
     // only when both flags are set (the WHERE guard prevents a double
-    // countdown if both players ready up simultaneously).
-    await db
+    // countdown if both players ready up simultaneously). Both flags are
+    // read back from the post-update row — checking the pre-fetched row
+    // would miss an opponent who readied between the fetch and now.
+    const [updated] = await db
       .update(matches)
       .set(isPlayerOne ? { playerOneReady: true } : { playerTwoReady: true })
       .where(eq(matches.id, id))
+      .returning({
+        playerOneReady: matches.playerOneReady,
+        playerTwoReady: matches.playerTwoReady,
+      })
 
     broadcastMatchEvent(id, 'match.player_ready', { userId })
 
-    const bothReady = isPlayerOne ? match.playerTwoReady : match.playerOneReady
+    const bothReady = updated?.playerOneReady && updated?.playerTwoReady
     if (!bothReady) {
       return reply.send({ data: { waitingForOpponent: true } })
     }

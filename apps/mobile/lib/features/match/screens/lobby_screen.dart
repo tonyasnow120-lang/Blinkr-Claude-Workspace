@@ -172,6 +172,10 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
           '/match/${widget.matchId}/countdown',
           extra: {'startsAt': next.countdownStartsAt?.toIso8601String()},
         );
+      } else if (next.phase == MatchPhase.live) {
+        // Countdown was missed entirely (e.g. broadcast dropped and the
+        // polling fallback caught up after it elapsed) — go straight in.
+        context.pushReplacement('/match/${widget.matchId}/contest');
       } else if (next.phase == MatchPhase.abandoned) {
         context.pushReplacement('/match/${widget.matchId}/result');
       } else if (next.opponentReady && prev?.opponentReady == false) {

@@ -90,6 +90,8 @@ class MatchNotifier extends StateNotifier<MatchState> {
   /// Incoming power-ups fired by the opponent (own ones are filtered out).
   Stream<PowerUpEvent> get powerUpStream => _powerUpController.stream;
 
+  Timer? _pollTimer;
+
   MatchNotifier({
     required this.matchId,
     required ApiClient api,
@@ -101,6 +103,7 @@ class MatchNotifier extends StateNotifier<MatchState> {
         super(const MatchState()) {
     _subscribeToRealtime();
     _connectVideo();
+    _startPolling();
   }
 
   LiveKitService get livekit => _livekit;
@@ -162,36 +165,124 @@ class MatchNotifier extends StateNotifier<MatchState> {
         ));
       },
       onCountdownStart: (payload) {
-        final startsAt = DateTime.parse(payload['startsAt'] as String);
-        state = state.copyWith(
-          phase: MatchPhase.countdown,
-          countdownStartsAt: startsAt,
-        );
+        final startsAt = DateTime.tryParse(payload['startsAt'] as String? ?? '');
+        if (startsAt != null) _handleCountdown(startsAt);
       },
-      onLive: (_) {
-        state = state.copyWith(phase: MatchPhase.live);
-        _startBlinkDetection();
-        _startFaceTracking();
-      },
+      onLive: (_) => _handleLive(),
       onResult: (payload) {
-        state = state.copyWith(
-          phase: MatchPhase.result,
-          result: MatchResult(
-            winnerId: payload['winnerId'] as String,
-            loserId: payload['loserId'] as String,
-            reason: payload['reason'] as String,
-            durationMs: payload['durationMs'] as int?,
-          ),
-        );
-        _faceTracking?.stop();
-        _blinkSub?.cancel();
+        final winnerId = payload['winnerId'] as String?;
+        final loserId = payload['loserId'] as String?;
+        if (winnerId == null || loserId == null) return;
+        _handleResult(MatchResult(
+          winnerId: winnerId,
+          loserId: loserId,
+          reason: payload['reason'] as String? ?? 'blink',
+          durationMs: payload['durationMs'] as int?,
+        ));
       },
-      onAbandoned: (_) {
-        state = state.copyWith(phase: MatchPhase.abandoned);
-        _faceTracking?.stop();
-        _blinkSub?.cancel();
-      },
+      onAbandoned: (_) => _handleAbandoned(),
     );
+  }
+
+  // Phase transitions are idempotent so the Realtime broadcast and the
+  // polling fallback can both fire without double-starting detection or
+  // regressing the phase.
+
+  void _handleCountdown(DateTime startsAt) {
+    if (!mounted || state.phase != MatchPhase.lobby) return;
+    state = state.copyWith(
+      phase: MatchPhase.countdown,
+      countdownStartsAt: startsAt,
+    );
+  }
+
+  void _handleLive() {
+    if (!mounted ||
+        state.phase == MatchPhase.live ||
+        state.phase == MatchPhase.result ||
+        state.phase == MatchPhase.abandoned) {
+      return;
+    }
+    state = state.copyWith(phase: MatchPhase.live);
+    _startBlinkDetection();
+    _startFaceTracking();
+  }
+
+  void _handleResult(MatchResult result) {
+    if (!mounted ||
+        state.phase == MatchPhase.result ||
+        state.phase == MatchPhase.abandoned) {
+      return;
+    }
+    state = state.copyWith(phase: MatchPhase.result, result: result);
+    _faceTracking?.stop();
+    _blinkSub?.cancel();
+    _stopPolling();
+  }
+
+  void _handleAbandoned() {
+    if (!mounted || state.phase == MatchPhase.abandoned) return;
+    state = state.copyWith(phase: MatchPhase.abandoned);
+    _faceTracking?.stop();
+    _blinkSub?.cancel();
+    _stopPolling();
+  }
+
+  /// Polling fallback for the match's server state. Realtime broadcasts are
+  /// the fast path, but they can be dropped (the challenge-accept flow has
+  /// the same fallback for the same reason) — without this, a missed
+  /// `match.countdown_start` strands both players in the lobby.
+  void _startPolling() {
+    _pollTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
+      if (!mounted) return;
+      try {
+        final res = await _api.get(ApiEndpoints.matchById(matchId));
+        if (!mounted) return;
+        _applyServerState(res['data'] as Map<String, dynamic>);
+      } catch (_) {
+        // Best-effort — keep polling, the broadcast may still land.
+      }
+    });
+  }
+
+  void _stopPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = null;
+  }
+
+  void _applyServerState(Map<String, dynamic> match) {
+    final myId = Supabase.instance.client.auth.currentUser?.id;
+    final opponentReady = match['playerOneId'] == myId
+        ? match['playerTwoReady'] == true
+        : match['playerOneReady'] == true;
+    if (opponentReady && !state.opponentReady) {
+      state = state.copyWith(opponentReady: true);
+    }
+
+    switch (match['status'] as String?) {
+      case 'countdown':
+        final startsAt =
+            DateTime.tryParse(match['startedAt'] as String? ?? '');
+        if (startsAt != null) _handleCountdown(startsAt);
+        break;
+      case 'live':
+        _handleLive();
+        break;
+      case 'completed':
+        final winnerId = match['winnerId'] as String?;
+        final loserId = match['loserId'] as String?;
+        if (winnerId == null || loserId == null) break;
+        _handleResult(MatchResult(
+          winnerId: winnerId,
+          loserId: loserId,
+          reason: match['resultReason'] as String? ?? 'blink',
+          durationMs: match['durationMs'] as int?,
+        ));
+        break;
+      case 'abandoned':
+        _handleAbandoned();
+        break;
+    }
   }
 
   void _startBlinkDetection() {
@@ -226,6 +317,7 @@ class MatchNotifier extends StateNotifier<MatchState> {
 
   @override
   void dispose() {
+    _stopPolling();
     _faceTracking?.dispose();
     _blinkSub?.cancel();
     _blinkDetector.dispose();

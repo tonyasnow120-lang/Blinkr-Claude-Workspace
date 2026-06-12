@@ -118,7 +118,11 @@ class MatchmakingNotifier extends StateNotifier<MatchmakingState> {
       ..onBroadcast(
         event: 'challenge.accepted',
         callback: (payload) {
-          final matchId = payload['matchId'] as String?;
+          // The callback receives the broadcast envelope; the server's
+          // data is nested under `payload`.
+          final data = payload['payload'];
+          final matchId =
+              (data is Map ? data['matchId'] : payload['matchId']) as String?;
           if (matchId != null) _onAccepted(matchId);
         },
       )
