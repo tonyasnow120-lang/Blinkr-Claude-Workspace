@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../../core/supabase/supabase_service.dart';
+import '../matchmaking_service.dart';
 import 'matchmaking_provider.dart';
 
 /// An incoming targeted challenge (friend/contact/proximity) from another

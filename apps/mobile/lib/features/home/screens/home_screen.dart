@@ -378,3 +378,43 @@ class _StatsStrip extends StatelessWidget {
     );
   }
 }
+
+// ── Matchmaking shortcut chip ─────────────────────────────────────────────────
+class _MatchmakingShortcut extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String route;
+
+  const _MatchmakingShortcut({
+    required this.icon,
+    required this.label,
+    required this.route,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () => context.push(route),
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: Colors.white.withAlpha(180), size: 22),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: Colors.white.withAlpha(115),
+                fontSize: 8,
+                fontWeight: FontWeight.w300,
+                letterSpacing: 2,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

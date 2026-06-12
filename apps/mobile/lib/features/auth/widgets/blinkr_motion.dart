@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../shared/widgets/watching_eye.dart';
 
 /// The animated "watching eye" graphic shared by the auth screens — see
