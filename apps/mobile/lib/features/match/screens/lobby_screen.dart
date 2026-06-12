@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/match_provider.dart';
+import '../widgets/camera_feed.dart';
 import '../../../core/api/api_endpoints.dart';
 import '../../../core/audio/background_music.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -162,6 +163,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
   @override
   Widget build(BuildContext context) {
     final matchState = ref.watch(matchNotifierProvider(widget.matchId));
+    final notifier = ref.read(matchNotifierProvider(widget.matchId).notifier);
 
     ref.listen(matchNotifierProvider(widget.matchId), (prev, next) {
       if (next.phase == MatchPhase.countdown) {
@@ -171,6 +173,11 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
         );
       } else if (next.phase == MatchPhase.abandoned) {
         context.pushReplacement('/match/${widget.matchId}/result');
+      } else if (next.opponentReady && prev?.opponentReady == false) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Your opponent is ready!'),
+          duration: Duration(seconds: 2),
+        ));
       }
     });
 
@@ -202,7 +209,17 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 24),
+              SizedBox(
+                height: 180,
+                child: CameraFeed(
+                  blinkDetector: notifier.blinkDetector,
+                  localVideoTrack: matchState.videoConnected
+                      ? notifier.livekit.localVideoTrack
+                      : null,
+                ),
+              ),
+              const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
