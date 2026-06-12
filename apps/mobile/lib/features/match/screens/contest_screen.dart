@@ -1,11 +1,14 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/match_provider.dart';
 import '../widgets/camera_feed.dart';
 import '../widgets/remote_video_feed.dart';
+import '../widgets/powerup_overlay.dart';
 import '../../../core/security/screen_security.dart';
 import '../../../core/audio/background_music.dart';
+import '../../../shared/widgets/line_eye.dart';
 
 class ContestScreen extends ConsumerStatefulWidget {
   final String matchId;
@@ -17,17 +20,43 @@ class ContestScreen extends ConsumerStatefulWidget {
 }
 
 class _ContestScreenState extends ConsumerState<ContestScreen> {
+  StreamSubscription<PowerUpEvent>? _powerUpSub;
+  PowerUpEvent? _activePowerUp;
+  final Set<String> _usedPowerUps = {};
+
   @override
   void initState() {
     super.initState();
     // Block screenshots and screen recording during live contest (GAP-15)
     ScreenSecurity.enableSecureMode();
+    _powerUpSub = ref
+        .read(matchNotifierProvider(widget.matchId).notifier)
+        .powerUpStream
+        .listen((event) {
+      if (mounted) setState(() => _activePowerUp = event);
+    });
   }
 
   @override
   void dispose() {
+    _powerUpSub?.cancel();
     ScreenSecurity.disableSecureMode();
     super.dispose();
+  }
+
+  Future<void> _firePowerUp(String type) async {
+    setState(() => _usedPowerUps.add(type));
+    try {
+      await ref
+          .read(matchNotifierProvider(widget.matchId).notifier)
+          .firePowerUp(type);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _usedPowerUps.remove(type));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.toString().replaceFirst('Exception: ', '')),
+      ));
+    }
   }
 
   @override
@@ -81,6 +110,39 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
                 ],
               ),
             ),
+            // Distraction power-ups — each usable once per match.
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: 192,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _PowerUpButton(
+                    label: 'Swarm',
+                    used: _usedPowerUps.contains('eye_swarm'),
+                    onPressed: () => _firePowerUp('eye_swarm'),
+                    child: const LineEyeIcon(size: 20, color: Colors.white),
+                  ),
+                  const SizedBox(width: 14),
+                  _PowerUpButton(
+                    label: 'Flash',
+                    used: _usedPowerUps.contains('flash'),
+                    onPressed: () => _firePowerUp('flash'),
+                    child:
+                        const Icon(Icons.bolt, color: Colors.white, size: 22),
+                  ),
+                  const SizedBox(width: 14),
+                  _PowerUpButton(
+                    label: 'Photos',
+                    used: _usedPowerUps.contains('photo_bomb'),
+                    onPressed: () => _firePowerUp('photo_bomb'),
+                    child: const Icon(Icons.collections,
+                        color: Colors.white, size: 20),
+                  ),
+                ],
+              ),
+            ),
             Positioned(
               top: 16,
               right: 16,
@@ -118,8 +180,67 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
               left: 8,
               child: MusicToggleButton(),
             ),
+            if (_activePowerUp != null)
+              Positioned.fill(
+                child: PowerUpOverlay(
+                  key: ObjectKey(_activePowerUp),
+                  event: _activePowerUp!,
+                  onDone: () {
+                    if (mounted) setState(() => _activePowerUp = null);
+                  },
+                ),
+              ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _PowerUpButton extends StatelessWidget {
+  final String label;
+  final bool used;
+  final VoidCallback onPressed;
+  final Widget child;
+
+  const _PowerUpButton({
+    required this.label,
+    required this.used,
+    required this.onPressed,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: used ? 0.25 : 1.0,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          InkWell(
+            onTap: used ? null : onPressed,
+            customBorder: const CircleBorder(),
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.08),
+                border: Border.all(color: Colors.white24),
+              ),
+              child: Center(child: child),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label.toUpperCase(),
+            style: const TextStyle(
+              color: Colors.white38,
+              fontSize: 8,
+              letterSpacing: 2,
+            ),
+          ),
+        ],
       ),
     );
   }

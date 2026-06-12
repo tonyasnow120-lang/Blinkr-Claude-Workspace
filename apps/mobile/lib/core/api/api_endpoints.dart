@@ -19,6 +19,7 @@ class ApiEndpoints {
   static String matchReady(String id) => '/v1/matches/$id/ready';
   static String matchBlink(String id) => '/v1/matches/$id/blink';
   static String matchAbandon(String id) => '/v1/matches/$id/abandon';
+  static String matchPowerup(String id) => '/v1/matches/$id/powerup';
 
   // Matchmaking
   static const String userSearch = '/v1/users/search';

@@ -11,6 +11,16 @@ import '../../auth/providers/auth_provider.dart';
 
 enum MatchPhase { lobby, countdown, live, result, abandoned }
 
+/// A distraction effect fired by the opponent. `type` is an open set —
+/// unknown types are ignored by the overlay, so new effects (including
+/// face-anchored AR lenses in v1.1) can ship server-first.
+class PowerUpEvent {
+  final String type;
+  final List<String> photoUrls;
+
+  const PowerUpEvent({required this.type, this.photoUrls = const []});
+}
+
 class MatchResult {
   final String winnerId;
   final String loserId;
@@ -67,6 +77,11 @@ class MatchNotifier extends StateNotifier<MatchState> {
   final LiveKitService _livekit;
   final BlinkDetector _blinkDetector = BlinkDetector();
   StreamSubscription<BlinkEvent>? _blinkSub;
+  final StreamController<PowerUpEvent> _powerUpController =
+      StreamController<PowerUpEvent>.broadcast();
+
+  /// Incoming power-ups fired by the opponent (own ones are filtered out).
+  Stream<PowerUpEvent> get powerUpStream => _powerUpController.stream;
 
   MatchNotifier({
     required this.matchId,
@@ -106,6 +121,14 @@ class MatchNotifier extends StateNotifier<MatchState> {
         if (payload['userId'] != null && payload['userId'] != myId) {
           state = state.copyWith(opponentReady: true);
         }
+      },
+      onPowerUp: (payload) {
+        final myId = Supabase.instance.client.auth.currentUser?.id;
+        if (payload['fromUserId'] == myId) return;
+        _powerUpController.add(PowerUpEvent(
+          type: payload['type'] as String? ?? '',
+          photoUrls: (payload['photoUrls'] as List?)?.cast<String>() ?? const [],
+        ));
       },
       onCountdownStart: (payload) {
         final startsAt = DateTime.parse(payload['startsAt'] as String);
@@ -158,6 +181,10 @@ class MatchNotifier extends StateNotifier<MatchState> {
     await _api.post(ApiEndpoints.matchReady(matchId));
   }
 
+  Future<void> firePowerUp(String type) async {
+    await _api.post(ApiEndpoints.matchPowerup(matchId), body: {'type': type});
+  }
+
   Future<void> abandon() async {
     await _api.post(ApiEndpoints.matchAbandon(matchId));
     state = state.copyWith(phase: MatchPhase.abandoned);
@@ -167,6 +194,7 @@ class MatchNotifier extends StateNotifier<MatchState> {
   void dispose() {
     _blinkSub?.cancel();
     _blinkDetector.dispose();
+    _powerUpController.close();
     _supabase.unsubscribeFromMatch(matchId);
     _livekit.disconnect();
     super.dispose();

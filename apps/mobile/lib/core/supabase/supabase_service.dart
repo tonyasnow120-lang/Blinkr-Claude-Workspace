@@ -18,6 +18,7 @@ class SupabaseService {
     required void Function(Map<String, dynamic> payload) onResult,
     required void Function(Map<String, dynamic> payload) onAbandoned,
     void Function(Map<String, dynamic> payload)? onPlayerReady,
+    void Function(Map<String, dynamic> payload)? onPowerUp,
   }) {
     matchChannel(matchId)
         .onBroadcast(
@@ -27,6 +28,10 @@ class SupabaseService {
         .onBroadcast(
           event: 'match.player_ready',
           callback: (payload) => onPlayerReady?.call(payload),
+        )
+        .onBroadcast(
+          event: 'match.powerup',
+          callback: (payload) => onPowerUp?.call(payload),
         )
         .onBroadcast(
           event: 'match.countdown_start',

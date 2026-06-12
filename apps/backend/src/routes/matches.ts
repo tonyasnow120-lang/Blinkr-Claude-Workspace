@@ -1,8 +1,8 @@
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
-import { and, eq, sql } from 'drizzle-orm'
+import { and, desc, eq, sql } from 'drizzle-orm'
 import { db } from '../db/index.js'
-import { matches, users, userStats } from '../db/schema.js'
+import { matches, users, userPhotos, userStats } from '../db/schema.js'
 import { getMatchById, processBlinkAndAdjudicate } from '../services/matchService.js'
 import * as livekitService from '../services/livekitService.js'
 import { broadcastEvent, matchTopic } from '../services/realtimeService.js'
@@ -14,6 +14,20 @@ const BlinkEventSchema = z.object({
   earValue: z.number().min(0).max(1),
   eventType: z.enum(['blink', 'gaze_break']),
 })
+
+// Screen-space distraction effects rendered over the opponent's contest
+// screen. Face-anchored AR lens types will join this enum in v1.1 —
+// clients ignore types they don't recognise, so adding new ones is
+// backward-compatible.
+const PowerUpSchema = z.object({
+  type: z.enum(['eye_swarm', 'flash', 'photo_bomb']),
+})
+
+// Each player may fire each power-up type once per match. Tracked
+// in-memory ("matchId" -> set of "userId:type") and dropped when the match
+// ends; a server restart mid-match resets usage, which is acceptable for a
+// cosmetic feature.
+const powerUpUsage = new Map<string, Set<string>>()
 
 // Fire-and-forget Realtime broadcast on the match channel the mobile
 // client subscribes to (`match:{matchId}`). Failures are logged without
@@ -186,6 +200,7 @@ export async function matchRoutes(app: FastifyInstance) {
     )
 
     if (result) {
+      powerUpUsage.delete(id)
       broadcastMatchEvent(id, 'match.result', {
         winnerId: result.winnerId,
         loserId: result.loserId,
@@ -198,6 +213,62 @@ export async function matchRoutes(app: FastifyInstance) {
     }
 
     return reply.send({ data: { recorded: true, adjudicated: !!result } })
+  })
+
+  // Fires a distraction power-up at the opponent. Broadcast on the match
+  // channel; the attacker's own client ignores events it originated.
+  app.post('/matches/:id/powerup', async (request, reply) => {
+    const userId = (request.user as { sub: string }).sub
+    const { id } = request.params as { id: string }
+    const { type } = PowerUpSchema.parse(request.body)
+
+    const match = await getMatchById(db, id)
+
+    if (match.playerOneId !== userId && match.playerTwoId !== userId) {
+      logSecurityEvent(request.log, 'idor_attempt', {
+        userId,
+        matchId: id,
+        route: 'POST /matches/:id/powerup',
+      })
+      throw Errors.forbidden()
+    }
+
+    if (match.status !== 'live') {
+      throw Errors.conflict('Power-ups can only be used during a live match')
+    }
+
+    const usageKey = `${userId}:${type}`
+    const used = powerUpUsage.get(id) ?? new Set<string>()
+    if (used.has(usageKey)) {
+      throw Errors.conflict('Power-up already used this match')
+    }
+
+    let photoUrls: string[] = []
+    if (type === 'photo_bomb') {
+      const photos = await db
+        .select({ url: userPhotos.url })
+        .from(userPhotos)
+        .where(eq(userPhotos.userId, userId))
+        .orderBy(desc(userPhotos.createdAt))
+        .limit(6)
+      photoUrls = photos.map((p) => p.url)
+      if (photoUrls.length === 0) {
+        throw Errors.validation(
+          'Add photos to your profile collage to use the photo bomb',
+        )
+      }
+    }
+
+    used.add(usageKey)
+    powerUpUsage.set(id, used)
+
+    broadcastMatchEvent(id, 'match.powerup', {
+      type,
+      fromUserId: userId,
+      photoUrls,
+    })
+
+    return reply.send({ data: { fired: true, type } })
   })
 
   app.post('/matches/:id/abandon', async (request, reply) => {
@@ -241,6 +312,7 @@ export async function matchRoutes(app: FastifyInstance) {
         .where(eq(userStats.userId, otherId))
     }
 
+    powerUpUsage.delete(id)
     broadcastMatchEvent(id, 'match.abandoned')
     livekitService.deleteRoom(match.livekitRoomName).catch((err) =>
       request.log.error({ err, matchId: id }, 'Failed to delete LiveKit room'),
