@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/audio/background_music.dart';
+import '../../../core/theme/app_colors.dart';
 import '../providers/challenge_provider.dart';
 
 class JoinChallengeScreen extends ConsumerStatefulWidget {
@@ -59,11 +60,12 @@ class _JoinChallengeScreenState extends ConsumerState<JoinChallengeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        foregroundColor: Colors.white,
+        foregroundColor: colors.foreground,
         title: const Text('Join Challenge'),
         actions: const [MusicToggleButton()],
       ),
@@ -73,17 +75,17 @@ class _JoinChallengeScreenState extends ConsumerState<JoinChallengeScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 40),
-            const Text(
+            Text(
               'Enter the 9-letter code',
-              style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+              style: TextStyle(color: colors.foreground, fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
             TextField(
               controller: _codeController,
               textCapitalization: TextCapitalization.characters,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: colors.foreground,
                 fontSize: 24,
                 letterSpacing: 5,
                 fontWeight: FontWeight.bold,
@@ -93,12 +95,12 @@ class _JoinChallengeScreenState extends ConsumerState<JoinChallengeScreen> {
                 counterText: '',
                 hintText: 'XXXXXXXXX',
                 hintStyle: TextStyle(
-                  color: Colors.white.withOpacity(0.3),
+                  color: colors.ink(0.3),
                   letterSpacing: 5,
                   fontSize: 24,
                 ),
                 filled: true,
-                fillColor: Colors.white.withOpacity(0.1),
+                fillColor: colors.ink(0.1),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -113,8 +115,8 @@ class _JoinChallengeScreenState extends ConsumerState<JoinChallengeScreen> {
             FilledButton(
               onPressed: _loading ? null : _accept,
               style: FilledButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.black,
+                backgroundColor: colors.foreground,
+                foregroundColor: colors.background,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),

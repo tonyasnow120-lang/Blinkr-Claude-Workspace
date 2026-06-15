@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/audio/background_music.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/line_eye.dart';
 
 class WelcomeScreen extends StatefulWidget {
@@ -81,12 +82,16 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
+    final colors = context.colors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    SystemChrome.setSystemUIOverlayStyle(
+      isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+    );
     final size = MediaQuery.sizeOf(context);
     final eyeCenterY = size.height * 0.38;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colors.background,
       body: Stack(
         alignment: Alignment.center,
         children: [
@@ -102,6 +107,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 arcRotation: _arcCtrl.value,
                 blink: _blinkCtrl.value,
                 eyeCenterY: eyeCenterY,
+                color: colors.foreground,
+                background: colors.background,
               ),
             ),
           ),
@@ -127,30 +134,30 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Text(
+                      Text(
                         'BLINKR',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: colors.foreground,
                           fontSize: 34,
                           fontWeight: FontWeight.w200,
                           letterSpacing: 13,
                         ),
                       ),
                       const SizedBox(width: 3),
-                      _BlinkingCursor(),
+                      _BlinkingCursor(color: colors.foreground),
                     ],
                   ),
                   const SizedBox(height: 13),
                   Container(
                     width: 40,
                     height: 0.5,
-                    color: Colors.white.withAlpha(71),
+                    color: colors.ink(0.28),
                   ),
                   const SizedBox(height: 11),
-                  const Text(
+                  Text(
                     'FIRST TO BLINK LOSES.',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: colors.foreground,
                       fontSize: 9.5,
                       fontWeight: FontWeight.w300,
                       letterSpacing: 5,
@@ -176,8 +183,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 child: ElevatedButton(
                   onPressed: () => context.push('/login'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
+                    backgroundColor: colors.foreground,
+                    foregroundColor: colors.background,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(4),
@@ -209,6 +216,9 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 }
 
 class _BlinkingCursor extends StatefulWidget {
+  final Color color;
+  const _BlinkingCursor({required this.color});
+
   @override
   State<_BlinkingCursor> createState() => _BlinkingCursorState();
 }
@@ -228,12 +238,12 @@ class _BlinkingCursorState extends State<_BlinkingCursor>
   @override
   Widget build(BuildContext context) => FadeTransition(
         opacity: _ctrl,
-        child: const Padding(
-          padding: EdgeInsets.only(bottom: 2),
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 2),
           child: Text(
             '|',
             style: TextStyle(
-                color: Colors.white,
+                color: widget.color,
                 fontSize: 32,
                 fontWeight: FontWeight.w100),
           ),
@@ -247,6 +257,8 @@ class _SplashPainter extends CustomPainter {
   final double arcRotation;
   final double blink;
   final double eyeCenterY;
+  final Color color;
+  final Color background;
 
   const _SplashPainter({
     required this.pulse,
@@ -254,6 +266,8 @@ class _SplashPainter extends CustomPainter {
     required this.arcRotation,
     required this.blink,
     required this.eyeCenterY,
+    required this.color,
+    required this.background,
   });
 
   @override
@@ -261,9 +275,10 @@ class _SplashPainter extends CustomPainter {
     final center = Offset(size.width / 2, eyeCenterY);
     final base = size.width;
     LineEye.drawRings(canvas, center, base,
-        rotation: rotation, arcRotation: arcRotation);
-    LineEye.drawPulseRings(canvas, center, base, pulse);
-    LineEye.drawEye(canvas, center, base, blink: blink);
+        rotation: rotation, arcRotation: arcRotation, color: color);
+    LineEye.drawPulseRings(canvas, center, base, pulse, color: color);
+    LineEye.drawEye(canvas, center, base,
+        blink: blink, color: color, background: background);
   }
 
   @override
@@ -271,5 +286,7 @@ class _SplashPainter extends CustomPainter {
       old.pulse != pulse ||
       old.rotation != rotation ||
       old.arcRotation != arcRotation ||
-      old.blink != blink;
+      old.blink != blink ||
+      old.color != color ||
+      old.background != background;
 }

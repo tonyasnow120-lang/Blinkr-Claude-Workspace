@@ -12,12 +12,16 @@ class WatchingEye extends StatefulWidget {
   final double height;
   final bool wander;
   final bool crying;
+  final Color color;
+  final Color background;
 
   const WatchingEye({
     super.key,
     this.height = 230,
     this.wander = true,
     this.crying = false,
+    this.color = Colors.white,
+    this.background = Colors.black,
   });
 
   @override
@@ -85,6 +89,8 @@ class _WatchingEyeState extends State<WatchingEye>
               wander: widget.wander ? _wanderCtrl.value : 0,
               crying: widget.crying,
               tearPhase: _tearCtrl.value,
+              color: widget.color,
+              background: widget.background,
             ),
           ),
         ),
@@ -101,6 +107,8 @@ class _WatchingEyePainter extends CustomPainter {
   final double wander;
   final bool crying;
   final double tearPhase;
+  final Color color;
+  final Color background;
 
   const _WatchingEyePainter({
     required this.rotation,
@@ -110,6 +118,8 @@ class _WatchingEyePainter extends CustomPainter {
     required this.wander,
     required this.crying,
     required this.tearPhase,
+    required this.color,
+    required this.background,
   });
 
   @override
@@ -117,8 +127,8 @@ class _WatchingEyePainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final base = size.height;
     LineEye.drawRings(canvas, center, base,
-        rotation: rotation, arcRotation: arcRotation);
-    LineEye.drawPulseRings(canvas, center, base, pulse);
+        rotation: rotation, arcRotation: arcRotation, color: color);
+    LineEye.drawPulseRings(canvas, center, base, pulse, color: color);
     LineEye.drawEye(
       canvas,
       center,
@@ -127,6 +137,8 @@ class _WatchingEyePainter extends CustomPainter {
       wander: wander,
       crying: crying,
       tearPhase: tearPhase,
+      color: color,
+      background: background,
     );
   }
 
@@ -138,5 +150,7 @@ class _WatchingEyePainter extends CustomPainter {
       old.blink != blink ||
       old.wander != wander ||
       old.crying != crying ||
-      old.tearPhase != tearPhase;
+      old.tearPhase != tearPhase ||
+      old.color != color ||
+      old.background != background;
 }

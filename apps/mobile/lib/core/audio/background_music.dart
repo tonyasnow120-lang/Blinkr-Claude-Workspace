@@ -2,6 +2,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../theme/app_colors.dart';
 
 final backgroundMusicProvider =
     ChangeNotifierProvider<BackgroundMusicController>((ref) {
@@ -89,6 +90,7 @@ class MusicToggleButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final muted = ref.watch(backgroundMusicProvider).muted;
+    final ink = context.colors.foreground;
     return Padding(
       padding: const EdgeInsets.all(8),
       child: GestureDetector(
@@ -100,14 +102,14 @@ class MusicToggleButton extends ConsumerWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(
-              color: Colors.white.withAlpha(muted ? 41 : 77),
+              color: ink.withOpacity(muted ? 0.16 : 0.3),
               width: 0.8,
             ),
           ),
           child: Icon(
             muted ? Icons.music_off_outlined : Icons.music_note_outlined,
             size: 15,
-            color: Colors.white.withAlpha(muted ? 97 : 200),
+            color: ink.withOpacity(muted ? 0.38 : 0.78),
           ),
         ),
       ),

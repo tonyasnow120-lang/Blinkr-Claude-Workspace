@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../../core/audio/background_music.dart';
+import '../../../core/theme/app_colors.dart';
 import '../providers/matchmaking_provider.dart';
 
 /// QR matchmaking, display side (Feature 4). Shows a one-time challenge as
@@ -69,12 +70,13 @@ class _QrMatchScreenState extends ConsumerState<QrMatchScreen> {
     });
 
     final deepLink = state.deepLink;
+    final colors = context.colors;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        foregroundColor: Colors.white,
+        foregroundColor: colors.foreground,
         title: const Text('QR Match'),
         actions: const [MusicToggleButton()],
       ),
@@ -95,22 +97,24 @@ class _QrMatchScreenState extends ConsumerState<QrMatchScreen> {
                 TextButton(
                   onPressed: _generate,
                   child:
-                      const Text('Retry', style: TextStyle(color: Colors.white)),
+                      Text('Retry', style: TextStyle(color: colors.foreground)),
                 ),
               ] else if (deepLink == null)
-                const Center(
-                    child: CircularProgressIndicator(color: Colors.white))
+                Center(
+                    child: CircularProgressIndicator(color: colors.foreground))
               else ...[
-                const Text(
+                Text(
                   'Have your opponent scan this',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white, fontSize: 20),
+                  style: TextStyle(color: colors.foreground, fontSize: 20),
                 ),
                 const SizedBox(height: 24),
                 Center(
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
+                      // QR backing stays white regardless of theme — the
+                      // code itself is rendered as black modules on white.
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -125,13 +129,13 @@ class _QrMatchScreenState extends ConsumerState<QrMatchScreen> {
                 Text(
                   'New code in ${_secondsLeft}s',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white.withOpacity(0.5)),
+                  style: TextStyle(color: colors.ink(0.5)),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Waiting for opponent…',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white.withOpacity(0.5)),
+                  style: TextStyle(color: colors.ink(0.5)),
                 ),
                 const SizedBox(height: 32),
                 OutlinedButton.icon(
@@ -139,8 +143,8 @@ class _QrMatchScreenState extends ConsumerState<QrMatchScreen> {
                   icon: const Icon(Icons.qr_code_scanner, size: 18),
                   label: const Text('Scan theirs instead'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: BorderSide(color: Colors.white.withOpacity(0.3)),
+                    foregroundColor: colors.foreground,
+                    side: BorderSide(color: colors.ink(0.3)),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),

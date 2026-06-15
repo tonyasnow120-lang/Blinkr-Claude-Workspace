@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/audio/background_music.dart';
+import '../../../core/theme/app_colors.dart';
 import '../providers/proximity_provider.dart';
 import '../widgets/player_tile.dart';
 import '../widgets/proximity_map.dart';
@@ -48,19 +49,20 @@ class _ProximityScreenState extends ConsumerState<ProximityScreen> {
   }
 
   Widget _disclosure() {
+    final colors = context.colors;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 32),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Icon(Icons.near_me_outlined, color: Colors.white, size: 48),
+          Icon(Icons.near_me_outlined, color: colors.foreground, size: 48),
           const SizedBox(height: 24),
-          const Text(
+          Text(
             'Play people nearby',
             textAlign: TextAlign.center,
             style: TextStyle(
-                color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                color: colors.foreground, fontSize: 22, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           Text(
@@ -71,14 +73,14 @@ class _ProximityScreenState extends ConsumerState<ProximityScreen> {
             '•  Other players never see your coordinates — only roughly how '
             'far away you are (e.g. "~45m away").\n'
             '•  Visibility switches off automatically after 10 minutes.',
-            style: TextStyle(color: Colors.white.withOpacity(0.6), height: 1.5),
+            style: TextStyle(color: colors.ink(0.6), height: 1.5),
           ),
           const SizedBox(height: 32),
           FilledButton(
             onPressed: _acceptDisclosure,
             style: FilledButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.black,
+              backgroundColor: colors.foreground,
+              foregroundColor: colors.background,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
@@ -95,12 +97,13 @@ class _ProximityScreenState extends ConsumerState<ProximityScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(proximityNotifierProvider);
     final notifier = ref.read(proximityNotifierProvider.notifier);
+    final colors = context.colors;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        foregroundColor: Colors.white,
+        foregroundColor: colors.foreground,
         title: const Text('Nearby'),
         actions: [
           if (state.visible) ...[
@@ -119,8 +122,8 @@ class _ProximityScreenState extends ConsumerState<ProximityScreen> {
       ),
       body: SafeArea(
         child: _disclosureSeen == null
-            ? const Center(
-                child: CircularProgressIndicator(color: Colors.white))
+            ? Center(
+                child: CircularProgressIndicator(color: colors.foreground))
             : !_disclosureSeen!
                 ? _disclosure()
                 : Column(
@@ -131,18 +134,18 @@ class _ProximityScreenState extends ConsumerState<ProximityScreen> {
                           value: state.visible,
                           onChanged:
                               state.busy ? null : (on) => notifier.setVisible(on),
-                          activeColor: Colors.white,
+                          activeColor: colors.foreground,
                           activeTrackColor: Colors.greenAccent.withOpacity(0.5),
-                          title: const Text(
+                          title: Text(
                             'Make me visible to nearby players',
-                            style: TextStyle(color: Colors.white),
+                            style: TextStyle(color: colors.foreground),
                           ),
                           subtitle: Text(
                             state.visible
                                 ? 'Visible — auto-off in 10 minutes'
                                 : 'Invisible',
                             style: TextStyle(
-                                color: Colors.white.withOpacity(0.5),
+                                color: colors.ink(0.5),
                                 fontSize: 12),
                           ),
                           contentPadding: EdgeInsets.zero,
@@ -166,7 +169,7 @@ class _ProximityScreenState extends ConsumerState<ProximityScreen> {
                                       : 'Turn on visibility to see\nwho\'s around you',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
-                                      color: Colors.white.withOpacity(0.4),
+                                      color: colors.ink(0.4),
                                       height: 1.5),
                                 ),
                               )
@@ -186,7 +189,7 @@ class _ProximityScreenState extends ConsumerState<ProximityScreen> {
                                       'Nobody nearby right now.\nThey need this screen open too!',
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
-                                          color: Colors.white.withOpacity(0.4),
+                                          color: colors.ink(0.4),
                                           height: 1.5),
                                     ),
                                   )

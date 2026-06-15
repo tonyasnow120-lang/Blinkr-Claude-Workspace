@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../core/audio/background_music.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/line_eye.dart';
 import '../../matchmaking/providers/matchmaking_provider.dart';
 
@@ -66,12 +67,13 @@ class _CreateChallengeScreenState
     });
 
     final targeted = widget.opponentId != null;
+    final colors = context.colors;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        foregroundColor: Colors.white,
+        foregroundColor: colors.foreground,
         title: const Text('Challenge'),
         actions: const [MusicToggleButton()],
       ),
@@ -84,8 +86,8 @@ class _CreateChallengeScreenState
             children: [
               if (state.phase == MatchmakingPhase.creating ||
                   state.phase == MatchmakingPhase.idle)
-                const Center(
-                    child: CircularProgressIndicator(color: Colors.white))
+                Center(
+                    child: CircularProgressIndicator(color: colors.foreground))
               else if (state.phase == MatchmakingPhase.error)
                 Column(
                   children: [
@@ -102,52 +104,52 @@ class _CreateChallengeScreenState
                             kind: widget.kind,
                             opponentId: widget.opponentId,
                           ),
-                      child: const Text('Retry',
-                          style: TextStyle(color: Colors.white)),
+                      child: Text('Retry',
+                          style: TextStyle(color: colors.foreground)),
                     ),
                   ],
                 )
               else if (targeted) ...[
-                const LineEyeIcon(size: 56, color: Colors.white),
+                LineEyeIcon(size: 56, color: colors.foreground),
                 const SizedBox(height: 24),
                 Text(
                   'Challenge sent to ${widget.opponentName ?? 'your opponent'}',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white, fontSize: 20),
+                  style: TextStyle(color: colors.foreground, fontSize: 20),
                 ),
                 const SizedBox(height: 24),
-                const Center(
+                Center(
                   child: SizedBox(
                     height: 24,
                     width: 24,
                     child: CircularProgressIndicator(
-                        color: Colors.white, strokeWidth: 2),
+                        color: colors.foreground, strokeWidth: 2),
                   ),
                 ),
                 const SizedBox(height: 16),
                 Text(
                   'Waiting for them to accept…',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white.withOpacity(0.5)),
+                  style: TextStyle(color: colors.ink(0.5)),
                 ),
               ] else ...[
-                const Text(
+                Text(
                   'Share this challenge',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white, fontSize: 20),
+                  style: TextStyle(color: colors.foreground, fontSize: 20),
                 ),
                 const SizedBox(height: 24),
                 Container(
                   padding: const EdgeInsets.symmetric(vertical: 24),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
+                    color: colors.ink(0.1),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
                     state.code ?? '',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: colors.foreground,
                       fontSize: 32,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 8,
@@ -160,8 +162,8 @@ class _CreateChallengeScreenState
                   icon: const Icon(Icons.ios_share),
                   label: const Text('Share invite link'),
                   style: FilledButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
+                    backgroundColor: colors.foreground,
+                    foregroundColor: colors.background,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -181,8 +183,8 @@ class _CreateChallengeScreenState
                   icon: const Icon(Icons.copy, size: 18),
                   label: const Text('Copy link'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: BorderSide(color: Colors.white.withOpacity(0.3)),
+                    foregroundColor: colors.foreground,
+                    side: BorderSide(color: colors.ink(0.3)),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -193,7 +195,7 @@ class _CreateChallengeScreenState
                 Text(
                   'Waiting for opponent…',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white.withOpacity(0.5)),
+                  style: TextStyle(color: colors.ink(0.5)),
                 ),
               ],
             ],

@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/audio/background_music.dart';
+import '../../../core/theme/app_colors.dart';
 import '../providers/auth_provider.dart';
 
 class VerifyScreen extends ConsumerStatefulWidget {
@@ -67,11 +69,17 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    SystemChrome.setSystemUIOverlayStyle(
+      isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+    );
+
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        foregroundColor: Colors.white,
+        foregroundColor: colors.foreground,
         actions: const [MusicToggleButton()],
       ),
       body: Padding(
@@ -80,10 +88,10 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 40),
-            const Text(
+            Text(
               'Check your email',
               style: TextStyle(
-                color: Colors.white,
+                color: colors.foreground,
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
               ),
@@ -91,15 +99,15 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
             const SizedBox(height: 8),
             Text(
               'Tap the sign-in button in the email sent to ${widget.email} — the app will open automatically.\n\nOr enter the code below if one was included.',
-              style: TextStyle(color: Colors.white.withOpacity(0.6)),
+              style: TextStyle(color: colors.ink(0.6)),
             ),
             const SizedBox(height: 32),
             TextField(
               controller: _codeController,
               keyboardType: TextInputType.number,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: colors.foreground,
                 fontSize: 24,
                 letterSpacing: 6,
               ),
@@ -108,12 +116,12 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
                 counterText: '',
                 hintText: '--------',
                 hintStyle: TextStyle(
-                  color: Colors.white.withOpacity(0.4),
+                  color: colors.ink(0.4),
                   letterSpacing: 6,
                   fontSize: 24,
                 ),
                 filled: true,
-                fillColor: Colors.white.withOpacity(0.1),
+                fillColor: colors.ink(0.1),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -128,18 +136,19 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
             FilledButton(
               onPressed: _loading ? null : _verify,
               style: FilledButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.black,
+                backgroundColor: colors.foreground,
+                foregroundColor: colors.background,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
               child: _loading
-                  ? const SizedBox(
+                  ? SizedBox(
                       height: 20,
                       width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: colors.background),
                     )
                   : const Text(
                       'Verify',

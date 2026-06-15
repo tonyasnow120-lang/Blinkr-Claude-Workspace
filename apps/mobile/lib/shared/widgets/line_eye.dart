@@ -16,6 +16,7 @@ class LineEye {
     double base, {
     required double rotation,
     required double arcRotation,
+    Color color = Colors.white,
   }) {
     final innerR = base * 0.36;
     final outerR = base * 0.485;
@@ -30,7 +31,7 @@ class LineEye {
     for (int i = 0; i < 24; i++) {
       final a = i * math.pi / 12;
       final isMajor = i % 6 == 0;
-      p.color = Colors.white.withAlpha(isMajor ? 115 : 26);
+      p.color = color.withAlpha(isMajor ? 115 : 26);
       final len = isMajor ? 10.0 : 5.0;
       canvas.drawLine(
         Offset(math.cos(a) * (innerR - len), math.sin(a) * (innerR - len)),
@@ -46,7 +47,7 @@ class LineEye {
     for (int i = 0; i < 36; i++) {
       final a = i * math.pi / 18;
       final isLong = i % 3 == 0;
-      p.color = Colors.white.withAlpha(isLong ? 51 : 13);
+      p.color = color.withAlpha(isLong ? 51 : 13);
       final len = isLong ? 8.0 : 4.0;
       canvas.drawLine(
         Offset(math.cos(a) * (outerR - len), math.sin(a) * (outerR - len)),
@@ -58,7 +59,8 @@ class LineEye {
   }
 
   static void drawPulseRings(
-      Canvas canvas, Offset center, double base, double pulse) {
+      Canvas canvas, Offset center, double base, double pulse,
+      {Color color = Colors.white}) {
     final baseR = base * 0.39;
     final p = Paint()
       ..style = PaintingStyle.stroke
@@ -69,7 +71,7 @@ class LineEye {
       final alpha =
           t < 0.15 ? ((t / 0.15) * 128).round() : ((1 - t) * 128).round();
       if (alpha <= 0) continue;
-      p.color = Colors.white.withAlpha(alpha);
+      p.color = color.withAlpha(alpha);
       canvas.drawCircle(center, baseR * scale, p);
     }
   }
@@ -92,6 +94,8 @@ class LineEye {
     double tearPhase = 0,
     bool checkmark = false,
     double checkTrim = 0,
+    Color color = Colors.white,
+    Color background = Colors.black,
   }) {
     final eyeW = base * 0.62;
     final eyeH = eyeW * 0.44;
@@ -132,10 +136,10 @@ class LineEye {
     final strokePaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.1
-      ..color = Colors.white.withAlpha(230);
+      ..color = color.withAlpha(230);
     canvas.drawCircle(irisCenter, irisR, strokePaint);
 
-    strokePaint.color = Colors.white.withAlpha(76);
+    strokePaint.color = color.withAlpha(76);
     strokePaint.strokeWidth = 0.5;
     canvas.drawCircle(irisCenter, irisR * 0.7, strokePaint);
 
@@ -154,22 +158,22 @@ class LineEye {
               ..strokeWidth = 2.0
               ..strokeCap = StrokeCap.round
               ..strokeJoin = StrokeJoin.round
-              ..color = Colors.white,
+              ..color = color,
           );
         }
       }
     } else {
       canvas.drawCircle(
-          irisCenter, irisR * 0.44, Paint()..color = Colors.white);
+          irisCenter, irisR * 0.44, Paint()..color = color);
       canvas.drawCircle(
         Offset(irisCenter.dx + irisR * 0.27, irisCenter.dy - irisR * 0.3),
         irisR * 0.17,
-        Paint()..color = Colors.black.withAlpha(140),
+        Paint()..color = background.withAlpha(140),
       );
     }
 
     if (lidT > 0.001) {
-      final lidPaint = Paint()..color = Colors.black;
+      final lidPaint = Paint()..color = background;
       final lidOffset = eyeH * lidT;
       final pad = eyeW * 0.05;
 
@@ -207,16 +211,16 @@ class LineEye {
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.2
-        ..color = Colors.white,
+        ..color = color,
     );
 
     if (crying) {
-      _drawTears(canvas, center, eyeW, eyeH, tearPhase);
+      _drawTears(canvas, center, eyeW, eyeH, tearPhase, color);
     }
   }
 
-  static void _drawTears(
-      Canvas canvas, Offset center, double eyeW, double eyeH, double tearPhase) {
+  static void _drawTears(Canvas canvas, Offset center, double eyeW,
+      double eyeH, double tearPhase, Color color) {
     final dropStartY = center.dy + eyeH * 0.85;
     final dropEndY = center.dy + eyeH * 4.4;
     for (var i = 0; i < 3; i++) {
@@ -226,7 +230,7 @@ class LineEye {
       final dx = center.dx - eyeW * 0.22 + i * eyeW * 0.22;
       final scale = 0.7 + 0.3 * (1 - phase);
       _drawTeardrop(canvas, Offset(dx, dy), eyeH * 0.22 * scale,
-          Paint()..color = Colors.white.withOpacity(opacity * 0.85));
+          Paint()..color = color.withOpacity(opacity * 0.85));
     }
   }
 

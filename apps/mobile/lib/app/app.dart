@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'router.dart';
 import '../core/audio/background_music.dart';
 import '../core/security/app_lifecycle_observer.dart';
+import '../core/theme/app_colors.dart';
+import '../core/theme/theme_provider.dart';
 import '../features/matchmaking/providers/challenge_invite_provider.dart';
 
 class BlinkrApp extends ConsumerWidget {
@@ -21,11 +23,27 @@ class BlinkrApp extends ConsumerWidget {
       return _ErrorApp('Router failed:\n$e');
     }
 
+    final themeMode = ref.watch(themeModeProvider);
+
     return AppLifecycleObserver(
       child: MaterialApp.router(
         title: 'Blinkr',
         debugShowCheckedModeBanner: false,
+        themeMode: themeMode,
         theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.black,
+            brightness: Brightness.light,
+          ),
+          useMaterial3: true,
+          scaffoldBackgroundColor: Colors.white,
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+            elevation: 0,
+          ),
+        ),
+        darkTheme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
             seedColor: Colors.white,
             brightness: Brightness.dark,
@@ -85,11 +103,11 @@ class _ChallengeInviteListener extends ConsumerWidget {
       showDialog<void>(
         context: dialogContext,
         builder: (context) => AlertDialog(
-          backgroundColor: const Color(0xFF1C1C1E),
-          title: const Text('Challenge!', style: TextStyle(color: Colors.white)),
+          backgroundColor: context.colors.surface,
+          title: Text('Challenge!', style: TextStyle(color: context.colors.foreground)),
           content: Text(
             '${next.challengerName} wants to blink against you.',
-            style: const TextStyle(color: Colors.white70),
+            style: TextStyle(color: context.colors.ink(0.7)),
           ),
           actions: [
             TextButton(

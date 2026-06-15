@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/line_eye.dart';
 
 /// Standard player row used across matchmaking lists: avatar, name,
@@ -19,28 +20,29 @@ class PlayerTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 4),
       leading: CircleAvatar(
         radius: 22,
-        backgroundColor: Colors.white.withOpacity(0.15),
+        backgroundColor: colors.ink(0.15),
         backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl!) : null,
         child: avatarUrl == null
             ? Text(
                 title.isNotEmpty ? title[0].toUpperCase() : '?',
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: colors.foreground),
               )
             : null,
       ),
       title: Text(
         title,
-        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+        style: TextStyle(color: colors.foreground, fontWeight: FontWeight.w500),
       ),
       subtitle: subtitle == null
           ? null
           : Text(
               subtitle!,
-              style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
+              style: TextStyle(color: colors.ink(0.5), fontSize: 12),
             ),
       trailing: trailing,
     );
@@ -55,20 +57,21 @@ class ChallengeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return FilledButton(
       onPressed: onPressed,
       style: FilledButton.styleFrom(
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: colors.foreground,
+        foregroundColor: colors.background,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('Challenge', style: TextStyle(fontSize: 13)),
-          SizedBox(width: 6),
-          LineEyeIcon(size: 15, color: Colors.black),
+          const Text('Challenge', style: TextStyle(fontSize: 13)),
+          const SizedBox(width: 6),
+          LineEyeIcon(size: 15, color: colors.background),
         ],
       ),
     );

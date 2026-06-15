@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/audio/background_music.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/watching_eye.dart';
 import '../providers/auth_provider.dart';
 
@@ -140,10 +141,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
+    final colors = context.colors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    SystemChrome.setSystemUIOverlayStyle(
+      isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+    );
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colors.background,
       resizeToAvoidBottomInset: true,
       body: GestureDetector(
         onTap: () => _focusNode.unfocus(),
@@ -158,19 +163,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   children: [
                     TextButton.icon(
                       onPressed: () => context.pop(),
-                      icon: const Icon(Icons.arrow_back,
-                          color: Colors.white, size: 16),
-                      label: const Text(
+                      icon: Icon(Icons.arrow_back,
+                          color: colors.foreground, size: 16),
+                      label: Text(
                         'BACK',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: colors.foreground,
                           fontSize: 11,
                           fontWeight: FontWeight.w300,
                           letterSpacing: 3,
                         ),
                       ),
                       style: TextButton.styleFrom(
-                        foregroundColor: Colors.white.withAlpha(115),
+                        foregroundColor: colors.ink(0.45),
                         padding: const EdgeInsets.symmetric(
                             horizontal: 4, vertical: 8),
                       ),
@@ -181,7 +186,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               ),
 
               // Eye + rings
-              const WatchingEye(height: 200),
+              WatchingEye(
+                height: 200,
+                color: colors.foreground,
+                background: colors.background,
+              ),
 
               // Wordmark
               AnimatedBuilder(
@@ -197,17 +206,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    const Text(
+                    Text(
                       'BLINKR',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: colors.foreground,
                         fontSize: 22,
                         fontWeight: FontWeight.w200,
                         letterSpacing: 10,
                       ),
                     ),
                     const SizedBox(width: 3),
-                    _BlinkingCursor(fontSize: 20),
+                    _BlinkingCursor(fontSize: 20, color: colors.foreground),
                   ],
                 ),
               ),
@@ -232,10 +241,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'ENTER YOUR EMAIL',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: colors.foreground,
                               fontSize: 8.5,
                               fontWeight: FontWeight.w400,
                               letterSpacing: 4.5,
@@ -250,10 +259,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                           ),
 
                           const SizedBox(height: 12),
-                          const Text(
+                          Text(
                             "WE'LL SEND YOU A SECURE LINK",
                             style: TextStyle(
-                              color: Colors.white,
+                              color: colors.foreground,
                               fontSize: 9,
                               fontWeight: FontWeight.w300,
                               letterSpacing: 2,
@@ -278,14 +287,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 Expanded(
                                     child: Container(
                                         height: 0.5,
-                                        color: Colors.white.withAlpha(51))),
+                                        color: colors.ink(0.2))),
                                 Padding(
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 14),
                                   child: Text(
                                     'OR CONTINUE WITH',
                                     style: TextStyle(
-                                      color: Colors.white.withAlpha(76),
+                                      color: colors.ink(0.3),
                                       fontSize: 9,
                                       fontWeight: FontWeight.w300,
                                       letterSpacing: 3,
@@ -295,15 +304,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 Expanded(
                                     child: Container(
                                         height: 0.5,
-                                        color: Colors.white.withAlpha(51))),
+                                        color: colors.ink(0.2))),
                               ],
                             ),
                           ),
 
                           // Social buttons
                           _SocialButton(
-                            icon: const Icon(Icons.apple,
-                                color: Colors.white, size: 18),
+                            icon: Icon(Icons.apple,
+                                color: colors.foreground, size: 18),
                             label: 'APPLE',
                             onTap: _signInWithApple,
                           ),
@@ -345,20 +354,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             onPressed:
                                 (_emailValid && !_loading) ? _submit : null,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: Colors.black,
-                              disabledBackgroundColor: Colors.white,
-                              disabledForegroundColor: Colors.black,
+                              backgroundColor: colors.foreground,
+                              foregroundColor: colors.background,
+                              disabledBackgroundColor: colors.foreground,
+                              disabledForegroundColor: colors.background,
                               elevation: 0,
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(4)),
                             ),
                             child: _loading
-                                ? const SizedBox(
+                                ? SizedBox(
                                     height: 18,
                                     width: 18,
                                     child: CircularProgressIndicator(
-                                        strokeWidth: 2, color: Colors.black),
+                                        strokeWidth: 2, color: colors.background),
                                   )
                                 : const Text(
                                     'CONTINUE',
@@ -374,7 +383,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       Text.rich(
                         TextSpan(
                           style: TextStyle(
-                            color: Colors.white.withAlpha(51),
+                            color: colors.ink(0.2),
                             fontSize: 8.5,
                             fontWeight: FontWeight.w300,
                             letterSpacing: 1.5,
@@ -385,20 +394,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 text: 'By continuing you agree to our\n'),
                             TextSpan(
                               text: 'Terms of Service',
-                              style: const TextStyle(
-                                color: Color(0x66FFFFFF),
+                              style: TextStyle(
+                                color: colors.ink(0.4),
                                 decoration: TextDecoration.underline,
-                                decorationColor: Color(0x33FFFFFF),
+                                decorationColor: colors.ink(0.2),
                               ),
                               recognizer: _termsTap,
                             ),
                             const TextSpan(text: '   ·   '),
                             TextSpan(
                               text: 'Privacy Policy',
-                              style: const TextStyle(
-                                color: Color(0x66FFFFFF),
+                              style: TextStyle(
+                                color: colors.ink(0.4),
                                 decoration: TextDecoration.underline,
-                                decorationColor: Color(0x33FFFFFF),
+                                decorationColor: colors.ink(0.2),
                               ),
                               recognizer: _privacyTap,
                             ),
@@ -461,6 +470,7 @@ class _EmailFieldState extends State<_EmailField>
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -471,8 +481,8 @@ class _EmailFieldState extends State<_EmailField>
           textInputAction: TextInputAction.done,
           onFieldSubmitted: (_) => widget.onSubmit(),
           autocorrect: false,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: colors.foreground,
             fontSize: 15,
             fontWeight: FontWeight.w300,
             letterSpacing: 0.5,
@@ -480,13 +490,13 @@ class _EmailFieldState extends State<_EmailField>
           decoration: InputDecoration(
             hintText: 'you@example.com',
             hintStyle: TextStyle(
-              color: Colors.white.withAlpha(51),
+              color: colors.ink(0.2),
               fontWeight: FontWeight.w200,
               letterSpacing: 0.5,
             ),
             enabledBorder: UnderlineInputBorder(
               borderSide:
-                  BorderSide(color: Colors.white.withAlpha(76), width: 0.5),
+                  BorderSide(color: colors.ink(0.3), width: 0.5),
             ),
             focusedBorder: const UnderlineInputBorder(
               borderSide:
@@ -494,10 +504,10 @@ class _EmailFieldState extends State<_EmailField>
             ),
             contentPadding: const EdgeInsets.only(bottom: 8),
           ),
-          cursorColor: Colors.white,
+          cursorColor: colors.foreground,
           cursorWidth: 1.2,
         ),
-        // Animated white underline on focus
+        // Animated underline on focus
         AnimatedBuilder(
           animation: _lineWidth,
           builder: (_, __) => Container(
@@ -506,7 +516,7 @@ class _EmailFieldState extends State<_EmailField>
             alignment: Alignment.centerLeft,
             child: FractionallySizedBox(
               widthFactor: _lineWidth.value,
-              child: Container(color: Colors.white),
+              child: Container(color: colors.foreground),
             ),
           ),
         ),
@@ -531,8 +541,8 @@ class _SocialButton extends StatelessWidget {
         child: OutlinedButton(
           onPressed: onTap,
           style: OutlinedButton.styleFrom(
-            foregroundColor: Colors.white,
-            side: BorderSide(color: Colors.white.withAlpha(46), width: 0.5),
+            foregroundColor: context.colors.foreground,
+            side: BorderSide(color: context.colors.ink(0.18), width: 0.5),
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(4)),
           ),
@@ -608,7 +618,8 @@ class _GoogleLogoPainter extends CustomPainter {
 // ── Blinking cursor ───────────────────────────────────────────────────────────
 class _BlinkingCursor extends StatefulWidget {
   final double fontSize;
-  const _BlinkingCursor({this.fontSize = 32});
+  final Color color;
+  const _BlinkingCursor({this.fontSize = 32, this.color = Colors.white});
 
   @override
   State<_BlinkingCursor> createState() => _BlinkingCursorState();
@@ -634,7 +645,7 @@ class _BlinkingCursorState extends State<_BlinkingCursor>
           child: Text(
             '|',
             style: TextStyle(
-              color: Colors.white,
+              color: widget.color,
               fontSize: widget.fontSize,
               fontWeight: FontWeight.w100,
             ),

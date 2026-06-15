@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/audio/background_music.dart';
+import '../../../core/theme/app_colors.dart';
 import '../providers/friends_provider.dart';
 import '../widgets/player_tile.dart';
 
@@ -23,12 +24,13 @@ class FriendsListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(friendsNotifierProvider);
     final notifier = ref.read(friendsNotifierProvider.notifier);
+    final colors = context.colors;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        foregroundColor: Colors.white,
+        foregroundColor: colors.foreground,
         title: const Text('Friends'),
         actions: [
           IconButton(
@@ -41,7 +43,7 @@ class FriendsListScreen extends ConsumerWidget {
       ),
       body: SafeArea(
         child: RefreshIndicator(
-          color: Colors.black,
+          color: colors.background,
           onRefresh: notifier.refresh,
           child: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -58,7 +60,7 @@ class FriendsListScreen extends ConsumerWidget {
                   child: Text(
                     'FRIEND REQUESTS',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.5),
+                      color: colors.ink(0.5),
                       fontSize: 11,
                       letterSpacing: 2,
                     ),
@@ -79,20 +81,20 @@ class FriendsListScreen extends ConsumerWidget {
                               notifier.accept(req['friendshipId'] as String),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.cancel, color: Colors.white38),
+                          icon: Icon(Icons.cancel, color: colors.ink(0.38)),
                           onPressed: () =>
                               notifier.decline(req['friendshipId'] as String),
                         ),
                       ],
                     ),
                   ),
-                const Divider(color: Colors.white12, height: 32),
+                Divider(color: colors.ink(0.12), height: 32),
               ],
               if (state.loading && state.friends.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.only(top: 64),
+                Padding(
+                  padding: const EdgeInsets.only(top: 64),
                   child: Center(
-                      child: CircularProgressIndicator(color: Colors.white)),
+                      child: CircularProgressIndicator(color: colors.foreground)),
                 )
               else if (state.friends.isEmpty)
                 Padding(
@@ -103,13 +105,13 @@ class FriendsListScreen extends ConsumerWidget {
                         'No friends yet',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                            color: Colors.white.withOpacity(0.5), fontSize: 16),
+                            color: colors.ink(0.5), fontSize: 16),
                       ),
                       const SizedBox(height: 12),
                       TextButton(
                         onPressed: () => context.push('/friends/search'),
-                        child: const Text('Find players',
-                            style: TextStyle(color: Colors.white)),
+                        child: Text('Find players',
+                            style: TextStyle(color: colors.foreground)),
                       ),
                     ],
                   ),

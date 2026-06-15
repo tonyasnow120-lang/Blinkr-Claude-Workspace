@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/theme/app_colors.dart';
 
 /// Which legal document to display.
 enum LegalDocument { terms, privacy }
@@ -157,7 +158,7 @@ const List<_LegalSection> _privacySections = [
   ),
 ];
 
-/// Black-on-white legal document page in the app's typographic style.
+/// Legal document page in the app's typographic style.
 /// Public route — reachable from the login screen before sign-in.
 class LegalScreen extends StatefulWidget {
   final LegalDocument document;
@@ -200,9 +201,10 @@ class _LegalScreenState extends State<LegalScreen>
     final isTerms = widget.document == LegalDocument.terms;
     final title = isTerms ? 'TERMS OF SERVICE' : 'PRIVACY POLICY';
     final sections = isTerms ? _termsSections : _privacySections;
+    final colors = context.colors;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colors.background,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -211,19 +213,19 @@ class _LegalScreenState extends State<LegalScreen>
               padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
               child: TextButton.icon(
                 onPressed: () => context.pop(),
-                icon: const Icon(Icons.arrow_back,
-                    color: Colors.white, size: 16),
-                label: const Text(
+                icon: Icon(Icons.arrow_back,
+                    color: colors.foreground, size: 16),
+                label: Text(
                   'BACK',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: colors.foreground,
                     fontSize: 11,
                     fontWeight: FontWeight.w300,
                     letterSpacing: 3,
                   ),
                 ),
                 style: TextButton.styleFrom(
-                  foregroundColor: Colors.white.withAlpha(115),
+                  foregroundColor: colors.ink(0.45),
                   padding:
                       const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
                 ),
@@ -241,8 +243,8 @@ class _LegalScreenState extends State<LegalScreen>
                       children: [
                         Text(
                           title,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: colors.foreground,
                             fontSize: 18,
                             fontWeight: FontWeight.w200,
                             letterSpacing: 6,
@@ -252,7 +254,7 @@ class _LegalScreenState extends State<LegalScreen>
                         Text(
                           _lastUpdated,
                           style: TextStyle(
-                            color: Colors.white.withAlpha(76),
+                            color: colors.ink(0.3),
                             fontSize: 9,
                             fontWeight: FontWeight.w300,
                             letterSpacing: 2,
@@ -262,8 +264,8 @@ class _LegalScreenState extends State<LegalScreen>
                         for (final section in sections) ...[
                           Text(
                             section.heading,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: colors.foreground,
                               fontSize: 10,
                               fontWeight: FontWeight.w400,
                               letterSpacing: 3,
@@ -273,7 +275,7 @@ class _LegalScreenState extends State<LegalScreen>
                           Text(
                             section.body,
                             style: TextStyle(
-                              color: Colors.white.withAlpha(150),
+                              color: colors.ink(150 / 255),
                               fontSize: 12.5,
                               fontWeight: FontWeight.w300,
                               height: 1.65,

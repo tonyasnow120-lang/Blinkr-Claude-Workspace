@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/audio/background_music.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/theme_toggle_button.dart';
 import '../../../shared/widgets/watching_eye.dart';
 import '../../profile/providers/profile_provider.dart';
 
@@ -72,7 +74,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    SystemChrome.setSystemUIOverlayStyle(
+      isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+    );
+    final colors = context.colors;
     final size = MediaQuery.sizeOf(context);
     final profile = ref.watch(profileProvider);
 
@@ -92,21 +98,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        title: const Text(
+        title: Text(
           'BLINKR',
           style: TextStyle(
-            color: Colors.white,
+            color: colors.foreground,
             fontWeight: FontWeight.w900,
             letterSpacing: 4,
           ),
         ),
         actions: [
           const MusicToggleButton(),
+          const ThemeToggleButton(),
           IconButton(
-            icon: const Icon(Icons.person_outline, color: Colors.white),
+            icon: Icon(Icons.person_outline, color: colors.foreground),
             // Home is normally pushed from the profile hub — pop back to it
             // rather than stacking another copy. Push covers deep links.
             onPressed: () =>
@@ -134,7 +141,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           'WELCOME BACK, ${displayName.toUpperCase()}',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: Colors.white.withAlpha(115),
+                            color: colors.ink(0.45),
                             fontSize: 9,
                             fontWeight: FontWeight.w400,
                             letterSpacing: 3.5,
@@ -142,11 +149,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         ),
                         const SizedBox(height: 14),
                       ],
-                      const Text(
+                      Text(
                         'READY TO STARE?',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: Colors.white,
+                          color: colors.foreground,
                           fontSize: 24,
                           fontWeight: FontWeight.w200,
                           letterSpacing: 8,
@@ -162,7 +169,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               // The eye, staring back
               Opacity(
                 opacity: _eyeOpacity.value,
-                child: const WatchingEye(height: 230),
+                child: WatchingEye(
+                  height: 230,
+                  color: colors.foreground,
+                  background: colors.background,
+                ),
               ),
 
               // Live record strip
@@ -190,8 +201,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           child: ElevatedButton(
                             onPressed: () => context.push('/challenge/create'),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: Colors.black,
+                              backgroundColor: colors.foreground,
+                              foregroundColor: colors.background,
                               elevation: 0,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(4),
@@ -213,9 +224,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           child: OutlinedButton(
                             onPressed: () => context.push('/challenge/join'),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.white,
+                              foregroundColor: colors.foreground,
                               side: BorderSide(
-                                color: Colors.white.withAlpha(115),
+                                color: colors.ink(0.45),
                                 width: 0.8,
                               ),
                               shape: RoundedRectangleBorder(
@@ -236,7 +247,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         // Matchmaking shortcuts: friends, contacts, QR, nearby
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: const [
+                          children: [
                             _MatchmakingShortcut(
                               icon: Icons.people_outline,
                               label: 'FRIENDS',
@@ -316,7 +327,7 @@ class _TaglineCyclerState extends State<_TaglineCycler> {
         key: ValueKey(_index),
         textAlign: TextAlign.center,
         style: TextStyle(
-          color: Colors.white.withAlpha(140),
+          color: context.colors.ink(0.55),
           fontSize: 9.5,
           fontWeight: FontWeight.w300,
           letterSpacing: 5,
@@ -334,13 +345,14 @@ class _StatsStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     Widget item(String label, Object? value) => Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               '${value ?? 0}',
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: colors.foreground,
                 fontSize: 20,
                 fontWeight: FontWeight.w200,
                 letterSpacing: 2,
@@ -350,7 +362,7 @@ class _StatsStrip extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                color: Colors.white.withAlpha(102),
+                color: colors.ink(0.4),
                 fontSize: 8,
                 fontWeight: FontWeight.w400,
                 letterSpacing: 3,
@@ -363,7 +375,7 @@ class _StatsStrip extends StatelessWidget {
           width: 0.5,
           height: 26,
           margin: const EdgeInsets.symmetric(horizontal: 28),
-          color: Colors.white.withAlpha(46),
+          color: colors.ink(0.18),
         );
 
     return Row(
@@ -393,6 +405,7 @@ class _MatchmakingShortcut extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return InkWell(
       onTap: () => context.push(route),
       borderRadius: BorderRadius.circular(8),
@@ -401,12 +414,12 @@ class _MatchmakingShortcut extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: Colors.white.withAlpha(180), size: 22),
+            Icon(icon, color: colors.ink(0.71), size: 22),
             const SizedBox(height: 6),
             Text(
               label,
               style: TextStyle(
-                color: Colors.white.withAlpha(115),
+                color: colors.ink(0.45),
                 fontSize: 8,
                 fontWeight: FontWeight.w300,
                 letterSpacing: 2,

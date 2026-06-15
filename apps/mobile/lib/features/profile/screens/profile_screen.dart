@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/audio/background_music.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/theme_toggle_button.dart';
 import '../providers/profile_provider.dart';
 import '../../auth/providers/auth_provider.dart';
 
@@ -135,15 +137,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
   }
 
   Future<void> _confirmDeletePhoto(String id) async {
+    final colors = context.colors;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF111111),
-        title: const Text('Remove photo?',
-            style: TextStyle(color: Colors.white)),
-        content: const Text(
+        backgroundColor: colors.surface,
+        title: Text('Remove photo?',
+            style: TextStyle(color: colors.foreground)),
+        content: Text(
           'This photo will be removed from your collage.',
-          style: TextStyle(color: Colors.white70),
+          style: TextStyle(color: colors.ink(0.7)),
         ),
         actions: [
           TextButton(
