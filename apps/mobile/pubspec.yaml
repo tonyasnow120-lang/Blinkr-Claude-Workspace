@@ -35,7 +35,7 @@ dependencies:
   # Matchmaking
   share_plus: ^10.1.0          # Feature 1 — native share sheet for invite links
   qr_flutter: ^4.1.0           # Feature 4 — QR display
-  mobile_scanner: ^5.2.3       # Feature 4 — QR scanning
+  mobile_scanner: ^7.2.0       # Feature 4 — QR scanning (v7 drops GoogleMLKit on iOS, fixing MLKitVision conflict with face_detection)
   flutter_contacts: ^1.1.9+2   # Feature 2 — contact discovery (hashed)
   permission_handler: ^11.3.1  # Features 2/4 — rationale-first permission flows
   geolocator: ^13.0.2          # Feature 5 — GPS radius matching
