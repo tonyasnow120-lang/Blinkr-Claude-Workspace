@@ -95,8 +95,9 @@ class _SetupProfileScreenState extends ConsumerState<SetupProfileScreen>
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         automaticallyImplyLeading: false,
@@ -129,10 +130,10 @@ class _SetupProfileScreenState extends ConsumerState<SetupProfileScreen>
                 opacity: _headerOpacity,
                 child: SlideTransition(
                   position: _headerSlide,
-                  child: const Text(
+                  child: Text(
                     'Set up your profile',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: colors.foreground,
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
                     ),
@@ -146,7 +147,7 @@ class _SetupProfileScreenState extends ConsumerState<SetupProfileScreen>
                   position: _headerSlide,
                   child: Text(
                     'Choose a username to get started.',
-                    style: TextStyle(color: Colors.white.withOpacity(0.6)),
+                    style: TextStyle(color: colors.ink(0.6)),
                   ),
                 ),
               ),
@@ -175,18 +176,19 @@ class _SetupProfileScreenState extends ConsumerState<SetupProfileScreen>
                 child: FilledButton(
                   onPressed: _loading ? null : _submit,
                   style: FilledButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
+                    backgroundColor: colors.foreground,
+                    foregroundColor: colors.background,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   child: _loading
-                      ? const SizedBox(
+                      ? SizedBox(
                           height: 20,
                           width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: colors.background),
                         )
                       : const Text(
                           'Get started',

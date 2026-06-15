@@ -178,22 +178,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
   Widget build(BuildContext context) {
     final profile = ref.watch(profileProvider);
     final photos = ref.watch(userPhotosProvider);
+    final colors = context.colors;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        foregroundColor: Colors.white,
+        foregroundColor: colors.foreground,
         title: const Text('Profile'),
         actions: [
           const MusicToggleButton(),
+          const ThemeToggleButton(),
           TextButton(
             onPressed: () async {
               await ref.read(authServiceProvider).signOut();
               if (context.mounted) context.go('/');
             },
-            child:
-                const Text('Sign out', style: TextStyle(color: Colors.white70)),
+            child: Text('Sign out', style: TextStyle(color: colors.ink(0.7))),
           ),
         ],
       ),
@@ -203,7 +204,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(child: _buildProfileBody(profile, photos)),
+          Expanded(child: _buildProfileBody(profile, photos, colors)),
           Padding(
             padding: const EdgeInsets.fromLTRB(40, 0, 40, 36),
             child: SizedBox(
@@ -211,8 +212,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
               child: ElevatedButton(
                 onPressed: () => context.push('/home'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.black,
+                  backgroundColor: colors.foreground,
+                  foregroundColor: colors.background,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(4),
@@ -237,10 +238,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
   Widget _buildProfileBody(
     AsyncValue<Map<String, dynamic>> profile,
     AsyncValue<List<dynamic>> photos,
+    AppColors colors,
   ) {
     return profile.when(
       loading: () =>
-          const Center(child: CircularProgressIndicator(color: Colors.white)),
+          Center(child: CircularProgressIndicator(color: colors.foreground)),
       error: (e, _) => Center(
         child: Text(e.toString(), style: const TextStyle(color: Colors.redAccent)),
       ),
@@ -268,6 +270,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                           user?['avatar_url']) as String?,
                       uploading: _uploadingAvatar,
                       onAddPhoto: _pickAndUploadAvatar,
+                      colors: colors,
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -279,15 +282,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                                 user?['display_name'] ??
                                 user?['username'] ??
                                 '') as String,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: colors.foreground,
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           Text(
                             '@${user?['username'] ?? ''}',
-                            style: TextStyle(color: Colors.white.withOpacity(0.5)),
+                            style: TextStyle(color: colors.ink(0.5)),
                           ),
                         ],
                       ),
@@ -309,10 +312,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Stats',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: colors.foreground,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -323,18 +326,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                         children: [
                           _StatTile(
                               label: 'Wins',
-                              value: _toInt(stats['wins'])),
+                              value: _toInt(stats['wins']),
+                              colors: colors),
                           _StatTile(
                               label: 'Losses',
-                              value: _toInt(stats['losses'])),
+                              value: _toInt(stats['losses']),
+                              colors: colors),
                           _StatTile(
                               label: 'Streak',
                               value: _toInt(stats['currentStreak'] ??
-                                  stats['current_streak'])),
+                                  stats['current_streak']),
+                              colors: colors),
                           _StatTile(
                               label: 'Best',
                               value: _toInt(stats['longestStreak'] ??
-                                  stats['longest_streak'])),
+                                  stats['longest_streak']),
+                              colors: colors),
                         ],
                       ),
                     ],
@@ -355,6 +362,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                   uploading: _uploading,
                   onAdd: _pickAndUploadPhoto,
                   onDelete: _confirmDeletePhoto,
+                  colors: colors,
                 ),
               ),
             ],
@@ -373,12 +381,14 @@ class _AnimatedAvatar extends StatelessWidget {
   final String? avatarUrl;
   final bool uploading;
   final VoidCallback onAddPhoto;
+  final AppColors colors;
 
   const _AnimatedAvatar({
     required this.rotation,
     this.avatarUrl,
     required this.uploading,
     required this.onAddPhoto,
+    required this.colors,
   });
 
   @override
@@ -391,17 +401,20 @@ class _AnimatedAvatar extends StatelessWidget {
           AnimatedBuilder(
             animation: rotation,
             builder: (_, child) => CustomPaint(
-              painter: _AvatarAuraPainter(rotation: rotation.value),
+              painter: _AvatarAuraPainter(
+                rotation: rotation.value,
+                color: colors.foreground,
+              ),
               child: child,
             ),
             child: Center(
               child: CircleAvatar(
                 radius: 36,
-                backgroundColor: Colors.white12,
+                backgroundColor: colors.ink(0.07),
                 backgroundImage:
                     avatarUrl != null ? NetworkImage(avatarUrl!) : null,
                 child: avatarUrl == null
-                    ? const Icon(Icons.person, color: Colors.white, size: 36)
+                    ? Icon(Icons.person, color: colors.foreground, size: 36)
                     : null,
               ),
             ),
@@ -411,7 +424,7 @@ class _AnimatedAvatar extends StatelessWidget {
             right: 4,
             bottom: 4,
             child: Material(
-              color: Colors.white,
+              color: colors.foreground,
               shape: const CircleBorder(),
               child: InkWell(
                 customBorder: const CircleBorder(),
@@ -420,12 +433,12 @@ class _AnimatedAvatar extends StatelessWidget {
                   width: 24,
                   height: 24,
                   child: uploading
-                      ? const Padding(
-                          padding: EdgeInsets.all(5),
+                      ? Padding(
+                          padding: const EdgeInsets.all(5),
                           child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.black),
+                              strokeWidth: 2, color: colors.background),
                         )
-                      : const Icon(Icons.add, color: Colors.black, size: 16),
+                      : Icon(Icons.add, color: colors.background, size: 16),
                 ),
               ),
             ),
@@ -438,8 +451,9 @@ class _AnimatedAvatar extends StatelessWidget {
 
 class _AvatarAuraPainter extends CustomPainter {
   final double rotation;
+  final Color color;
 
-  const _AvatarAuraPainter({required this.rotation});
+  const _AvatarAuraPainter({required this.rotation, required this.color});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -451,7 +465,7 @@ class _AvatarAuraPainter extends CustomPainter {
     canvas.drawCircle(
       center,
       radius + 6 + pulseT * 4,
-      Paint()..color = Colors.white.withOpacity(0.03 + pulseT * 0.05),
+      Paint()..color = color.withOpacity(0.03 + pulseT * 0.05),
     );
 
     // Rotating dashed ring
@@ -467,7 +481,7 @@ class _AvatarAuraPainter extends CustomPainter {
     for (int i = 0; i < dashCount; i++) {
       final a = i * (2 * math.pi / dashCount);
       final isMajor = i % 7 == 0;
-      ringPaint.color = Colors.white.withAlpha(isMajor ? 153 : 38);
+      ringPaint.color = color.withAlpha(isMajor ? 153 : 38);
       final len = isMajor ? 8.0 : 3.0;
       canvas.drawLine(
         Offset(math.cos(a) * radius, math.sin(a) * radius),
@@ -480,15 +494,16 @@ class _AvatarAuraPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _AvatarAuraPainter oldDelegate) =>
-      oldDelegate.rotation != rotation;
+      oldDelegate.rotation != rotation || oldDelegate.color != color;
 }
 
 // ── Stats with count-up animation ─────────────────────────────────────────────
 class _StatTile extends StatelessWidget {
   final String label;
   final int value;
+  final AppColors colors;
 
-  const _StatTile({required this.label, required this.value});
+  const _StatTile({required this.label, required this.value, required this.colors});
 
   @override
   Widget build(BuildContext context) {
@@ -500,8 +515,8 @@ class _StatTile extends StatelessWidget {
           curve: Curves.easeOutCubic,
           builder: (_, v, __) => Text(
             '$v',
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: colors.foreground,
               fontSize: 28,
               fontWeight: FontWeight.bold,
             ),
@@ -510,7 +525,7 @@ class _StatTile extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           label,
-          style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
+          style: TextStyle(color: colors.ink(0.5), fontSize: 12),
         ),
       ],
     );
@@ -523,12 +538,14 @@ class _PhotoCollage extends StatelessWidget {
   final bool uploading;
   final VoidCallback onAdd;
   final void Function(String id) onDelete;
+  final AppColors colors;
 
   const _PhotoCollage({
     required this.photos,
     required this.uploading,
     required this.onAdd,
     required this.onDelete,
+    required this.colors,
   });
 
   @override
@@ -536,10 +553,10 @@ class _PhotoCollage extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Photos',
           style: TextStyle(
-            color: Colors.white,
+            color: colors.foreground,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
@@ -547,19 +564,19 @@ class _PhotoCollage extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           'Hold a photo to remove it.',
-          style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12),
+          style: TextStyle(color: colors.ink(0.4), fontSize: 12),
         ),
         const SizedBox(height: 16),
         photos.when(
-          loading: () => const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24),
+          loading: () => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
             child: Center(
                 child: CircularProgressIndicator(
-                    color: Colors.white24, strokeWidth: 2)),
+                    color: colors.ink(0.14), strokeWidth: 2)),
           ),
           error: (e, _) => Text(
             'Could not load photos',
-            style: TextStyle(color: Colors.white.withOpacity(0.4)),
+            style: TextStyle(color: colors.ink(0.4)),
           ),
           data: (items) => GridView.builder(
             shrinkWrap: true,
@@ -572,12 +589,13 @@ class _PhotoCollage extends StatelessWidget {
             itemCount: items.length + 1,
             itemBuilder: (context, index) {
               if (index == 0) {
-                return _AddPhotoTile(uploading: uploading, onTap: onAdd);
+                return _AddPhotoTile(uploading: uploading, onTap: onAdd, colors: colors);
               }
               final photo = items[index - 1] as Map<String, dynamic>;
               return _PhotoTile(
                 url: photo['url'] as String,
                 onLongPress: () => onDelete(photo['id'] as String),
+                colors: colors,
               );
             },
           ),
@@ -590,8 +608,9 @@ class _PhotoCollage extends StatelessWidget {
 class _AddPhotoTile extends StatelessWidget {
   final bool uploading;
   final VoidCallback onTap;
+  final AppColors colors;
 
-  const _AddPhotoTile({required this.uploading, required this.onTap});
+  const _AddPhotoTile({required this.uploading, required this.onTap, required this.colors});
 
   @override
   Widget build(BuildContext context) {
@@ -600,18 +619,18 @@ class _AddPhotoTile extends StatelessWidget {
       borderRadius: BorderRadius.circular(8),
       child: Container(
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.white.withOpacity(0.18)),
+          border: Border.all(color: colors.ink(0.18)),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Center(
           child: uploading
-              ? const SizedBox(
+              ? SizedBox(
                   width: 18,
                   height: 18,
                   child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.white54),
+                      strokeWidth: 2, color: colors.ink(0.33)),
                 )
-              : Icon(Icons.add, color: Colors.white.withOpacity(0.5)),
+              : Icon(Icons.add, color: colors.ink(0.5)),
         ),
       ),
     );
@@ -621,8 +640,9 @@ class _AddPhotoTile extends StatelessWidget {
 class _PhotoTile extends StatelessWidget {
   final String url;
   final VoidCallback onLongPress;
+  final AppColors colors;
 
-  const _PhotoTile({required this.url, required this.onLongPress});
+  const _PhotoTile({required this.url, required this.onLongPress, required this.colors});
 
   @override
   Widget build(BuildContext context) {
@@ -634,10 +654,10 @@ class _PhotoTile extends StatelessWidget {
           url,
           fit: BoxFit.cover,
           loadingBuilder: (context, child, progress) =>
-              progress == null ? child : Container(color: Colors.white10),
+              progress == null ? child : Container(color: colors.ink(0.06)),
           errorBuilder: (_, __, ___) => Container(
-            color: Colors.white10,
-            child: Icon(Icons.broken_image, color: Colors.white.withOpacity(0.2)),
+            color: colors.ink(0.06),
+            child: Icon(Icons.broken_image, color: colors.ink(0.2)),
           ),
         ),
       ),

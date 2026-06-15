@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'player_tile.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/line_eye.dart';
 
 /// Interactive map for the Nearby screen. The backend only ever returns
@@ -154,7 +155,7 @@ class ProximityMap extends StatelessWidget {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.grey[900],
+      backgroundColor: context.colors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
 import '../../../core/api/api_endpoints.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/line_eye.dart';
 
 /// Shown immediately after a session is established (Google, Apple, OTP or
@@ -134,11 +135,15 @@ class _SignInSuccessScreenState extends ConsumerState<SignInSuccessScreen>
 
   @override
   Widget build(BuildContext context) {
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
+    final colors = context.colors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    SystemChrome.setSystemUIOverlayStyle(
+      isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+    );
     final size = MediaQuery.sizeOf(context);
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colors.background,
       body: AnimatedBuilder(
         animation: Listenable.merge([_seqCtrl, _rotCtrl]),
         builder: (_, __) => Opacity(
@@ -160,6 +165,8 @@ class _SignInSuccessScreenState extends ConsumerState<SignInSuccessScreen>
                         rotation: _rotCtrl.value,
                         checkTrim: _checkTrim.value,
                         pulse: _pulse.value,
+                        color: colors.foreground,
+                        background: colors.background,
                       ),
                     ),
                   ),
@@ -171,10 +178,10 @@ class _SignInSuccessScreenState extends ConsumerState<SignInSuccessScreen>
                   opacity: _labelOpacity.value,
                   child: Transform.translate(
                     offset: Offset(0, _labelSlide.value),
-                    child: const Text(
+                    child: Text(
                       'SIGNED IN',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: colors.foreground,
                         fontSize: 9,
                         fontWeight: FontWeight.w400,
                         letterSpacing: 4.5,
@@ -189,10 +196,10 @@ class _SignInSuccessScreenState extends ConsumerState<SignInSuccessScreen>
                   opacity: _welcomeOpacity.value,
                   child: Transform.translate(
                     offset: Offset(0, _welcomeSlide.value),
-                    child: const Text(
+                    child: Text(
                       'WELCOME',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: colors.foreground,
                         fontSize: 26,
                         fontWeight: FontWeight.w200,
                         letterSpacing: 10,
@@ -218,11 +225,15 @@ class _SuccessEyePainter extends CustomPainter {
   final double rotation;
   final double checkTrim;
   final double pulse;
+  final Color color;
+  final Color background;
 
   const _SuccessEyePainter({
     required this.rotation,
     required this.checkTrim,
     required this.pulse,
+    required this.color,
+    required this.background,
   });
 
   @override
@@ -230,10 +241,14 @@ class _SuccessEyePainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final base = size.width * 0.5;
     LineEye.drawRings(canvas, center, base,
-        rotation: rotation, arcRotation: -rotation * 0.6);
-    LineEye.drawPulseRings(canvas, center, base, pulse);
+        rotation: rotation, arcRotation: -rotation * 0.6, color: color);
+    LineEye.drawPulseRings(canvas, center, base, pulse, color: color);
     LineEye.drawEye(canvas, center, base,
-        blink: 0, checkmark: true, checkTrim: checkTrim);
+        blink: 0,
+        checkmark: true,
+        checkTrim: checkTrim,
+        color: color,
+        background: background);
   }
 
   @override

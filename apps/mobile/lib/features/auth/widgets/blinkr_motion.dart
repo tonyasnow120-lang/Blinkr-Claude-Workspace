@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/watching_eye.dart';
 
 /// The animated "watching eye" graphic shared by the auth screens — see
@@ -10,7 +11,14 @@ class BlinkrEyeGraphic extends StatelessWidget {
   const BlinkrEyeGraphic({super.key, this.height = 200});
 
   @override
-  Widget build(BuildContext context) => WatchingEye(height: height);
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return WatchingEye(
+      height: height,
+      color: colors.foreground,
+      background: colors.background,
+    );
+  }
 }
 
 
@@ -22,6 +30,7 @@ class BlinkrWordmark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -29,7 +38,7 @@ class BlinkrWordmark extends StatelessWidget {
         Text(
           'BLINKR',
           style: TextStyle(
-            color: Colors.white,
+            color: colors.foreground,
             fontSize: fontSize,
             fontWeight: FontWeight.w200,
             letterSpacing: 10,
@@ -71,7 +80,7 @@ class _BlinkrCursorState extends State<BlinkrCursor>
           child: Text(
             '|',
             style: TextStyle(
-              color: Colors.white,
+              color: context.colors.foreground,
               fontSize: widget.fontSize,
               fontWeight: FontWeight.w100,
             ),
@@ -138,6 +147,7 @@ class _UnderlineTextFieldState extends State<UnderlineTextField>
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -148,8 +158,8 @@ class _UnderlineTextFieldState extends State<UnderlineTextField>
           onFieldSubmitted: (_) => widget.onSubmit?.call(),
           autocorrect: false,
           inputFormatters: widget.inputFormatters,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: colors.foreground,
             fontSize: 15,
             fontWeight: FontWeight.w300,
             letterSpacing: 0.5,
@@ -157,20 +167,20 @@ class _UnderlineTextFieldState extends State<UnderlineTextField>
           decoration: InputDecoration(
             hintText: widget.hintText,
             hintStyle: TextStyle(
-              color: Colors.white.withAlpha(51),
+              color: colors.ink(0.2),
               fontWeight: FontWeight.w200,
               letterSpacing: 0.5,
             ),
             enabledBorder: UnderlineInputBorder(
               borderSide:
-                  BorderSide(color: Colors.white.withAlpha(76), width: 0.5),
+                  BorderSide(color: colors.ink(0.3), width: 0.5),
             ),
             focusedBorder: const UnderlineInputBorder(
               borderSide: BorderSide(color: Colors.transparent, width: 0),
             ),
             contentPadding: const EdgeInsets.only(bottom: 8),
           ),
-          cursorColor: Colors.white,
+          cursorColor: colors.foreground,
           cursorWidth: 1.2,
         ),
         AnimatedBuilder(
@@ -181,7 +191,7 @@ class _UnderlineTextFieldState extends State<UnderlineTextField>
             alignment: Alignment.centerLeft,
             child: FractionallySizedBox(
               widthFactor: _lineWidth.value,
-              child: Container(color: Colors.white),
+              child: Container(color: colors.foreground),
             ),
           ),
         ),

@@ -32,20 +32,20 @@ class _UserSearchScreenState extends ConsumerState<UserSearchScreen> {
     });
   }
 
-  Widget _action(Map<String, dynamic> user) {
+  Widget _action(Map<String, dynamic> user, AppColors colors) {
     final status = user['friendshipStatus'] as String?;
     final requestedByMe = user['friendshipRequestedByMe'] == true;
 
     if (status == 'blocked') {
       return Text('Blocked',
-          style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13));
+          style: TextStyle(color: colors.ink(0.4), fontSize: 13));
     }
     if (status == 'accepted') {
       return ChallengeButton(onPressed: () => _challenge(user));
     }
     if (status == 'pending') {
       return Text(requestedByMe ? 'Requested' : 'Respond in Friends',
-          style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13));
+          style: TextStyle(color: colors.ink(0.4), fontSize: 13));
     }
     return OutlinedButton(
       onPressed: () async {
@@ -62,8 +62,8 @@ class _UserSearchScreenState extends ConsumerState<UserSearchScreen> {
         }
       },
       style: OutlinedButton.styleFrom(
-        foregroundColor: Colors.white,
-        side: BorderSide(color: Colors.white.withOpacity(0.3)),
+        foregroundColor: colors.foreground,
+        side: BorderSide(color: colors.ink(0.3)),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
@@ -74,12 +74,13 @@ class _UserSearchScreenState extends ConsumerState<UserSearchScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(userSearchNotifierProvider);
+    final colors = context.colors;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        foregroundColor: Colors.white,
+        foregroundColor: colors.foreground,
         title: const Text('Find players'),
         actions: const [MusicToggleButton()],
       ),
@@ -94,14 +95,13 @@ class _UserSearchScreenState extends ConsumerState<UserSearchScreen> {
                 autofocus: true,
                 onChanged: (q) =>
                     ref.read(userSearchNotifierProvider.notifier).setQuery(q),
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: colors.foreground),
                 decoration: InputDecoration(
                   hintText: 'Search by username',
-                  hintStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
-                  prefixIcon: Icon(Icons.search,
-                      color: Colors.white.withOpacity(0.4)),
+                  hintStyle: TextStyle(color: colors.ink(0.4)),
+                  prefixIcon: Icon(Icons.search, color: colors.ink(0.4)),
                   filled: true,
-                  fillColor: Colors.white.withOpacity(0.1),
+                  fillColor: colors.ink(0.1),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -125,8 +125,7 @@ class _UserSearchScreenState extends ConsumerState<UserSearchScreen> {
                               : state.loading
                                   ? ''
                                   : 'No players found',
-                          style:
-                              TextStyle(color: Colors.white.withOpacity(0.4)),
+                          style: TextStyle(color: colors.ink(0.4)),
                         ),
                       )
                     : ListView.builder(
@@ -139,7 +138,7 @@ class _UserSearchScreenState extends ConsumerState<UserSearchScreen> {
                             title: user['username'] as String,
                             subtitle: '$wins W · $losses L',
                             avatarUrl: user['avatarUrl'] as String?,
-                            trailing: _action(user),
+                            trailing: _action(user, colors),
                           );
                         },
                       ),

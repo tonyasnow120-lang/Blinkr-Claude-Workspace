@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/audio/background_music.dart';
+import '../../../core/theme/app_colors.dart';
 import '../matchmaking_error.dart';
 import '../providers/matchmaking_provider.dart';
 import '../services/contacts_service.dart';
@@ -90,20 +91,20 @@ class _ContactsMatchScreenState extends ConsumerState<ContactsMatchScreen> {
     });
   }
 
-  Widget _disclosure() {
+  Widget _disclosure(AppColors colors) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 32),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Icon(Icons.contacts_outlined, color: Colors.white, size: 48),
+          Icon(Icons.contacts_outlined, color: colors.foreground, size: 48),
           const SizedBox(height: 24),
-          const Text(
+          Text(
             'Find friends from your contacts',
             textAlign: TextAlign.center,
             style: TextStyle(
-                color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                color: colors.foreground, fontSize: 22, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           Text(
@@ -115,15 +116,14 @@ class _ContactsMatchScreenState extends ConsumerState<ContactsMatchScreen> {
             '•  Nothing is stored on our servers, and numbers never appear '
             'in logs.\n'
             '•  Only players who allow contact discovery will appear.',
-            style: TextStyle(
-                color: Colors.white.withOpacity(0.6), height: 1.5),
+            style: TextStyle(color: colors.ink(0.6), height: 1.5),
           ),
           const SizedBox(height: 32),
           FilledButton(
             onPressed: _onDisclosureAccepted,
             style: FilledButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.black,
+              backgroundColor: colors.foreground,
+              foregroundColor: colors.background,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
@@ -134,15 +134,14 @@ class _ContactsMatchScreenState extends ConsumerState<ContactsMatchScreen> {
           const SizedBox(height: 12),
           TextButton(
             onPressed: () => context.pop(),
-            child: Text('Not now',
-                style: TextStyle(color: Colors.white.withOpacity(0.5))),
+            child: Text('Not now', style: TextStyle(color: colors.ink(0.5))),
           ),
         ],
       ),
     );
   }
 
-  Widget _list() {
+  Widget _list(AppColors colors) {
     if (_matches.isEmpty) {
       return Center(
         child: Padding(
@@ -150,7 +149,7 @@ class _ContactsMatchScreenState extends ConsumerState<ContactsMatchScreen> {
           child: Text(
             'None of your contacts are on Blinkr yet.\nChallenge them with an invite link instead!',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white.withOpacity(0.5), height: 1.5),
+            style: TextStyle(color: colors.ink(0.5), height: 1.5),
           ),
         ),
       );
@@ -172,11 +171,12 @@ class _ContactsMatchScreenState extends ConsumerState<ContactsMatchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        foregroundColor: Colors.white,
+        foregroundColor: colors.foreground,
         title: const Text('Contacts'),
         actions: [
           if (_stage == _Stage.list)
@@ -190,10 +190,10 @@ class _ContactsMatchScreenState extends ConsumerState<ContactsMatchScreen> {
       ),
       body: SafeArea(
         child: switch (_stage) {
-          _Stage.disclosure => _disclosure(),
-          _Stage.loading => const Center(
-              child: CircularProgressIndicator(color: Colors.white)),
-          _Stage.list => _list(),
+          _Stage.disclosure => _disclosure(colors),
+          _Stage.loading =>
+            Center(child: CircularProgressIndicator(color: colors.foreground)),
+          _Stage.list => _list(colors),
           _Stage.error => Center(
               child: Padding(
                 padding: const EdgeInsets.all(32),
@@ -208,8 +208,8 @@ class _ContactsMatchScreenState extends ConsumerState<ContactsMatchScreen> {
                     const SizedBox(height: 16),
                     TextButton(
                       onPressed: () => _load(forceRefresh: true),
-                      child: const Text('Retry',
-                          style: TextStyle(color: Colors.white)),
+                      child: Text('Retry',
+                          style: TextStyle(color: colors.foreground)),
                     ),
                   ],
                 ),
