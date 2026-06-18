@@ -23,6 +23,7 @@ import '../features/matchmaking/screens/contacts_match_screen.dart';
 import '../features/matchmaking/screens/qr_match_screen.dart';
 import '../features/matchmaking/screens/qr_scanner_screen.dart';
 import '../features/matchmaking/screens/proximity_screen.dart';
+import '../features/onboarding/screens/onboarding_screen.dart';
 
 // Validates challenge codes: 9 uppercase alphanumeric chars, no O/0/I/1
 // (M9, GAP-9). Length must match the backend's shortCode generator (9 chars
@@ -258,6 +259,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/verify',
         pageBuilder: (context, state) =>
             _fadeRise(state, VerifyScreen(email: state.extra as String)),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        pageBuilder: (context, state) {
+          final next = state.uri.queryParameters['next'] ?? '/profile';
+          return _fadeRise(state, OnboardingScreen(nextRoute: next));
+        },
       ),
       GoRoute(
         path: '/home',

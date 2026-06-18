@@ -7,6 +7,7 @@ import '../providers/auth_provider.dart';
 import '../../../core/api/api_endpoints.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/line_eye.dart';
+import '../../onboarding/screens/onboarding_screen.dart';
 
 /// Shown immediately after a session is established (Google, Apple, OTP or
 /// magic link). Plays the success animation while the profile lookup runs
@@ -112,18 +113,20 @@ class _SignInSuccessScreenState extends ConsumerState<SignInSuccessScreen>
   }
 
   Future<String> _resolveDestination() async {
+    String dest;
     try {
       final api = ref.read(apiClientProvider);
       final profile = await api
           .getOrNull(ApiEndpoints.me)
           .timeout(const Duration(seconds: 5));
-      // Existing users land on their profile page (the post-login hub);
-      // first sign-ins go set one up.
-      return profile != null ? '/profile' : '/setup-profile';
+      dest = profile != null ? '/profile' : '/setup-profile';
     } catch (_) {
-      // Backend unreachable — profile screen shows its own error state.
-      return '/profile';
+      dest = '/profile';
     }
+
+    final seen = await hasSeenOnboarding();
+    if (!seen) return '/onboarding?next=${Uri.encodeComponent(dest)}';
+    return dest;
   }
 
   @override
