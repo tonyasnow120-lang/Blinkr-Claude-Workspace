@@ -14,6 +14,7 @@ import '../features/match/screens/countdown_screen.dart';
 import '../features/match/screens/contest_screen.dart';
 import '../features/match/screens/result_screen.dart';
 import '../features/profile/screens/profile_screen.dart';
+import '../features/onboarding/screens/onboarding_screen.dart';
 
 // Validates challenge codes: 8 uppercase alphanumeric chars, no O/0/I/1 (M9, GAP-9)
 final _codePattern = RegExp(r'^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$');
@@ -53,7 +54,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       );
     },
-    redirect: (context, state) {
+    redirect: (context, state) async {
       debugPrint('BLINKR: redirect called for ${state.matchedLocation}');
       final session = Supabase.instance.client.auth.currentSession;
       final isAuthenticated = session != null;
@@ -65,8 +66,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Redirect unauthenticated users away from protected routes (C2)
       if (!isAuthenticated && !isPublic) return '/';
 
-      // Redirect authenticated users away from auth screens (but allow setup-profile)
-      if (isAuthenticated && (path == '/' || path == '/login')) return '/home';
+      if (isAuthenticated && (path == '/' || path == '/login')) {
+        final seen = await hasSeenOnboarding();
+        return seen ? '/home' : '/onboarding';
+      }
 
       return null;
     },
@@ -83,6 +86,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/verify',
         builder: (context, state) =>
             VerifyScreen(email: state.extra as String),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
       ),
       GoRoute(
         path: '/home',
