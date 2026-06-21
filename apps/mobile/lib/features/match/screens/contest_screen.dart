@@ -8,6 +8,8 @@ import '../widgets/remote_video_feed.dart';
 import '../widgets/powerup_overlay.dart';
 import '../../../core/security/screen_security.dart';
 import '../../../core/audio/background_music.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/graffiti_highlight.dart';
 import '../../../shared/widgets/line_eye.dart';
 
 class ContestScreen extends ConsumerStatefulWidget {
@@ -84,17 +86,52 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
                   Expanded(
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(16),
-                      child: matchState.videoConnected && room != null
-                          ? RemoteVideoFeed(room: room)
-                          : Container(
-                              color: Colors.grey[900],
-                              child: const Center(
-                                child: Text(
-                                  'Opponent',
-                                  style: TextStyle(color: Colors.white54),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          matchState.videoConnected && room != null
+                              ? RemoteVideoFeed(room: room)
+                              : Container(
+                                  color: Colors.grey[900],
+                                  child: const Center(
+                                    child: Text(
+                                      'Opponent',
+                                      style: TextStyle(color: Colors.white54),
+                                    ),
+                                  ),
                                 ),
-                              ),
+                          Positioned(
+                            bottom: 16,
+                            left: 0,
+                            right: 0,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Text(
+                                  "DON'T ",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w200,
+                                    letterSpacing: 5,
+                                  ),
+                                ),
+                                GraffitiHighlight(
+                                  child: Text(
+                                    'BLINK',
+                                    style: TextStyle(
+                                      color: AppColors.acidInk,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w500,
+                                      letterSpacing: 5,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),

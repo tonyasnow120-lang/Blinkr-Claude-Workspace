@@ -10,6 +10,9 @@ class AppColors {
   final Color surface;
   final Color foreground;
 
+  static const acid = Color(0xFFCCFF00);
+  static const acidInk = Color(0xFF1A1F00);
+
   const AppColors._({
     required this.background,
     required this.surface,

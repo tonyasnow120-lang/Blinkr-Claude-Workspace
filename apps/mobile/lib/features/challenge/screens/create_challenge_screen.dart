@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../core/audio/background_music.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/graffiti_highlight.dart';
 import '../../../shared/widgets/line_eye.dart';
 import '../../matchmaking/providers/matchmaking_provider.dart';
 
@@ -78,7 +79,20 @@ class _CreateChallengeScreenState
         actions: const [MusicToggleButton()],
       ),
       body: SafeArea(
-        child: Padding(
+        child: Stack(
+          children: [
+            Positioned(
+              top: MediaQuery.sizeOf(context).height * 0.12,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Opacity(
+                  opacity: 0.05,
+                  child: LineEyeIcon(size: 300, color: colors.foreground),
+                ),
+              ),
+            ),
+            Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -110,6 +124,32 @@ class _CreateChallengeScreenState
                   ],
                 )
               else if (targeted) ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'CHALLENGE A ',
+                      style: TextStyle(
+                        color: colors.foreground,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w200,
+                        letterSpacing: 5,
+                      ),
+                    ),
+                    GraffitiHighlight(
+                      child: Text(
+                        'FRIEND',
+                        style: TextStyle(
+                          color: AppColors.acidInk,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
                 LineEyeIcon(size: 56, color: colors.foreground),
                 const SizedBox(height: 24),
                 Text(
@@ -133,10 +173,30 @@ class _CreateChallengeScreenState
                   style: TextStyle(color: colors.ink(0.5)),
                 ),
               ] else ...[
-                Text(
-                  'Share this challenge',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: colors.foreground, fontSize: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'CHALLENGE A ',
+                      style: TextStyle(
+                        color: colors.foreground,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w200,
+                        letterSpacing: 5,
+                      ),
+                    ),
+                    GraffitiHighlight(
+                      child: Text(
+                        'FRIEND',
+                        style: TextStyle(
+                          color: AppColors.acidInk,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 5,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 24),
                 Container(
@@ -200,6 +260,8 @@ class _CreateChallengeScreenState
               ],
             ],
           ),
+        ),
+          ],
         ),
       ),
     );

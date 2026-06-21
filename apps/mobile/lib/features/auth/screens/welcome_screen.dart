@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/audio/background_music.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/graffiti_highlight.dart';
 import '../../../shared/widgets/line_eye.dart';
 
 class WelcomeScreen extends StatefulWidget {
@@ -154,14 +155,31 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                     color: colors.ink(0.28),
                   ),
                   const SizedBox(height: 11),
-                  Text(
-                    'FIRST TO BLINK LOSES.',
-                    style: TextStyle(
-                      color: colors.foreground,
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w300,
-                      letterSpacing: 5,
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        'FIRST TO BLINK ',
+                        style: TextStyle(
+                          color: colors.foreground,
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w300,
+                          letterSpacing: 5,
+                        ),
+                      ),
+                      GraffitiHighlight(
+                        child: Text(
+                          'LOSES',
+                          style: TextStyle(
+                            color: AppColors.acidInk,
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: 5,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

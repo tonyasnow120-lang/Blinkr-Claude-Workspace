@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/audio/background_music.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/graffiti_highlight.dart';
 import '../../../shared/widgets/watching_eye.dart';
 import '../providers/auth_provider.dart';
 
@@ -221,7 +222,41 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                 ),
               ),
 
-              const SizedBox(height: 36),
+              const SizedBox(height: 12),
+              AnimatedBuilder(
+                animation: _entranceCtrl,
+                builder: (_, child) => Opacity(
+                  opacity: _headerOpacity.value,
+                  child: child,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'HOLD YOUR ',
+                      style: TextStyle(
+                        color: colors.ink(0.55),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w300,
+                        letterSpacing: 4,
+                      ),
+                    ),
+                    GraffitiHighlight(
+                      variant: GraffitiVariant.underline,
+                      child: Text(
+                        'NERVE',
+                        style: TextStyle(
+                          color: colors.foreground,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w300,
+                          letterSpacing: 4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
 
               // Form
               Expanded(

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/audio/background_music.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/theme_toggle_button.dart';
+import '../../../shared/widgets/graffiti_highlight.dart';
 import '../../../shared/widgets/watching_eye.dart';
 import '../../profile/providers/profile_provider.dart';
 
@@ -149,15 +150,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         ),
                         const SizedBox(height: 14),
                       ],
-                      Text(
-                        'READY TO STARE?',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: colors.foreground,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w200,
-                          letterSpacing: 8,
-                        ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            'READY TO ',
+                            style: TextStyle(
+                              color: colors.foreground,
+                              fontSize: 24,
+                              fontWeight: FontWeight.w200,
+                              letterSpacing: 8,
+                            ),
+                          ),
+                          GraffitiHighlight(
+                            child: Text(
+                              'STARE',
+                              style: TextStyle(
+                                color: AppColors.acidInk,
+                                fontSize: 24,
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: 8,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '?',
+                            style: TextStyle(
+                              color: colors.foreground,
+                              fontSize: 24,
+                              fontWeight: FontWeight.w200,
+                              letterSpacing: 8,
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 12),
                       const _TaglineCycler(),
