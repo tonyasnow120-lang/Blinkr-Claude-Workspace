@@ -6,6 +6,8 @@ import '../providers/match_provider.dart';
 import '../widgets/camera_feed.dart';
 import '../widgets/remote_video_feed.dart';
 import '../widgets/powerup_overlay.dart';
+import 'capture_editor_screen.dart';
+import '../../profile/providers/profile_provider.dart';
 import '../../../core/security/screen_security.dart';
 import '../../../core/audio/background_music.dart';
 import '../../../core/theme/app_colors.dart';
@@ -57,6 +59,33 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
       setState(() => _usedPowerUps.remove(type));
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(e.toString().replaceFirst('Exception: ', '')),
+      ));
+    }
+  }
+
+  /// Grabs the opponent's current video frame and opens the editor. Saved
+  /// shots land in the player's collage (and become photo-bomb ammo). Unlike
+  /// power-ups this can be used repeatedly.
+  Future<void> _captureOpponent() async {
+    final notifier = ref.read(matchNotifierProvider(widget.matchId).notifier);
+    final bytes = await notifier.captureOpponentFrame();
+    if (!mounted) return;
+    if (bytes == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('No opponent video to capture yet'),
+      ));
+      return;
+    }
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => CaptureEditorScreen(imageBytes: bytes),
+      ),
+    );
+    if (saved == true && mounted) {
+      ref.invalidate(userPhotosProvider);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Saved to your collage'),
       ));
     }
   }
@@ -130,6 +159,13 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
                               ],
                             ),
                           ),
+                          // Grab a reaction shot of the opponent for the
+                          // collage / future photo bombs.
+                          Positioned(
+                            top: 8,
+                            left: 8,
+                            child: _CaptureButton(onPressed: _captureOpponent),
+                          ),
                         ],
                       ),
                     ),
@@ -162,37 +198,74 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
                 ],
               ),
             ),
-            // Distraction power-ups — each usable once per match.
+            // Distraction power-ups — each usable once per match. Scrolls
+            // horizontally so the arsenal can grow past what fits on screen.
             Positioned(
-              left: 16,
-              right: 16,
+              left: 0,
+              right: 0,
               bottom: 192,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _PowerUpButton(
-                    label: 'Swarm',
-                    used: _usedPowerUps.contains('eye_swarm'),
-                    onPressed: () => _firePowerUp('eye_swarm'),
-                    child: const LineEyeIcon(size: 20, color: Colors.white),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minWidth: MediaQuery.sizeOf(context).width,
                   ),
-                  const SizedBox(width: 14),
-                  _PowerUpButton(
-                    label: 'Flash',
-                    used: _usedPowerUps.contains('flash'),
-                    onPressed: () => _firePowerUp('flash'),
-                    child:
-                        const Icon(Icons.bolt, color: Colors.white, size: 22),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _PowerUpButton(
+                          label: 'Swarm',
+                          used: _usedPowerUps.contains('eye_swarm'),
+                          onPressed: () => _firePowerUp('eye_swarm'),
+                          child:
+                              const LineEyeIcon(size: 20, color: Colors.white),
+                        ),
+                        const SizedBox(width: 10),
+                        _PowerUpButton(
+                          label: 'Flash',
+                          used: _usedPowerUps.contains('flash'),
+                          onPressed: () => _firePowerUp('flash'),
+                          child: const Icon(Icons.bolt,
+                              color: Colors.white, size: 22),
+                        ),
+                        const SizedBox(width: 10),
+                        _PowerUpButton(
+                          label: 'Photos',
+                          used: _usedPowerUps.contains('photo_bomb'),
+                          onPressed: () => _firePowerUp('photo_bomb'),
+                          child: const Icon(Icons.collections,
+                              color: Colors.white, size: 20),
+                        ),
+                        const SizedBox(width: 10),
+                        _PowerUpButton(
+                          label: 'Shake',
+                          used: _usedPowerUps.contains('shake'),
+                          onPressed: () => _firePowerUp('shake'),
+                          child: const Icon(Icons.vibration,
+                              color: Colors.white, size: 22),
+                        ),
+                        const SizedBox(width: 10),
+                        _PowerUpButton(
+                          label: 'Glitch',
+                          used: _usedPowerUps.contains('glitch'),
+                          onPressed: () => _firePowerUp('glitch'),
+                          child: const Icon(Icons.broken_image,
+                              color: Colors.white, size: 20),
+                        ),
+                        const SizedBox(width: 10),
+                        _PowerUpButton(
+                          label: 'Taunt',
+                          used: _usedPowerUps.contains('taunt'),
+                          onPressed: () => _firePowerUp('taunt'),
+                          child: const Icon(Icons.campaign,
+                              color: Colors.white, size: 22),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(width: 14),
-                  _PowerUpButton(
-                    label: 'Photos',
-                    used: _usedPowerUps.contains('photo_bomb'),
-                    onPressed: () => _firePowerUp('photo_bomb'),
-                    child: const Icon(Icons.collections,
-                        color: Colors.white, size: 20),
-                  ),
-                ],
+                ),
               ),
             ),
             Positioned(
@@ -270,6 +343,32 @@ class _CameraSwitchButton extends StatelessWidget {
           border: Border.all(color: Colors.white24),
         ),
         child: const Icon(Icons.cameraswitch, color: Colors.white, size: 18),
+      ),
+    );
+  }
+}
+
+/// Snaps a still of the opponent's feed. Lives on the feed itself so it reads
+/// as "capture what you're looking at".
+class _CaptureButton extends StatelessWidget {
+  final VoidCallback onPressed;
+
+  const _CaptureButton({required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onPressed,
+      customBorder: const CircleBorder(),
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.black.withOpacity(0.4),
+          border: Border.all(color: Colors.white24),
+        ),
+        child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
       ),
     );
   }
