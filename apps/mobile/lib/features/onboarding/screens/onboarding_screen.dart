@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../core/theme/app_colors.dart';
 
 const _onboardingSeenKey = 'onboarding_seen';
 
@@ -11,7 +12,8 @@ Future<bool> hasSeenOnboarding() async {
 }
 
 class OnboardingScreen extends StatefulWidget {
-  const OnboardingScreen({super.key});
+  final String nextRoute;
+  const OnboardingScreen({super.key, required this.nextRoute});
 
   @override
   State<OnboardingScreen> createState() => _OnboardingScreenState();
@@ -67,8 +69,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   @override
   void initState() {
     super.initState();
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
-
     _entranceCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
@@ -98,7 +98,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   Future<void> _complete() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_onboardingSeenKey, true);
-    if (mounted) context.go('/home');
+    if (mounted) context.go(widget.nextRoute);
   }
 
   void _next() {
@@ -114,10 +114,15 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    SystemChrome.setSystemUIOverlayStyle(
+      isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+    );
     final isLast = _currentPage == _pages.length - 1;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colors.background,
       body: SafeArea(
         child: AnimatedBuilder(
           animation: _entranceCtrl,
@@ -136,10 +141,10 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   padding: const EdgeInsets.only(top: 8, right: 16),
                   child: TextButton(
                     onPressed: _complete,
-                    child: const Text(
+                    child: Text(
                       'SKIP',
                       style: TextStyle(
-                        color: Colors.white38,
+                        color: colors.ink(0.4),
                         fontSize: 10,
                         fontWeight: FontWeight.w400,
                         letterSpacing: 3,
@@ -172,7 +177,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       height: 6,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(3),
-                        color: active ? Colors.white : Colors.white12,
+                        color: active
+                            ? colors.foreground
+                            : colors.ink(0.18),
                       ),
                     );
                   }),
@@ -187,8 +194,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   child: ElevatedButton(
                     onPressed: _next,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: Colors.black,
+                      backgroundColor: colors.foreground,
+                      foregroundColor: colors.background,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(4),
@@ -237,6 +244,7 @@ class _FeaturePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 40),
       child: Column(
@@ -249,9 +257,9 @@ class _FeaturePage extends StatelessWidget {
             height: 100,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.white10, width: 1),
+              border: Border.all(color: colors.ink(0.12), width: 1),
             ),
-            child: Icon(data.icon, size: 40, color: Colors.white),
+            child: Icon(data.icon, size: 40, color: colors.foreground),
           ),
 
           const SizedBox(height: 48),
@@ -259,8 +267,8 @@ class _FeaturePage extends StatelessWidget {
           Text(
             data.title,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: colors.foreground,
               fontSize: 26,
               fontWeight: FontWeight.w200,
               letterSpacing: 10,
@@ -269,15 +277,15 @@ class _FeaturePage extends StatelessWidget {
 
           const SizedBox(height: 14),
 
-          Container(width: 32, height: 0.5, color: Colors.white24),
+          Container(width: 32, height: 0.5, color: colors.ink(0.25)),
 
           const SizedBox(height: 14),
 
           Text(
             data.subtitle,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white54,
+            style: TextStyle(
+              color: colors.ink(0.55),
               fontSize: 9.5,
               fontWeight: FontWeight.w400,
               letterSpacing: 4,
@@ -289,8 +297,8 @@ class _FeaturePage extends StatelessWidget {
           Text(
             data.body,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white60,
+            style: TextStyle(
+              color: colors.ink(0.6),
               fontSize: 14,
               fontWeight: FontWeight.w300,
               height: 1.6,

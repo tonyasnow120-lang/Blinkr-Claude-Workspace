@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'router.dart';
+import '../core/audio/background_music.dart';
 import '../core/security/app_lifecycle_observer.dart';
+import '../core/theme/app_colors.dart';
+import '../core/theme/theme_provider.dart';
+import '../features/matchmaking/providers/challenge_invite_provider.dart';
 
 class BlinkrApp extends ConsumerWidget {
   const BlinkrApp({super.key});
@@ -19,11 +23,27 @@ class BlinkrApp extends ConsumerWidget {
       return _ErrorApp('Router failed:\n$e');
     }
 
+    final themeMode = ref.watch(themeModeProvider);
+
     return AppLifecycleObserver(
       child: MaterialApp.router(
         title: 'Blinkr',
         debugShowCheckedModeBanner: false,
+        themeMode: themeMode,
         theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.black,
+            brightness: Brightness.light,
+          ),
+          useMaterial3: true,
+          scaffoldBackgroundColor: Colors.white,
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+            elevation: 0,
+          ),
+        ),
+        darkTheme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
             seedColor: Colors.white,
             brightness: Brightness.dark,
@@ -37,8 +57,79 @@ class BlinkrApp extends ConsumerWidget {
           ),
         ),
         routerConfig: router,
+        builder: (context, child) => _ChallengeInviteListener(
+          child: _MusicBootstrap(child: child ?? const SizedBox.shrink()),
+        ),
       ),
     );
+  }
+}
+
+/// Starts the looping background music once the first frame is up, so audio
+/// init can never delay or break startup.
+class _MusicBootstrap extends ConsumerStatefulWidget {
+  final Widget child;
+  const _MusicBootstrap({required this.child});
+
+  @override
+  ConsumerState<_MusicBootstrap> createState() => _MusicBootstrapState();
+}
+
+class _MusicBootstrapState extends ConsumerState<_MusicBootstrap> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(backgroundMusicProvider).start();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
+/// Listens for incoming targeted challenges (friend/contact/proximity) and
+/// shows an accept/dismiss dialog over whatever screen is currently active.
+class _ChallengeInviteListener extends ConsumerWidget {
+  final Widget child;
+  const _ChallengeInviteListener({required this.child});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen<ChallengeInvite?>(challengeInviteProvider, (prev, next) {
+      if (next == null) return;
+      final dialogContext = rootNavigatorKey.currentContext;
+      if (dialogContext == null) return;
+      showDialog<void>(
+        context: dialogContext,
+        builder: (context) => AlertDialog(
+          backgroundColor: context.colors.surface,
+          title: Text('Challenge!', style: TextStyle(color: context.colors.foreground)),
+          content: Text(
+            '${next.challengerName} wants to blink against you.',
+            style: TextStyle(color: context.colors.ink(0.7)),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                ref.read(challengeInviteProvider.notifier).dismiss();
+                Navigator.of(context).pop();
+              },
+              child: const Text('Deny'),
+            ),
+            FilledButton(
+              onPressed: () {
+                ref.read(challengeInviteProvider.notifier).dismiss();
+                Navigator.of(context).pop();
+                dialogContext.push('/match/${next.code}');
+              },
+              child: const Text('Accept'),
+            ),
+          ],
+        ),
+      );
+    });
+    return child;
   }
 }
 

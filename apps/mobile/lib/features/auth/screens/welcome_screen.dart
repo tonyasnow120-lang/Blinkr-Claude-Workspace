@@ -1,7 +1,10 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/audio/background_music.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/graffiti_highlight.dart';
+import '../../../shared/widgets/line_eye.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -80,12 +83,16 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
+    final colors = context.colors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    SystemChrome.setSystemUIOverlayStyle(
+      isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+    );
     final size = MediaQuery.sizeOf(context);
     final eyeCenterY = size.height * 0.38;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colors.background,
       body: Stack(
         alignment: Alignment.center,
         children: [
@@ -101,6 +108,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 arcRotation: _arcCtrl.value,
                 blink: _blinkCtrl.value,
                 eyeCenterY: eyeCenterY,
+                color: colors.foreground,
+                background: colors.background,
               ),
             ),
           ),
@@ -126,34 +135,51 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Text(
+                      Text(
                         'BLINKR',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: colors.foreground,
                           fontSize: 34,
                           fontWeight: FontWeight.w200,
                           letterSpacing: 13,
                         ),
                       ),
                       const SizedBox(width: 3),
-                      _BlinkingCursor(),
+                      _BlinkingCursor(color: colors.foreground),
                     ],
                   ),
                   const SizedBox(height: 13),
                   Container(
                     width: 40,
                     height: 0.5,
-                    color: Colors.white.withAlpha(71),
+                    color: colors.ink(0.28),
                   ),
                   const SizedBox(height: 11),
-                  const Text(
-                    'FIRST TO BLINK LOSES.',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w300,
-                      letterSpacing: 5,
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        'FIRST TO BLINK ',
+                        style: TextStyle(
+                          color: colors.foreground,
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w300,
+                          letterSpacing: 5,
+                        ),
+                      ),
+                      GraffitiHighlight(
+                        child: Text(
+                          'LOSES',
+                          style: TextStyle(
+                            color: AppColors.acidInk,
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: 5,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -175,8 +201,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 child: ElevatedButton(
                   onPressed: () => context.push('/login'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
+                    backgroundColor: colors.foreground,
+                    foregroundColor: colors.background,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(4),
@@ -194,6 +220,13 @@ class _WelcomeScreenState extends State<WelcomeScreen>
               ),
             ),
           ),
+
+          // Music toggle
+          const Positioned(
+            top: 8,
+            right: 8,
+            child: SafeArea(child: MusicToggleButton()),
+          ),
         ],
       ),
     );
@@ -201,6 +234,9 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 }
 
 class _BlinkingCursor extends StatefulWidget {
+  final Color color;
+  const _BlinkingCursor({required this.color});
+
   @override
   State<_BlinkingCursor> createState() => _BlinkingCursorState();
 }
@@ -220,12 +256,12 @@ class _BlinkingCursorState extends State<_BlinkingCursor>
   @override
   Widget build(BuildContext context) => FadeTransition(
         opacity: _ctrl,
-        child: const Padding(
-          padding: EdgeInsets.only(bottom: 2),
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 2),
           child: Text(
             '|',
             style: TextStyle(
-                color: Colors.white,
+                color: widget.color,
                 fontSize: 32,
                 fontWeight: FontWeight.w100),
           ),
@@ -239,6 +275,8 @@ class _SplashPainter extends CustomPainter {
   final double arcRotation;
   final double blink;
   final double eyeCenterY;
+  final Color color;
+  final Color background;
 
   const _SplashPainter({
     required this.pulse,
@@ -246,172 +284,19 @@ class _SplashPainter extends CustomPainter {
     required this.arcRotation,
     required this.blink,
     required this.eyeCenterY,
+    required this.color,
+    required this.background,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, eyeCenterY);
-    _drawRings(canvas, center, size);
-    _drawPulseRings(canvas, center, size);
-    _drawEye(canvas, center, size);
-  }
-
-  void _drawRings(Canvas canvas, Offset center, Size size) {
-    final innerR = size.width * 0.335;
-    final outerR = size.width * 0.487;
-    final p = Paint()
-      ..strokeWidth = 1.5
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
-
-    // inner clockwise
-    canvas.save();
-    canvas.translate(center.dx, center.dy);
-    canvas.rotate(rotation * math.pi * 2);
-    for (int i = 0; i < 24; i++) {
-      final a = i * math.pi / 12;
-      final isMajor = i % 6 == 0;
-      p.color = Colors.white.withAlpha(isMajor ? 128 : 31);
-      final len = isMajor ? 12.0 : 6.0;
-      canvas.drawLine(
-        Offset(math.cos(a) * (innerR - len), math.sin(a) * (innerR - len)),
-        Offset(math.cos(a) * innerR, math.sin(a) * innerR),
-        p,
-      );
-    }
-    canvas.restore();
-
-    // outer counter-clockwise
-    canvas.save();
-    canvas.translate(center.dx, center.dy);
-    canvas.rotate(-arcRotation * math.pi * 2);
-    for (int i = 0; i < 36; i++) {
-      final a = i * math.pi / 18;
-      final isLong = i % 3 == 0;
-      p.color = Colors.white.withAlpha(isLong ? 56 : 13);
-      final len = isLong ? 10.0 : 5.0;
-      canvas.drawLine(
-        Offset(math.cos(a) * (outerR - len), math.sin(a) * (outerR - len)),
-        Offset(math.cos(a) * outerR, math.sin(a) * outerR),
-        p,
-      );
-    }
-    canvas.restore();
-  }
-
-  void _drawPulseRings(Canvas canvas, Offset center, Size size) {
-    final baseR = size.width * 0.365;
-    final p = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.5;
-    for (int i = 0; i < 3; i++) {
-      final t = (pulse + i / 3.0) % 1.0;
-      final scale = 0.08 + t * 2.85;
-      final alpha = t < 0.15
-          ? ((t / 0.15) * 153).round()
-          : ((1 - t) * 153).round();
-      if (alpha <= 0) continue;
-      p.color = Colors.white.withAlpha(alpha);
-      canvas.drawCircle(center, baseR * scale, p);
-    }
-  }
-
-  void _drawEye(Canvas canvas, Offset center, Size size) {
-    final eyeW = size.width * 0.285;
-    final eyeH = eyeW * 0.44;
-
-    // Double-blink envelope: two blink events per cycle
-    double lidT = 0.0;
-    final t = blink;
-    if (t >= 0.28 && t <= 0.37) {
-      final bt = (t - 0.28) / 0.09;
-      lidT = bt < 0.5 ? bt * 2 : (1 - bt) * 2;
-    } else if (t >= 0.42 && t <= 0.48) {
-      final bt = (t - 0.42) / 0.06;
-      lidT = bt < 0.5 ? bt * 2 : (1 - bt) * 2;
-    }
-
-    final eyePath = Path()
-      ..moveTo(center.dx - eyeW / 2, center.dy)
-      ..quadraticBezierTo(
-          center.dx, center.dy - eyeH, center.dx + eyeW / 2, center.dy)
-      ..quadraticBezierTo(
-          center.dx, center.dy + eyeH, center.dx - eyeW / 2, center.dy)
-      ..close();
-
-    canvas.save();
-    canvas.clipPath(eyePath);
-
-    final irisScale = 1.0 - lidT * 0.08;
-    final irisR = eyeH * 0.88;
-
-    canvas.save();
-    canvas.translate(center.dx, center.dy);
-    canvas.scale(irisScale, irisScale);
-    canvas.translate(-center.dx, -center.dy);
-
-    final strokePaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.1
-      ..color = Colors.white.withAlpha(230);
-
-    canvas.drawCircle(center, irisR, strokePaint);
-
-    strokePaint.color = Colors.white.withAlpha(76);
-    strokePaint.strokeWidth = 0.5;
-    canvas.drawCircle(center, irisR * 0.7, strokePaint);
-
-    canvas.drawCircle(center, irisR * 0.44, Paint()..color = Colors.white);
-
-    canvas.drawCircle(
-      Offset(center.dx + irisR * 0.27, center.dy - irisR * 0.3),
-      irisR * 0.17,
-      Paint()..color = Colors.black.withAlpha(140),
-    );
-
-    canvas.restore();
-
-    if (lidT > 0.001) {
-      final lidPaint = Paint()..color = Colors.black;
-      final lidOffset = eyeH * lidT;
-      final pad = eyeW * 0.05;
-
-      final upperLid = Path()
-        ..moveTo(center.dx - eyeW / 2 - pad, center.dy)
-        ..quadraticBezierTo(
-            center.dx, center.dy - eyeH, center.dx + eyeW / 2 + pad, center.dy)
-        ..lineTo(center.dx + eyeW / 2 + pad, center.dy - eyeH * 2.5)
-        ..lineTo(center.dx - eyeW / 2 - pad, center.dy - eyeH * 2.5)
-        ..close();
-
-      canvas.save();
-      canvas.translate(0, lidOffset);
-      canvas.drawPath(upperLid, lidPaint);
-      canvas.restore();
-
-      final lowerLid = Path()
-        ..moveTo(center.dx - eyeW / 2 - pad, center.dy)
-        ..quadraticBezierTo(
-            center.dx, center.dy + eyeH, center.dx + eyeW / 2 + pad, center.dy)
-        ..lineTo(center.dx + eyeW / 2 + pad, center.dy + eyeH * 2.5)
-        ..lineTo(center.dx - eyeW / 2 - pad, center.dy + eyeH * 2.5)
-        ..close();
-
-      canvas.save();
-      canvas.translate(0, -lidOffset);
-      canvas.drawPath(lowerLid, lidPaint);
-      canvas.restore();
-    }
-
-    canvas.restore();
-
-    canvas.drawPath(
-      eyePath,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.2
-        ..color = Colors.white,
-    );
+    final base = size.width;
+    LineEye.drawRings(canvas, center, base,
+        rotation: rotation, arcRotation: arcRotation, color: color);
+    LineEye.drawPulseRings(canvas, center, base, pulse, color: color);
+    LineEye.drawEye(canvas, center, base,
+        blink: blink, color: color, background: background);
   }
 
   @override
@@ -419,5 +304,7 @@ class _SplashPainter extends CustomPainter {
       old.pulse != pulse ||
       old.rotation != rotation ||
       old.arcRotation != arcRotation ||
-      old.blink != blink;
+      old.blink != blink ||
+      old.color != color ||
+      old.background != background;
 }

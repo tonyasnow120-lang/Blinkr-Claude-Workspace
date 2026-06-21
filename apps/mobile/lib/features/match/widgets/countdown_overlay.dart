@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../../core/audio/countdown_sound.dart';
 
 class CountdownOverlay extends StatefulWidget {
   final DateTime startsAt;
@@ -18,6 +19,8 @@ class CountdownOverlay extends StatefulWidget {
 class _CountdownOverlayState extends State<CountdownOverlay> {
   late Timer _timer;
   int _remaining = 3;
+  final _sound = CountdownSoundPlayer();
+  int? _lastAnnounced;
 
   @override
   void initState() {
@@ -31,8 +34,16 @@ class _CountdownOverlayState extends State<CountdownOverlay> {
     final diff = widget.startsAt.difference(now).inSeconds;
     if (diff <= 0) {
       _timer.cancel();
+      if (_lastAnnounced != 0) {
+        _lastAnnounced = 0;
+        _sound.playGo();
+      }
       if (mounted) widget.onComplete();
     } else {
+      if (diff != _lastAnnounced) {
+        _lastAnnounced = diff;
+        _sound.playTick();
+      }
       if (mounted) setState(() => _remaining = diff);
     }
   }
@@ -40,6 +51,7 @@ class _CountdownOverlayState extends State<CountdownOverlay> {
   @override
   void dispose() {
     _timer.cancel();
+    _sound.dispose();
     super.dispose();
   }
 

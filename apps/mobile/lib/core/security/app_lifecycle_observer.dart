@@ -54,7 +54,15 @@ class _AppLifecycleObserverState extends State<AppLifecycleObserver>
 
   @override
   Widget build(BuildContext context) {
+    // This Stack sits at the app root, above MaterialApp, so there is no
+    // Directionality ancestor yet. Stack's default alignment
+    // (AlignmentDirectional.topStart) calls Directionality.of(context) to
+    // resolve, which throws in debug (visible red error) but silently
+    // produces a blank/black render in release (the assert is stripped) —
+    // i.e. a release-only black screen on launch with no error shown.
+    // Alignment.topLeft is non-directional and needs no Directionality.
     return Stack(
+      alignment: Alignment.topLeft,
       children: [
         widget.child,
         if (_obscured)

@@ -24,6 +24,23 @@ dependencies:
   google_sign_in: ^6.2.0
   sign_in_with_apple: ^6.1.0
   crypto: ^3.0.0
+  audioplayers: ^6.1.0
+  livekit_client: ^2.3.0       # Live video/audio between matched players
+  flutter_webrtc: any          # Version governed by livekit_client; declared
+                               # for direct MediaStreamTrack.captureFrame() use
+  google_mlkit_face_detection: ^0.13.0  # On-device blink detection — eye-open
+                                        # probability (docs/FACE_TRACKING_SCOPE.md)
+  shared_preferences: ^2.2.0
+  image_picker: ^1.1.2
+  # Matchmaking
+  share_plus: ^10.1.0          # Feature 1 — native share sheet for invite links
+  qr_flutter: ^4.1.0           # Feature 4 — QR display
+  mobile_scanner: ^7.2.0       # Feature 4 — QR scanning (v7 drops GoogleMLKit on iOS, fixing MLKitVision conflict with face_detection)
+  flutter_contacts: ^1.1.9+2   # Feature 2 — contact discovery (hashed)
+  permission_handler: ^11.3.1  # Features 2/4 — rationale-first permission flows
+  geolocator: ^13.0.2          # Feature 5 — GPS radius matching
+  flutter_map: ^7.0.2          # Feature 5 — interactive nearby-players map
+  latlong2: ^0.9.1             # Feature 5 — LatLng + bearing math for map markers
 
 # app_links is pulled in transitively by supabase_flutter (OAuth deep-link
 # callbacks). Version 6.4.1 "Updated Gradle settings" to read
@@ -45,3 +62,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/audio/background_music.mp3

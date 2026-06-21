@@ -16,6 +16,15 @@ CREATE TABLE IF NOT EXISTS public.users (
   updated_at  timestamptz NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS public.user_photos (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  url         text NOT NULL,
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS user_photos_user_id_idx ON public.user_photos(user_id);
+
 CREATE TABLE IF NOT EXISTS public.user_stats (
   user_id         uuid PRIMARY KEY REFERENCES public.users(id) ON DELETE CASCADE,
   wins            integer NOT NULL DEFAULT 0,
@@ -77,6 +86,7 @@ CREATE INDEX IF NOT EXISTS blink_events_match_idx ON public.blink_events(match_i
 -- ============================================================
 
 ALTER TABLE public.users        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_photos  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_stats   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.challenges   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.matches      ENABLE ROW LEVEL SECURITY;
@@ -89,6 +99,9 @@ ALTER TABLE public.blink_events ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "users_select"        ON public.users;
 DROP POLICY IF EXISTS "users_update"        ON public.users;
 DROP POLICY IF EXISTS "users_insert"        ON public.users;
+DROP POLICY IF EXISTS "user_photos_select"  ON public.user_photos;
+DROP POLICY IF EXISTS "user_photos_insert"  ON public.user_photos;
+DROP POLICY IF EXISTS "user_photos_delete"  ON public.user_photos;
 DROP POLICY IF EXISTS "stats_select"        ON public.user_stats;
 DROP POLICY IF EXISTS "stats_insert"        ON public.user_stats;
 DROP POLICY IF EXISTS "stats_update"        ON public.user_stats;
@@ -106,6 +119,12 @@ DROP POLICY IF EXISTS "blinks_select"       ON public.blink_events;
 CREATE POLICY "users_select"   ON public.users FOR SELECT USING (true);
 CREATE POLICY "users_update"   ON public.users FOR UPDATE USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
 CREATE POLICY "users_insert"   ON public.users FOR INSERT WITH CHECK (false); -- backend only
+
+-- user_photos: anyone logged in can view a profile's collage; only the
+-- owner can add/remove their own photos
+CREATE POLICY "user_photos_select" ON public.user_photos FOR SELECT USING (true);
+CREATE POLICY "user_photos_insert" ON public.user_photos FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "user_photos_delete" ON public.user_photos FOR DELETE USING (auth.uid() = user_id);
 
 -- user_stats: public read, backend writes
 CREATE POLICY "stats_select"   ON public.user_stats FOR SELECT USING (true);

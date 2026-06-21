@@ -6,9 +6,19 @@ import {
   integer,
   numeric,
   timestamp,
+  boolean,
   index,
+  uniqueIndex,
+  customType,
 } from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
+
+// PostGIS geography(Point, 4326) — Drizzle has no native type; raw SQL passthrough.
+const geographyPoint = customType<{ data: string }>({
+  dataType() {
+    return 'geography(Point, 4326)'
+  },
+})
 
 export const users = pgTable('users', {
   id: uuid('id').primaryKey(),
@@ -16,9 +26,30 @@ export const users = pgTable('users', {
   displayName: text('display_name'),
   avatarUrl: text('avatar_url'),
   fcmToken: text('fcm_token'),
+  // SHA-256 of the user's own E.164 phone number, hashed on-device — the
+  // server never sees the raw number. Powers contact discovery (Feature 2).
+  phoneHash: text('phone_hash'),
+  allowContactDiscovery: boolean('allow_contact_discovery').default(true).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-})
+}, (t) => ({
+  phoneHashIdx: index('users_phone_hash_idx').on(t.phoneHash),
+}))
+
+export const userPhotos = pgTable(
+  'user_photos',
+  {
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    url: text('url').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    userIdx: index('user_photos_user_id_idx').on(t.userId),
+  }),
+)
 
 export const userStats = pgTable('user_stats', {
   userId: uuid('user_id')
@@ -41,6 +72,13 @@ export const challenges = pgTable(
       .notNull()
       .references(() => users.id),
     opponentId: uuid('opponent_id').references(() => users.id),
+    // How the challenge was issued — drives TTL (qr: 60s, others: 15min)
+    // and whether opponentId is pre-targeted (friend/contact/proximity).
+    kind: text('kind', {
+      enum: ['link', 'qr', 'friend', 'contact', 'proximity'],
+    })
+      .default('link')
+      .notNull(),
     status: text('status', {
       enum: ['pending', 'accepted', 'expired', 'cancelled'],
     })
@@ -73,6 +111,9 @@ export const matches = pgTable(
     winnerId: uuid('winner_id').references(() => users.id),
     loserId: uuid('loser_id').references(() => users.id),
     livekitRoomName: text('livekit_room_name').notNull(),
+    // Per-player lobby ready flags — countdown starts only when both are true.
+    playerOneReady: boolean('player_one_ready').default(false).notNull(),
+    playerTwoReady: boolean('player_two_ready').default(false).notNull(),
     status: text('status', {
       enum: ['waiting', 'countdown', 'live', 'adjudicating', 'completed', 'abandoned'],
     })
@@ -113,8 +154,43 @@ export const blinkEvents = pgTable(
   }),
 )
 
+export const friendships = pgTable(
+  'friendships',
+  {
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+    requesterId: uuid('requester_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    addresseeId: uuid('addressee_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    status: text('status', { enum: ['pending', 'accepted', 'blocked'] })
+      .default('pending')
+      .notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    pairUnique: uniqueIndex('friendships_pair_idx').on(t.requesterId, t.addresseeId),
+    addresseeStatusIdx: index('friendships_addressee_status_idx').on(t.addresseeId, t.status),
+  }),
+)
+
+// Separate table (not columns on users) so RLS can deny ALL client access —
+// coordinates are only ever read by the backend, which returns distances.
+export const userLocations = pgTable('user_locations', {
+  userId: uuid('user_id')
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  location: geographyPoint('location'),
+  visible: boolean('visible').default(false).notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+})
+
 export type User = typeof users.$inferSelect
+export type UserPhoto = typeof userPhotos.$inferSelect
 export type UserStats = typeof userStats.$inferSelect
 export type Challenge = typeof challenges.$inferSelect
 export type Match = typeof matches.$inferSelect
 export type BlinkEvent = typeof blinkEvents.$inferSelect
+export type Friendship = typeof friendships.$inferSelect
+export type UserLocation = typeof userLocations.$inferSelect

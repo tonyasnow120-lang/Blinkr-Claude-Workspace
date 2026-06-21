@@ -8,6 +8,7 @@
 -- 1. Enable RLS on all tables
 -- ============================================================
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_photos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_stats ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.challenges ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.matches ENABLE ROW LEVEL SECURITY;
@@ -34,6 +35,46 @@ CREATE POLICY "users_update_own"
 CREATE POLICY "users_insert_service_role_only"
   ON public.users FOR INSERT
   WITH CHECK (FALSE); -- Only service_role (bypasses RLS) may insert
+
+-- ============================================================
+-- 2b. user_photos table (profile photo collage)
+-- ============================================================
+-- Anyone authenticated can view a profile's photo collage
+CREATE POLICY "user_photos_select_all"
+  ON public.user_photos FOR SELECT
+  USING (true);
+
+-- Users can only add photos to their own collage
+CREATE POLICY "user_photos_insert_own"
+  ON public.user_photos FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+-- Users can only delete their own photos
+CREATE POLICY "user_photos_delete_own"
+  ON public.user_photos FOR DELETE
+  USING (auth.uid() = user_id);
+
+-- ============================================================
+-- Storage bucket: "user-photos"
+-- ============================================================
+-- Create a public bucket named "user-photos" in Supabase Storage, then
+-- apply these policies (Storage > Policies) so users can only write to a
+-- folder named after their own auth.uid():
+--
+-- CREATE POLICY "user_photos_storage_read" ON storage.objects
+--   FOR SELECT USING (bucket_id = 'user-photos');
+--
+-- CREATE POLICY "user_photos_storage_write" ON storage.objects
+--   FOR INSERT WITH CHECK (
+--     bucket_id = 'user-photos'
+--     AND (storage.foldername(name))[1] = auth.uid()::text
+--   );
+--
+-- CREATE POLICY "user_photos_storage_delete" ON storage.objects
+--   FOR DELETE USING (
+--     bucket_id = 'user-photos'
+--     AND (storage.foldername(name))[1] = auth.uid()::text
+--   );
 
 -- ============================================================
 -- 3. user_stats table

@@ -100,6 +100,18 @@ class ApiClient {
     }
   }
 
+  Future<Map<String, dynamic>> put(
+    String path, {
+    Map<String, dynamic>? body,
+  }) async {
+    try {
+      final response = await _dio.put<Map<String, dynamic>>(path, data: body);
+      return response.data!;
+    } catch (e) {
+      throw Exception(_friendlyError(e));
+    }
+  }
+
   Future<Map<String, dynamic>> patch(
     String path, {
     Map<String, dynamic>? body,

@@ -1,0 +1,29 @@
+name: Run DB Migrations
+
+# Applies apps/backend/db/migrations/*.sql to the live database in
+# filename order. All migration files are idempotent (IF NOT EXISTS),
+# so re-running the whole set is safe.
+on:
+  workflow_dispatch:
+
+jobs:
+  migrate:
+    name: Apply SQL migrations
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::DATABASE_URL secret is not set (Supabase → Settings → Database)"
+            exit 1
+          fi
+          shopt -s nullglob
+          for f in apps/backend/db/migrations/*.sql; do
+            echo "=== Applying $f ==="
+            psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"
+          done
+          echo "All migrations applied."

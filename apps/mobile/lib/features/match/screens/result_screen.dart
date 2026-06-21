@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/match_provider.dart';
 import '../widgets/win_animation.dart';
+import '../widgets/crying_eye_animation.dart';
 import '../../../core/security/screen_security.dart';
+import '../../../core/audio/background_music.dart';
 
 class ResultScreen extends ConsumerStatefulWidget {
   final String matchId;
@@ -47,10 +49,17 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
           if (result != null)
             WinAnimation(won: won)
           else if (abandoned)
-            const Center(
-              child: Text(
-                'Match abandoned',
-                style: TextStyle(color: Colors.white54, fontSize: 24),
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  CryingEyeAnimation(),
+                  SizedBox(height: 16),
+                  Text(
+                    'Match abandoned',
+                    style: TextStyle(color: Colors.white54, fontSize: 24),
+                  ),
+                ],
               ),
             )
           else
@@ -92,6 +101,11 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
                 ],
               ),
             ),
+          ),
+          const Positioned(
+            top: 8,
+            right: 8,
+            child: SafeArea(child: MusicToggleButton()),
           ),
         ],
       ),

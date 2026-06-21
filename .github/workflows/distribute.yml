@@ -39,6 +39,7 @@ jobs:
           cp /tmp/MainActivity.kt android/app/src/main/kotlin/com/blinkr/app/MainActivity.kt
           cp /tmp/network_security_config.xml android/app/src/main/res/xml/network_security_config.xml
           cp /tmp/proguard-rules.pro android/app/proguard-rules.pro
+          # Flutter 3.44+ generates build.gradle.kts (Kotlin DSL); older versions use .gradle
           GRADLE_FILE=$(ls android/app/build.gradle.kts android/app/build.gradle 2>/dev/null | head -1)
           if [ -n "$GRADLE_FILE" ]; then
             sed -i "s/com\.blinkr\.mobile/com.blinkr.app/g;s/com\.blinkr\.blinkr/com.blinkr.app/g" "$GRADLE_FILE"
@@ -53,6 +54,8 @@ jobs:
         run: cd apps/mobile && flutter pub run build_runner build --delete-conflicting-outputs
 
       - name: Write dart-define file
+        env:
+          GOOGLE_WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
         run: |
           cat > apps/mobile/.env.dart-define <<EOF
           {
@@ -63,6 +66,12 @@ jobs:
             "GOOGLE_WEB_CLIENT_ID": "${{ secrets.GOOGLE_WEB_CLIENT_ID }}"
           }
           EOF
+          # Diagnostic: client IDs are public identifiers; print only the
+          # prefix to confirm the secret holds the WEB client (…-936…) and
+          # not the Android client (…-bnb…) — the wrong type causes Google
+          # Sign-In DEVELOPER_ERROR (code 10).
+          echo "GOOGLE_WEB_CLIENT_ID prefix: ${GOOGLE_WEB_CLIENT_ID:0:18}"
+          echo "GOOGLE_WEB_CLIENT_ID length: ${#GOOGLE_WEB_CLIENT_ID}"
 
       - name: Set up Android release signing
         env:
@@ -81,9 +90,88 @@ jobs:
           storeFile=app/blinkr-release.keystore
           EOF
             echo "Release keystore configured"
+            # Fingerprints are public info — print them so the SHA-1 can be
+            # registered in Firebase console (required for Google Sign-In;
+            # an unregistered SHA-1 causes ApiException code 10).
+            echo "=== Release signing certificate fingerprints ==="
+            keytool -list -v \
+              -keystore apps/mobile/android/app/blinkr-release.keystore \
+              -storepass "$ANDROID_KEYSTORE_PASSWORD" \
+              -alias "$ANDROID_KEY_ALIAS" 2>/dev/null \
+              | grep -E "SHA1:|SHA256:" || true
           else
             echo "No keystore secret — using debug signing"
           fi
+
+      - name: Patch build.gradle.kts — sign release builds with release keystore
+        run: |
+          python3 - <<'PYEOF'
+          # The flutter-create-generated build.gradle.kts signs release builds
+          # with the DEBUG signing config (the template's known TODO). The
+          # runner's debug keystore is auto-generated with a random key every
+          # run, so the APK's signing SHA-1 changes per build and can never be
+          # registered with Google — guaranteeing Google Sign-In error code 10
+          # (DEVELOPER_ERROR). Wire up key.properties so release builds are
+          # signed with the stable release keystore instead.
+          gradle_path = 'apps/mobile/android/app/build.gradle.kts'
+          with open(gradle_path, 'r') as f:
+              content = f.read()
+
+          # Kotlin DSL only allows import statements before the plugins {}
+          # block, so imports go at the very top while the property-loading
+          # vals are inserted just before the android {} block.
+          imports = '\n'.join([
+              'import java.util.Properties',
+              'import java.io.FileInputStream',
+              '',
+              '',
+          ])
+
+          props_loader = '\n'.join([
+              'val keystorePropertiesFile = rootProject.file("key.properties")',
+              'val keystoreProperties = Properties()',
+              'if (keystorePropertiesFile.exists()) {',
+              '    keystoreProperties.load(FileInputStream(keystorePropertiesFile))',
+              '}',
+              '',
+              '',
+          ])
+
+          signing_block = '\n'.join([
+              '    signingConfigs {',
+              '        if (keystorePropertiesFile.exists()) {',
+              '            create("release") {',
+              '                keyAlias = keystoreProperties["keyAlias"] as String',
+              '                keyPassword = keystoreProperties["keyPassword"] as String',
+              '                storeFile = rootProject.file(keystoreProperties["storeFile"] as String)',
+              '                storePassword = keystoreProperties["storePassword"] as String',
+              '            }',
+              '        }',
+              '    }',
+              '',
+              '',
+          ])
+
+          content = imports + content
+
+          anchor_android = 'android {'
+          assert anchor_android in content, 'android block not found'
+          content = content.replace(anchor_android, props_loader + anchor_android, 1)
+
+          anchor_buildtypes = '    buildTypes {'
+          assert anchor_buildtypes in content, 'buildTypes block not found'
+          content = content.replace(anchor_buildtypes, signing_block + anchor_buildtypes, 1)
+
+          old_sign = 'signingConfig = signingConfigs.getByName("debug")'
+          new_sign = ('signingConfig = if (keystorePropertiesFile.exists()) '
+                      'signingConfigs.getByName("release") else signingConfigs.getByName("debug")')
+          assert old_sign in content, 'debug signingConfig assignment not found'
+          content = content.replace(old_sign, new_sign, 1)
+
+          with open(gradle_path, 'w') as f:
+              f.write(content)
+          print('build.gradle.kts patched — release builds use release keystore when key.properties exists')
+          PYEOF
 
       - name: Place google-services.json
         run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > apps/mobile/android/app/google-services.json
@@ -91,8 +179,22 @@ jobs:
       - name: Build APK (release)
         run: |
           cd apps/mobile
+          # Unique build number per CI run — without it every build is
+          # versioned 1.0.0 (1) and Firebase App Distribution silently
+          # replaces the binary inside the existing release instead of
+          # creating a new release (no new entry, no tester notification).
           flutter build apk --release \
+            --build-number="${{ github.run_number }}" \
             --dart-define-from-file=.env.dart-define
+
+      - name: Verify APK signing certificate
+        run: |
+          BUILD_TOOLS=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          echo "=== APK is signed with ==="
+          "$BUILD_TOOLS/apksigner" verify --print-certs \
+            apps/mobile/build/app/outputs/apk/release/app-release.apk \
+            | grep -E "SHA-1|SHA-256" || true
+
 
       - name: Upload APK as workflow artifact
         uses: actions/upload-artifact@v4
@@ -138,31 +240,87 @@ jobs:
           cp /tmp/Info.plist ios/Runner/Info.plist
           cp /tmp/Runner.entitlements ios/Runner/Runner.entitlements
           cp /tmp/PrivacyInfo.xcprivacy ios/Runner/PrivacyInfo.xcprivacy
-          sed -i '' 's/com\.blinkr\.mobile/com.blinkr.app/g;s/com\.blinkr\.blinkr/com.blinkr.app/g' ios/Runner.xcodeproj/project.pbxproj
+          # Fix bundle ID — flutter create uses directory name ('mobile') or pubspec
+          # name ('blinkr'), neither of which is our registered bundle ID.
+          # Also raise the deployment target: google_mlkit_face_detection's
+          # MLKitFaceDetection pod requires iOS 15.5.
+          sed -i '' \
+            's/com\.blinkr\.mobile/com.blinkr.app/g;s/com\.blinkr\.blinkr/com.blinkr.app/g;s/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 15.5;/g' \
+            ios/Runner.xcodeproj/project.pbxproj
 
-      - name: Patch Podfile — disable code signing for pod targets
+      - name: Patch Podfile — disable code signing for CocoaPod targets
         run: |
           python3 - <<'PYEOF'
           podfile_path = 'apps/mobile/ios/Podfile'
           with open(podfile_path, 'r') as f:
               content = f.read()
-          old = 'flutter_additional_ios_build_settings(target)'
-          new_block = (
+
+          # google_mlkit_face_detection's MLKitFaceDetection pod requires
+          # iOS 15.5 — uncomment and raise the template's platform line.
+          old_platform = "# platform :ios, '12.0'"
+          new_platform = "platform :ios, '15.5'"
+          if old_platform in content:
+              content = content.replace(old_platform, new_platform, 1)
+          elif new_platform not in content:
+              # Newer Flutter templates may use a different default — replace
+              # any commented platform line.
+              import re
+              content = re.sub(r"# platform :ios, '[0-9.]+'", new_platform, content, count=1)
+
+          marker = 'flutter_additional_ios_build_settings(target)'
+          patch = (
               '\n      target.build_configurations.each do |config|\n'
               "        config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'\n"
+              "        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.5'\n"
               '      end'
           )
-          if old in content:
-              content = content.replace(old, old + new_block, 1)
+          if marker in content:
+              content = content.replace(marker, marker + patch, 1)
               with open(podfile_path, 'w') as f:
                   f.write(content)
-              print('Podfile patched — CODE_SIGNING_ALLOWED=NO for pod targets')
+              print('Podfile patched — signing off + iOS 15.5 for pod targets')
           else:
-              print('WARNING: marker not found in Podfile, skipping patch')
+              print('WARNING: Podfile marker not found, skipping')
           PYEOF
 
       - name: Flutter pub get
         run: cd apps/mobile && flutter pub get
+
+      - name: Patch flutter_contacts — fix instant-launch crash on iOS
+        run: |
+          python3 - <<'PYEOF'
+          import glob
+          import os
+
+          pattern = os.path.expanduser(
+              '~/.pub-cache/hosted/pub.dev/flutter_contacts-*/ios/Classes/SwiftFlutterContactsPlugin.swift'
+          )
+          paths = glob.glob(pattern)
+          assert paths, f'flutter_contacts source not found at {pattern}'
+
+          # flutter_contacts 1.1.9+2's register(with:) force-unwraps
+          # UIApplication.shared.delegate!.window!!.rootViewController! to
+          # build the plugin instance. Registration happens via the
+          # implicit-engine callback during FlutterViewController's
+          # awakeFromNib (storyboard-based launch) — at that point
+          # window.rootViewController hasn't been assigned yet, so the
+          # force-unwrap crashes the app on every launch (SIGTRAP,
+          # "Unexpectedly found nil while unwrapping an Optional value").
+          # rootViewController is only used to present the external
+          # view/edit/pick/insert contact UI, none of which this app uses,
+          # so a placeholder is safe when the real one isn't available yet.
+          old = 'let rootViewController = UIApplication.shared.delegate!.window!!.rootViewController!'
+          new = 'let rootViewController = UIApplication.shared.delegate?.window??.rootViewController ?? UIViewController()'
+
+          for path in paths:
+              with open(path) as f:
+                  content = f.read()
+              assert old in content, f'expected line not found in {path}'
+              content = content.replace(old, new, 1)
+              with open(path, 'w') as f:
+                  f.write(content)
+              print(f'Patched {path}')
+          PYEOF
 
       - name: Generate Dart code (freezed, json_serializable)
         run: cd apps/mobile && flutter pub run build_runner build --delete-conflicting-outputs
@@ -206,10 +364,10 @@ jobs:
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode \
             -o ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
-          echo "=== Certificates imported into build.keychain ==="
+          echo "=== Installed certificate ==="
           security find-identity -v -p codesigning
 
-      - name: Write ExportOptions.plist
+      - name: Write ExportOptions.plist and extract signing metadata
         if: env.SIGNING_AVAILABLE == 'true'
         run: |
           cd apps/mobile
@@ -217,7 +375,14 @@ jobs:
           security cms -D -i "$PROFILE_PATH" > /tmp/profile.plist
           TEAM_ID=$(/usr/libexec/PlistBuddy -c "Print TeamIdentifier:0" /tmp/profile.plist)
           PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print Name" /tmp/profile.plist)
-          echo "Team: $TEAM_ID  Profile: $PROFILE_NAME"
+          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /tmp/profile.plist)
+          APP_ID=$(/usr/libexec/PlistBuddy -c "Print Entitlements:application-identifier" /tmp/profile.plist)
+          PLATFORMS=$(/usr/libexec/PlistBuddy -c "Print Platform" /tmp/profile.plist 2>/dev/null || echo "n/a")
+          PREFIX=$(/usr/libexec/PlistBuddy -c "Print ApplicationIdentifierPrefix:0" /tmp/profile.plist 2>/dev/null || echo "n/a")
+          echo "Team: $TEAM_ID  Profile: $PROFILE_NAME  UUID: $PROFILE_UUID"
+          echo "AppID (entitlements): $APP_ID"
+          echo "ApplicationIdentifierPrefix: $PREFIX"
+          echo "Platform: $PLATFORMS"
           cat > ExportOptions.plist <<PLIST
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -256,54 +421,83 @@ jobs:
           with open(project_path, 'r') as f:
               content = f.read()
 
-          signing_lines = (
-              'CODE_SIGN_IDENTITY = "Apple Distribution";\n'
-              '\t\t\tCODE_SIGN_STYLE = Manual;\n'
-              f'\t\t\tDEVELOPMENT_TEAM = {team_id};\n'
-              f'\t\t\tPROVISIONING_PROFILE_SPECIFIER = "{profile_name}";'
-          )
+          # Use PROVISIONING_PROFILE_SPECIFIER (display name) — confirmed working
+          # in the "conflicting signing" error output which showed Xcode found the
+          # profile by name. UUID-based PROVISIONING_PROFILE is deprecated in Xcode 14+
+          # and silently ignored in Xcode 26, causing "no profiles found".
+          # CODE_SIGN_ENTITLEMENTS is not set by flutter create, so without it
+          # Runner.entitlements is silently ignored and the signed app ships
+          # with no applesignin entitlement (Apple Sign In fails with
+          # ASAuthorizationError 1000).
+          signing_block = '\n'.join([
+              'CODE_SIGN_IDENTITY = "Apple Distribution";',
+              '\t\t\tCODE_SIGN_STYLE = Manual;',
+              '\t\t\tCODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;',
+              f'\t\t\tDEVELOPMENT_TEAM = {team_id};',
+              f'\t\t\tPROVISIONING_PROFILE_SPECIFIER = "{profile_name}";',
+          ])
 
-          # Approach 1: replace CODE_SIGN_STYLE = Automatic (older Flutter templates)
-          old = 'CODE_SIGN_STYLE = Automatic;'
-          count = content.count(old)
-          print(f'  CODE_SIGN_STYLE = Automatic occurrences: {count}')
+          # Anchor strictly on the Runner target's bundle identifier
+          # (PRODUCT_BUNDLE_IDENTIFIER = com.blinkr.app;, exact match with
+          # trailing semicolon). This appears exactly 3 times — Debug,
+          # Release, and Profile configs of the Runner target — and does
+          # NOT match "com.blinkr.app.RunnerTests;" since that string is
+          # followed by ".RunnerTests" before the semicolon.
+          #
+          # A previous version of this script used a global replace on
+          # "CODE_SIGN_STYLE = Automatic;", which only exists in the
+          # RunnerTests target's configs in this Flutter-generated
+          # pbxproj — patching the wrong target and leaving Runner's
+          # configs with no signing keys at all (Xcode then defaults
+          # Runner to Automatic signing, causing "No profiles for
+          # 'com.blinkr.app' were found... Automatic signing is disabled
+          # and unable to generate a profile").
+          anchor = 'PRODUCT_BUNDLE_IDENTIFIER = com.blinkr.app;'
+          count = content.count(anchor)
+          print(f'Runner anchor ({anchor!r}): {count} hit(s)')
+
+          patched = False
           if count > 0:
-              content = content.replace(old, signing_lines)
-              print(f'  Replaced {count} occurrence(s) via CODE_SIGN_STYLE anchor')
-
-          # Approach 2: inject after INFOPLIST_FILE = Runner/Info.plist when
-          # approach 1 found nothing (Flutter 3.44+ may omit CODE_SIGN_STYLE)
-          infoplist_anchor = 'INFOPLIST_FILE = Runner/Info.plist;'
-          info_count = content.count(infoplist_anchor)
-          print(f'  INFOPLIST_FILE occurrences: {info_count}')
-          if count == 0 and info_count > 0:
-              injection = (
-                  infoplist_anchor + '\n'
-                  f'\t\t\t{signing_lines}'
+              content = content.replace(
+                  anchor, anchor + '\n\t\t\t' + signing_block
               )
-              content = content.replace(infoplist_anchor, injection)
-              print(f'  Injected signing block after INFOPLIST_FILE ({info_count} location(s))')
+              patched = True
+              print(f'  -> injected after {count} occurrence(s)')
+          else:
+              print('ERROR: Runner anchor not found — project.pbxproj NOT patched')
 
-          # Ensure no leftover empty DEVELOPMENT_TEAM overrides our setting
           content = content.replace('DEVELOPMENT_TEAM = "";', f'DEVELOPMENT_TEAM = {team_id};')
 
           with open(project_path, 'w') as f:
               f.write(content)
 
-          print('project.pbxproj patched')
+          print(f'project.pbxproj patched={patched}')
           PYEOF
+
+      - name: Dump signing-related pbxproj lines (diagnostic)
+        if: env.SIGNING_AVAILABLE == 'true'
+        run: |
+          cd apps/mobile
+          grep -n -E "CODE_SIGN|PROVISIONING_PROFILE|DEVELOPMENT_TEAM|ProvisioningStyle|PRODUCT_BUNDLE_IDENTIFIER|/\* (Debug|Release|Profile) \*/ = \{|isa = (PBXNativeTarget|XCBuildConfiguration|PBXProject)|name = (Runner|RunnerTests)" \
+            ios/Runner.xcodeproj/project.pbxproj || true
 
       - name: Build IPA (signed — TestFlight)
         if: env.SIGNING_AVAILABLE == 'true'
         run: |
           cd apps/mobile
-          # flutter build ios compiles Dart and writes dart-defines into DerivedData.
-          # Signing settings are in project.pbxproj (Runner target only) — NOT on the
-          # xcodebuild command line. Passing them globally on the CLI would propagate
-          # to Swift Package Manager package targets, which don't support provisioning
-          # profiles and would fail with exit code 65.
+          # Compile Dart; signing is deferred to the xcodebuild archive step.
+          # --build-number must increase on every TestFlight upload (App Store
+          # Connect rejects a CFBundleVersion that's already been used), so
+          # derive it from the unique, monotonically increasing CI run number.
           flutter build ios --release --no-codesign \
+            --build-number="${{ github.run_number }}" \
             --dart-define-from-file=.env.dart-define
+
+          # Archive using project.pbxproj signing (patched above for Runner only).
+          # CODE_SIGN_STYLE=Manual + PROVISIONING_PROFILE_SPECIFIER are set in
+          # project.pbxproj for Runner's build configs. Only DEVELOPMENT_TEAM is
+          # passed on the CLI — safe with both Automatic and Manual signing modes,
+          # and does not propagate provisioning-profile requirements to SPM targets.
           xcodebuild \
             -workspace ios/Runner.xcworkspace \
             -scheme Runner \
@@ -311,6 +505,7 @@ jobs:
             archive \
             -archivePath /tmp/blinkr.xcarchive \
             DEVELOPMENT_TEAM="$TEAM_ID"
+
           xcodebuild \
             -exportArchive \
             -archivePath /tmp/blinkr.xcarchive \

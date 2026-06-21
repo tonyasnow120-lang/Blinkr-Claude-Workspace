@@ -5,14 +5,24 @@ import { generateShortCode } from '../lib/shortCode.js'
 import { Errors } from '../lib/errors.js'
 
 const CHALLENGE_TTL_MINUTES = 15 // GAP-11: 15-minute TTL
+const QR_TTL_SECONDS = 90 // QR codes are scanned in person — short-lived
 
-export async function createChallenge(db: DrizzleDB, challengerId: string) {
+export type ChallengeKind = 'link' | 'qr' | 'friend' | 'contact' | 'proximity'
+
+export async function createChallenge(
+  db: DrizzleDB,
+  challengerId: string,
+  kind: ChallengeKind = 'link',
+  opponentId?: string,
+) {
   const code = await generateShortCode(db)
-  const expiresAt = new Date(Date.now() + CHALLENGE_TTL_MINUTES * 60 * 1000)
+  const ttlMs =
+    kind === 'qr' ? QR_TTL_SECONDS * 1000 : CHALLENGE_TTL_MINUTES * 60 * 1000
+  const expiresAt = new Date(Date.now() + ttlMs)
 
   const [challenge] = await db
     .insert(challenges)
-    .values({ code, challengerId, expiresAt })
+    .values({ code, challengerId, kind, opponentId, expiresAt })
     .returning()
 
   return challenge

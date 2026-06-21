@@ -1,10 +1,11 @@
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
-import { eq, sql } from 'drizzle-orm'
+import { and, desc, eq, sql } from 'drizzle-orm'
 import { db } from '../db/index.js'
-import { matches, users, userStats } from '../db/schema.js'
+import { matches, users, userPhotos, userStats } from '../db/schema.js'
 import { getMatchById, processBlinkAndAdjudicate } from '../services/matchService.js'
 import * as livekitService from '../services/livekitService.js'
+import { broadcastEvent, matchTopic } from '../services/realtimeService.js'
 import { Errors } from '../lib/errors.js'
 import { logSecurityEvent } from '../services/securityLogger.js'
 
@@ -14,15 +15,32 @@ const BlinkEventSchema = z.object({
   eventType: z.enum(['blink', 'gaze_break']),
 })
 
+// Screen-space distraction effects rendered over the opponent's contest
+// screen. Face-anchored AR lens types will join this enum in v1.1 —
+// clients ignore types they don't recognise, so adding new ones is
+// backward-compatible.
+const PowerUpSchema = z.object({
+  type: z.enum(['eye_swarm', 'flash', 'photo_bomb']),
+})
+
+// Each player may fire each power-up type once per match. Tracked
+// in-memory ("matchId" -> set of "userId:type") and dropped when the match
+// ends; a server restart mid-match resets usage, which is acceptable for a
+// cosmetic feature.
+const powerUpUsage = new Map<string, Set<string>>()
+
+// Fire-and-forget Realtime broadcast on the match channel the mobile
+// client subscribes to (`match:{matchId}`). Failures are logged without
+// payload (GAP-18) and never fail the request.
 function broadcastMatchEvent(
   matchId: string,
   event: string,
+  payload: Record<string, unknown> = {},
 ) {
-  // Supabase Realtime broadcast from server requires the Supabase admin client.
-  // The mobile client subscribes to channel `match:{matchId}:{userId}` (GAP-10).
-  // TODO: initialise supabase admin client and call:
-  // supabaseAdmin.channel(`match:${matchId}:${userId}`).send({ type: 'broadcast', event })
-  // Do NOT log payload — it may contain match state (GAP-18)
+  broadcastEvent(matchTopic(matchId), event, payload).catch(() => {
+    // Logged by callers where a request logger is available; payload
+    // intentionally never logged (GAP-18).
+  })
 }
 
 export async function matchRoutes(app: FastifyInstance) {
@@ -46,6 +64,47 @@ export async function matchRoutes(app: FastifyInstance) {
     return reply.send({ data: match })
   })
 
+  // Returns the caller's own LiveKit token for a match they participate in.
+  // Used by the challenger, who learns the matchId via the
+  // `challenge.accepted` Realtime event (the acceptor gets their token in
+  // the accept response). Tokens are never sent over Realtime broadcast.
+  app.post('/matches/:id/token', async (request, reply) => {
+    const userId = (request.user as { sub: string }).sub
+    const { id } = request.params as { id: string }
+
+    const match = await getMatchById(db, id)
+
+    if (match.playerOneId !== userId && match.playerTwoId !== userId) {
+      logSecurityEvent(request.log, 'idor_attempt', {
+        userId,
+        matchId: id,
+        route: 'POST /matches/:id/token',
+      })
+      throw Errors.forbidden()
+    }
+
+    const [user] = await db
+      .select({ displayName: users.displayName, username: users.username })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1)
+
+    const token = await livekitService.createParticipantToken(
+      match.livekitRoomName,
+      userId,
+      user?.displayName ?? user?.username ?? userId,
+    )
+
+    return reply.send({
+      data: {
+        matchId: match.id,
+        livekitToken: token,
+        livekitUrl: process.env.LIVEKIT_WS_URL,
+        livekitRoomName: match.livekitRoomName,
+      },
+    })
+  })
+
   app.post('/matches/:id/ready', async (request, reply) => {
     const userId = (request.user as { sub: string }).sub
     const { id } = request.params as { id: string }
@@ -61,14 +120,62 @@ export async function matchRoutes(app: FastifyInstance) {
       throw Errors.forbidden()
     }
 
+    if (match.status !== 'waiting') {
+      throw Errors.conflict('Match is no longer in the lobby')
+    }
+
+    const isPlayerOne = match.playerOneId === userId
+
+    // Record this player's ready flag, then atomically flip to countdown
+    // only when both flags are set (the WHERE guard prevents a double
+    // countdown if both players ready up simultaneously). Both flags are
+    // read back from the post-update row — checking the pre-fetched row
+    // would miss an opponent who readied between the fetch and now.
+    const [updated] = await db
+      .update(matches)
+      .set(isPlayerOne ? { playerOneReady: true } : { playerTwoReady: true })
+      .where(eq(matches.id, id))
+      .returning({
+        playerOneReady: matches.playerOneReady,
+        playerTwoReady: matches.playerTwoReady,
+      })
+
+    broadcastMatchEvent(id, 'match.player_ready', { userId })
+
+    const bothReady = updated?.playerOneReady && updated?.playerTwoReady
+    if (!bothReady) {
+      return reply.send({ data: { waitingForOpponent: true } })
+    }
+
     const startsAt = new Date(Date.now() + 3000)
 
-    await db
+    const flipped = await db
       .update(matches)
       .set({ status: 'countdown', startedAt: startsAt })
-      .where(eq(matches.id, id))
+      .where(and(eq(matches.id, id), eq(matches.status, 'waiting')))
+      .returning({ id: matches.id })
 
-    broadcastMatchEvent(id, 'match.countdown_start')
+    if (flipped.length > 0) {
+      broadcastMatchEvent(id, 'match.countdown_start', {
+        startsAt: startsAt.toISOString(),
+      })
+
+      // Flip to live when the countdown elapses. Blink events are rejected
+      // until status is 'live', so this server-side transition is what
+      // actually opens the contest.
+      setTimeout(async () => {
+        try {
+          const went = await db
+            .update(matches)
+            .set({ status: 'live' })
+            .where(and(eq(matches.id, id), eq(matches.status, 'countdown')))
+            .returning({ id: matches.id })
+          if (went.length > 0) broadcastMatchEvent(id, 'match.live')
+        } catch (err) {
+          app.log.error({ err, matchId: id }, 'Failed to transition match to live')
+        }
+      }, startsAt.getTime() - Date.now())
+    }
 
     return reply.send({ data: { startsAt: startsAt.toISOString() } })
   })
@@ -99,7 +206,12 @@ export async function matchRoutes(app: FastifyInstance) {
     )
 
     if (result) {
-      broadcastMatchEvent(id, 'match.result')
+      powerUpUsage.delete(id)
+      broadcastMatchEvent(id, 'match.result', {
+        winnerId: result.winnerId,
+        loserId: result.loserId,
+        reason: result.reason,
+      })
       // Async cleanup — do not await
       livekitService.deleteRoom(match.livekitRoomName).catch((err) =>
         request.log.error({ err, matchId: id }, 'Failed to delete LiveKit room'),
@@ -107,6 +219,62 @@ export async function matchRoutes(app: FastifyInstance) {
     }
 
     return reply.send({ data: { recorded: true, adjudicated: !!result } })
+  })
+
+  // Fires a distraction power-up at the opponent. Broadcast on the match
+  // channel; the attacker's own client ignores events it originated.
+  app.post('/matches/:id/powerup', async (request, reply) => {
+    const userId = (request.user as { sub: string }).sub
+    const { id } = request.params as { id: string }
+    const { type } = PowerUpSchema.parse(request.body)
+
+    const match = await getMatchById(db, id)
+
+    if (match.playerOneId !== userId && match.playerTwoId !== userId) {
+      logSecurityEvent(request.log, 'idor_attempt', {
+        userId,
+        matchId: id,
+        route: 'POST /matches/:id/powerup',
+      })
+      throw Errors.forbidden()
+    }
+
+    if (match.status !== 'live') {
+      throw Errors.conflict('Power-ups can only be used during a live match')
+    }
+
+    const usageKey = `${userId}:${type}`
+    const used = powerUpUsage.get(id) ?? new Set<string>()
+    if (used.has(usageKey)) {
+      throw Errors.conflict('Power-up already used this match')
+    }
+
+    let photoUrls: string[] = []
+    if (type === 'photo_bomb') {
+      const photos = await db
+        .select({ url: userPhotos.url })
+        .from(userPhotos)
+        .where(eq(userPhotos.userId, userId))
+        .orderBy(desc(userPhotos.createdAt))
+        .limit(6)
+      photoUrls = photos.map((p) => p.url)
+      if (photoUrls.length === 0) {
+        throw Errors.validation(
+          'Add photos to your profile collage to use the photo bomb',
+        )
+      }
+    }
+
+    used.add(usageKey)
+    powerUpUsage.set(id, used)
+
+    broadcastMatchEvent(id, 'match.powerup', {
+      type,
+      fromUserId: userId,
+      photoUrls,
+    })
+
+    return reply.send({ data: { fired: true, type } })
   })
 
   app.post('/matches/:id/abandon', async (request, reply) => {
@@ -150,6 +318,7 @@ export async function matchRoutes(app: FastifyInstance) {
         .where(eq(userStats.userId, otherId))
     }
 
+    powerUpUsage.delete(id)
     broadcastMatchEvent(id, 'match.abandoned')
     livekitService.deleteRoom(match.livekitRoomName).catch((err) =>
       request.log.error({ err, matchId: id }, 'Failed to delete LiveKit room'),
