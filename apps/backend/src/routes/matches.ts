@@ -20,7 +20,14 @@ const BlinkEventSchema = z.object({
 // clients ignore types they don't recognise, so adding new ones is
 // backward-compatible.
 const PowerUpSchema = z.object({
-  type: z.enum(['eye_swarm', 'flash', 'photo_bomb']),
+  type: z.enum([
+    'eye_swarm',
+    'flash',
+    'photo_bomb',
+    'shake',
+    'glitch',
+    'taunt',
+  ]),
 })
 
 // Each player may fire each power-up type once per match. Tracked

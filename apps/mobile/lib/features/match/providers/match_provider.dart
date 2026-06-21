@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/api/api_client.dart';
@@ -308,6 +309,33 @@ class MatchNotifier extends StateNotifier<MatchState> {
 
   Future<void> firePowerUp(String type) async {
     await _api.post(ApiEndpoints.matchPowerup(matchId), body: {'type': type});
+  }
+
+  /// Grabs a still frame of the opponent's live video as encoded image bytes
+  /// (JPEG), or null when no remote video track is currently subscribed.
+  ///
+  /// Reads the current frame straight off the remote track's underlying
+  /// MediaStreamTrack — the same `captureFrame()` API blink detection uses on
+  /// the local camera. The captured reaction shot feeds the in-match editor
+  /// so players can save opponent blunders to their collage and replay them
+  /// as a photo bomb later.
+  Future<Uint8List?> captureOpponentFrame() async {
+    final room = _livekit.room;
+    if (room == null) return null;
+    for (final participant in room.remoteParticipants.values) {
+      for (final pub in participant.videoTrackPublications) {
+        final track = pub.track;
+        if (track is livekit.VideoTrack) {
+          try {
+            final buffer = await track.mediaStreamTrack.captureFrame();
+            return buffer.asUint8List();
+          } catch (_) {
+            return null;
+          }
+        }
+      }
+    }
+    return null;
   }
 
   Future<void> abandon() async {

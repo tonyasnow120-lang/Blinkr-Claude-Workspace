@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
@@ -37,6 +38,30 @@ class PhotoService {
 
   Future<Map<String, dynamic>> uploadPhoto(XFile file) async {
     final url = await _uploadToStorage(file, prefix: '');
+
+    final response = await _api.post(ApiEndpoints.myPhotos, body: {'url': url});
+    return response['data'] as Map<String, dynamic>;
+  }
+
+  /// Uploads already-encoded image bytes (e.g. an edited in-match capture) to
+  /// the collage bucket and registers the public URL with the backend. Mirrors
+  /// [uploadPhoto] but skips the file round-trip since the editor hands us raw
+  /// PNG bytes from a `RepaintBoundary`.
+  Future<Map<String, dynamic>> uploadPhotoBytes(
+    Uint8List bytes, {
+    String ext = 'png',
+  }) async {
+    final supabase = Supabase.instance.client;
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null) throw Exception('Not signed in');
+
+    final storagePath = '$userId/${const Uuid().v4()}.$ext';
+    await supabase.storage.from(_bucket).uploadBinary(
+          storagePath,
+          bytes,
+          fileOptions: FileOptions(contentType: 'image/$ext'),
+        );
+    final url = supabase.storage.from(_bucket).getPublicUrl(storagePath);
 
     final response = await _api.post(ApiEndpoints.myPhotos, body: {'url': url});
     return response['data'] as Map<String, dynamic>;

@@ -1,6 +1,10 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../providers/match_provider.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/graffiti_highlight.dart';
 import '../../../shared/widgets/line_eye.dart';
 
 /// Full-screen, screen-space rendering of a power-up the opponent fired.
@@ -23,10 +27,15 @@ class _PowerUpOverlayState extends State<PowerUpOverlay>
   final math.Random _random = math.Random();
   late final List<_Drifter> _drifters;
 
+  Timer? _hapticTimer;
+
   static const _durations = {
     'eye_swarm': Duration(milliseconds: 3000),
     'flash': Duration(milliseconds: 1200),
     'photo_bomb': Duration(milliseconds: 3600),
+    'shake': Duration(milliseconds: 2200),
+    'glitch': Duration(milliseconds: 1800),
+    'taunt': Duration(milliseconds: 2400),
   };
 
   @override
@@ -42,10 +51,24 @@ class _PowerUpOverlayState extends State<PowerUpOverlay>
         if (status == AnimationStatus.completed) widget.onDone();
       })
       ..forward();
+
+    // Shake rattles the victim's phone with a burst of heavy haptics — the
+    // physical jolt is most of the distraction; the visual is secondary.
+    if (widget.event.type == 'shake') {
+      HapticFeedback.heavyImpact();
+      _hapticTimer = Timer.periodic(const Duration(milliseconds: 160), (t) {
+        if (!mounted) {
+          t.cancel();
+          return;
+        }
+        HapticFeedback.heavyImpact();
+      });
+    }
   }
 
   @override
   void dispose() {
+    _hapticTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -68,6 +91,12 @@ class _PowerUpOverlayState extends State<PowerUpOverlay>
         return _flash(t);
       case 'photo_bomb':
         return _photoBomb(context, t);
+      case 'shake':
+        return _shake(t);
+      case 'glitch':
+        return _glitch(t);
+      case 'taunt':
+        return _taunt(context, t);
       default:
         return const SizedBox.shrink();
     }
@@ -102,6 +131,66 @@ class _PowerUpOverlayState extends State<PowerUpOverlay>
       opacity = math.max(opacity, tri * 0.85);
     }
     return Container(color: Colors.white.withOpacity(opacity));
+  }
+
+  /// Jitters an acid frame around the screen edges in time with the haptic
+  /// burst fired from initState.
+  Widget _shake(double t) {
+    final intensity = (1 - t).clamp(0.0, 1.0);
+    final dx = (_random.nextDouble() - 0.5) * 18 * intensity;
+    final dy = (_random.nextDouble() - 0.5) * 18 * intensity;
+    return Transform.translate(
+      offset: Offset(dx, dy),
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: AppColors.acid.withOpacity(0.55 * intensity),
+            width: 6,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// RGB-split slices + scanlines that flicker over the opponent's feed.
+  Widget _glitch(double t) {
+    return CustomPaint(
+      size: Size.infinite,
+      painter: _GlitchPainter(_random, t),
+    );
+  }
+
+  /// A big acid graffiti word that sweeps across the screen with a wobble.
+  Widget _taunt(BuildContext context, double t) {
+    final size = MediaQuery.of(context).size;
+    final x = (1.2 - 2.4 * t) * size.width;
+    final wobble = math.sin(t * math.pi * 6) * 10;
+    final appear = math.sin(math.pi * t).clamp(0.0, 1.0);
+    return Stack(
+      children: [
+        Positioned(
+          top: size.height * 0.42 + wobble,
+          left: x,
+          child: Opacity(
+            opacity: appear,
+            child: Transform.rotate(
+              angle: -0.08,
+              child: GraffitiHighlight(
+                child: const Text(
+                  'BLINK!',
+                  style: TextStyle(
+                    color: AppColors.acidInk,
+                    fontSize: 54,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 3,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _photoBomb(BuildContext context, double t) {
@@ -151,6 +240,51 @@ class _PowerUpOverlayState extends State<PowerUpOverlay>
       ),
     );
   }
+}
+
+/// Draws flickering RGB-split bands and faint scanlines for the glitch
+/// power-up. Re-randomises every frame so the distortion crackles.
+class _GlitchPainter extends CustomPainter {
+  final math.Random r;
+  final double t;
+
+  _GlitchPainter(this.r, this.t);
+
+  static const _bandColors = [
+    Color(0xFF00FFFF), // cyan
+    Color(0xFFFF00FF), // magenta
+    AppColors.acid,
+    Colors.white,
+  ];
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final intensity = math.sin(math.pi * t);
+    if (intensity <= 0) return;
+
+    for (var i = 0; i < 14; i++) {
+      if (r.nextDouble() > 0.65) continue;
+      final y = r.nextDouble() * size.height;
+      final h = 4 + r.nextDouble() * 30;
+      final dx = (r.nextDouble() - 0.5) * 70 * intensity;
+      final color = _bandColors[r.nextInt(_bandColors.length)]
+          .withOpacity(0.35 * intensity);
+      canvas.drawRect(
+        Rect.fromLTWH(dx, y, size.width, h),
+        Paint()
+          ..color = color
+          ..blendMode = BlendMode.screen,
+      );
+    }
+
+    final scan = Paint()..color = Colors.black.withOpacity(0.12 * intensity);
+    for (double y = 0; y < size.height; y += 4) {
+      canvas.drawRect(Rect.fromLTWH(0, y, size.width, 1.5), scan);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_GlitchPainter old) => true;
 }
 
 class _Drifter {
