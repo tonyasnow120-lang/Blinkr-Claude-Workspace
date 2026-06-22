@@ -35,9 +35,9 @@ class _CaptureEditorScreenState extends ConsumerState<CaptureEditorScreen> {
 
   static const _palette = [
     AppColors.acid,
-    AppColors.dark.foreground,
-    Color(0xFFFF3B30), // loss red — reserved, but handy as a marker here
-    AppColors.dark.background,
+    AppColors.chalk,
+    Color(0xFFFF3B30),
+    AppColors.bg,
   ];
 
   void _onPanStart(DragStartDetails d) {
@@ -363,17 +363,17 @@ class _Toolbar extends StatelessWidget {
               children: [
                 IconButton(
                   onPressed: onAddText,
-                  icon: const Icon(Icons.text_fields, color: AppColors.dark.foreground),
+                  icon: const Icon(Icons.text_fields, color: AppColors.chalk),
                   tooltip: 'ADD TEXT',
                 ),
                 IconButton(
                   onPressed: onUndo,
-                  icon: const Icon(Icons.undo, color: AppColors.dark.foreground),
+                  icon: const Icon(Icons.undo, color: AppColors.chalk),
                   tooltip: 'UNDO',
                 ),
                 IconButton(
                   onPressed: onClear,
-                  icon: const Icon(Icons.delete_outline, color: AppColors.dark.foreground),
+                  icon: const Icon(Icons.delete_outline, color: AppColors.chalk),
                   tooltip: 'CLEAR',
                 ),
               ],

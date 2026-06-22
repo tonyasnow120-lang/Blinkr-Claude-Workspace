@@ -67,7 +67,7 @@ class _CountdownOverlayState extends State<CountdownOverlay> {
             '$_remaining',
             key: ValueKey(_remaining),
             style: const TextStyle(
-              color: AppColors.dark.foreground,
+              color: AppColors.chalk,
               fontSize: 120,
               fontWeight: FontWeight.w900,
             ),

@@ -181,7 +181,7 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
                                     used: _usedPowerUps.contains('eye_swarm'),
                                     onPressed: () => _firePowerUp('eye_swarm'),
                                     child: const LineEyeIcon(
-                                        size: 20, color: AppColors.dark.foreground),
+                                        size: 20, color: AppColors.chalk),
                                   ),
                                   const SizedBox(height: 18),
                                   _PowerUpButton(
@@ -189,7 +189,7 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
                                     used: _usedPowerUps.contains('flash'),
                                     onPressed: () => _firePowerUp('flash'),
                                     child: const Icon(Icons.bolt,
-                                        color: AppColors.dark.foreground, size: 22),
+                                        color: AppColors.chalk, size: 22),
                                   ),
                                   const SizedBox(height: 18),
                                   _PowerUpButton(
@@ -197,7 +197,7 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
                                     used: _usedPowerUps.contains('photo_bomb'),
                                     onPressed: () => _firePowerUp('photo_bomb'),
                                     child: const Icon(Icons.collections,
-                                        color: AppColors.dark.foreground, size: 20),
+                                        color: AppColors.chalk, size: 20),
                                   ),
                                   const SizedBox(height: 18),
                                   _PowerUpButton(
@@ -205,7 +205,7 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
                                     used: _usedPowerUps.contains('shake'),
                                     onPressed: () => _firePowerUp('shake'),
                                     child: const Icon(Icons.vibration,
-                                        color: AppColors.dark.foreground, size: 22),
+                                        color: AppColors.chalk, size: 22),
                                   ),
                                   const SizedBox(height: 18),
                                   _PowerUpButton(
@@ -213,7 +213,7 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
                                     used: _usedPowerUps.contains('glitch'),
                                     onPressed: () => _firePowerUp('glitch'),
                                     child: const Icon(Icons.broken_image,
-                                        color: AppColors.dark.foreground, size: 20),
+                                        color: AppColors.chalk, size: 20),
                                   ),
                                   const SizedBox(height: 18),
                                   _PowerUpButton(
@@ -221,7 +221,7 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
                                     used: _usedPowerUps.contains('taunt'),
                                     onPressed: () => _firePowerUp('taunt'),
                                     child: const Icon(Icons.campaign,
-                                        color: AppColors.dark.foreground, size: 22),
+                                        color: AppColors.chalk, size: 22),
                                   ),
                                 ],
                               ),

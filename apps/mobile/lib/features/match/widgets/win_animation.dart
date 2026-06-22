@@ -24,7 +24,7 @@ class WinAnimation extends StatelessWidget {
           Text(
             won ? 'YOU WON' : 'YOU BLINKED',
             style: const TextStyle(
-              color: AppColors.dark.foreground,
+              color: AppColors.chalk,
               fontSize: 32,
               fontWeight: FontWeight.bold,
             ),

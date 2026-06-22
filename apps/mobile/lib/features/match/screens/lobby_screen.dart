@@ -121,7 +121,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                   ? Text(
                       name.isNotEmpty ? name[0].toUpperCase() : '?',
                       style:
-                          const TextStyle(color: AppColors.dark.foreground, fontSize: 28),
+                          const TextStyle(color: AppColors.chalk, fontSize: 28),
                     )
                   : null,
             ),
@@ -131,7 +131,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                 bottom: 0,
                 child: CircleAvatar(
                   radius: 12,
-                  backgroundColor: AppColors.dark.background,
+                  backgroundColor: AppColors.bg,
                   child: Icon(Icons.check_circle,
                       color: AppColors.acid, size: 22),
                 ),
@@ -146,7 +146,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: AppColors.dark.foreground),
+            style: const TextStyle(color: AppColors.chalk),
           ),
         ),
         const SizedBox(height: 4),
@@ -280,7 +280,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                             fontWeight: FontWeight.bold, fontSize: 18),
                       ),
                       SizedBox(width: 10),
-                      LineEyeIcon(size: 22, color: AppColors.dark.background),
+                      LineEyeIcon(size: 22, color: AppColors.bg),
                     ],
                   ),
                 )

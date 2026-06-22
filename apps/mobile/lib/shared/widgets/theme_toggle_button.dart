@@ -47,7 +47,7 @@ class ThemeToggleIcon extends StatelessWidget {
   const ThemeToggleIcon({
     super.key,
     this.size = 18,
-    this.color = AppColors.dark.foreground,
+    this.color = AppColors.chalk,
     required this.isDark,
   });
 

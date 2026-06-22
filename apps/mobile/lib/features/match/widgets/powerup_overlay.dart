@@ -254,7 +254,7 @@ class _GlitchPainter extends CustomPainter {
     Color(0xFF00FFFF), // cyan
     Color(0xFFFF00FF), // magenta
     AppColors.acid,
-    AppColors.dark.foreground,
+    AppColors.chalk,
   ];
 
   @override

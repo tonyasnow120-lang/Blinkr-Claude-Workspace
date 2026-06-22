@@ -23,6 +23,10 @@ class AppColors {
   // --- Border ---
   static const borderDefault = Color(0xFF2A2A22);
 
+  // --- Const-safe aliases (use in default params and const expressions) ---
+  static const chalk = Color(0xFFF0EDE0);
+  static const bg = Color(0xFF080808);
+
   const AppColors._({
     required this.background,
     required this.surface,

@@ -654,7 +654,7 @@ class _GoogleLogoPainter extends CustomPainter {
 class _BlinkingCursor extends StatefulWidget {
   final double fontSize;
   final Color color;
-  const _BlinkingCursor({this.fontSize = 32, this.color = AppColors.dark.foreground});
+  const _BlinkingCursor({this.fontSize = 32, this.color = AppColors.chalk});
 
   @override
   State<_BlinkingCursor> createState() => _BlinkingCursorState();

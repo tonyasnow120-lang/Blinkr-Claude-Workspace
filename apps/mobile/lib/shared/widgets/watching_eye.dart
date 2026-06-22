@@ -21,8 +21,8 @@ class WatchingEye extends StatefulWidget {
     this.height = 230,
     this.wander = true,
     this.crying = false,
-    this.color = AppColors.dark.foreground,
-    this.background = AppColors.dark.background,
+    this.color = AppColors.chalk,
+    this.background = AppColors.bg,
   });
 
   @override

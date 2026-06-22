@@ -17,7 +17,7 @@ class LineEye {
     double base, {
     required double rotation,
     required double arcRotation,
-    Color color = AppColors.dark.foreground,
+    Color color = AppColors.chalk,
   }) {
     final innerR = base * 0.36;
     final outerR = base * 0.485;
@@ -61,7 +61,7 @@ class LineEye {
 
   static void drawPulseRings(
       Canvas canvas, Offset center, double base, double pulse,
-      {Color color = AppColors.dark.foreground}) {
+      {Color color = AppColors.chalk}) {
     final baseR = base * 0.39;
     final p = Paint()
       ..style = PaintingStyle.stroke
@@ -95,8 +95,8 @@ class LineEye {
     double tearPhase = 0,
     bool checkmark = false,
     double checkTrim = 0,
-    Color color = AppColors.dark.foreground,
-    Color background = AppColors.dark.background,
+    Color color = AppColors.chalk,
+    Color background = AppColors.bg,
   }) {
     final eyeW = base * 0.62;
     final eyeH = eyeW * 0.44;
@@ -262,7 +262,7 @@ class LineEyeIcon extends StatelessWidget {
   final double size;
   final Color color;
 
-  const LineEyeIcon({super.key, this.size = 18, this.color = AppColors.dark.foreground});
+  const LineEyeIcon({super.key, this.size = 18, this.color = AppColors.chalk});
 
   @override
   Widget build(BuildContext context) {
