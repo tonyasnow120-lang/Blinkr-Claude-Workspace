@@ -45,8 +45,8 @@ class _AuthCallbackScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      backgroundColor: AppColors.dark.background,
-      body: Center(child: CircularProgressIndicator(color: AppColors.dark.foreground)),
+      backgroundColor: AppColors.bg,
+      body: Center(child: CircularProgressIndicator(color: AppColors.chalk)),
     );
   }
 }
@@ -262,10 +262,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           final next = state.uri.queryParameters['next'] ?? '/profile';
           return _fadeRise(state, OnboardingScreen(nextRoute: next));
         },
-      ),
-      GoRoute(
-        path: '/onboarding',
-        builder: (context, state) => const OnboardingScreen(),
       ),
       GoRoute(
         path: '/home',

@@ -68,7 +68,7 @@ class _AppLifecycleObserverState extends State<AppLifecycleObserver>
         widget.child,
         if (_obscured)
           const ModalBarrier(
-            color: AppColors.dark.background,
+            color: AppColors.bg,
             dismissible: false,
           ),
       ],

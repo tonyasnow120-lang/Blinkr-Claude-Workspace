@@ -76,7 +76,7 @@ class _LoadingApp extends StatelessWidget {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
-        backgroundColor: AppColors.dark.background,
+        backgroundColor: AppColors.bg,
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -84,14 +84,14 @@ class _LoadingApp extends StatelessWidget {
               Text(
                 'BLINKR',
                 style: TextStyle(
-                  color: AppColors.dark.foreground,
+                  color: AppColors.chalk,
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 8,
                 ),
               ),
               SizedBox(height: 32),
-              CircularProgressIndicator(color: AppColors.dark.foreground),
+              CircularProgressIndicator(color: AppColors.chalk),
             ],
           ),
         ),

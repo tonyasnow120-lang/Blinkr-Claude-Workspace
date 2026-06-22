@@ -300,8 +300,8 @@ class _CaptionWidget extends StatelessWidget {
                   fontSize: 26,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 2,
-                  shadows: const [
-                    Shadow(blurRadius: 6, color: AppColors.dark.background.withOpacity(0.54)),
+                  shadows: [
+                    Shadow(blurRadius: 6, color: AppColors.bg.withOpacity(0.54)),
                   ],
                 ),
               ),
