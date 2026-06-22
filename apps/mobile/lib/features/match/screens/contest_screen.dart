@@ -166,6 +166,67 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
                             left: 8,
                             child: _CaptureButton(onPressed: _captureOpponent),
                           ),
+                          // Distraction power-ups — each usable once per
+                          // match. Vertical rail on the left edge.
+                          Positioned(
+                            left: 20,
+                            top: 0,
+                            bottom: 0,
+                            child: Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  _PowerUpButton(
+                                    label: 'Swarm',
+                                    used: _usedPowerUps.contains('eye_swarm'),
+                                    onPressed: () => _firePowerUp('eye_swarm'),
+                                    child: const LineEyeIcon(
+                                        size: 20, color: Colors.white),
+                                  ),
+                                  const SizedBox(height: 18),
+                                  _PowerUpButton(
+                                    label: 'Flash',
+                                    used: _usedPowerUps.contains('flash'),
+                                    onPressed: () => _firePowerUp('flash'),
+                                    child: const Icon(Icons.bolt,
+                                        color: Colors.white, size: 22),
+                                  ),
+                                  const SizedBox(height: 18),
+                                  _PowerUpButton(
+                                    label: 'Photos',
+                                    used: _usedPowerUps.contains('photo_bomb'),
+                                    onPressed: () => _firePowerUp('photo_bomb'),
+                                    child: const Icon(Icons.collections,
+                                        color: Colors.white, size: 20),
+                                  ),
+                                  const SizedBox(height: 18),
+                                  _PowerUpButton(
+                                    label: 'Shake',
+                                    used: _usedPowerUps.contains('shake'),
+                                    onPressed: () => _firePowerUp('shake'),
+                                    child: const Icon(Icons.vibration,
+                                        color: Colors.white, size: 22),
+                                  ),
+                                  const SizedBox(height: 18),
+                                  _PowerUpButton(
+                                    label: 'Glitch',
+                                    used: _usedPowerUps.contains('glitch'),
+                                    onPressed: () => _firePowerUp('glitch'),
+                                    child: const Icon(Icons.broken_image,
+                                        color: Colors.white, size: 20),
+                                  ),
+                                  const SizedBox(height: 18),
+                                  _PowerUpButton(
+                                    label: 'Taunt',
+                                    used: _usedPowerUps.contains('taunt'),
+                                    onPressed: () => _firePowerUp('taunt'),
+                                    child: const Icon(Icons.campaign,
+                                        color: Colors.white, size: 22),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -196,76 +257,6 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
                     ),
                   ),
                 ],
-              ),
-            ),
-            // Distraction power-ups — each usable once per match. Scrolls
-            // horizontally so the arsenal can grow past what fits on screen.
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 192,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    minWidth: MediaQuery.sizeOf(context).width,
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _PowerUpButton(
-                          label: 'Swarm',
-                          used: _usedPowerUps.contains('eye_swarm'),
-                          onPressed: () => _firePowerUp('eye_swarm'),
-                          child:
-                              const LineEyeIcon(size: 20, color: Colors.white),
-                        ),
-                        const SizedBox(width: 10),
-                        _PowerUpButton(
-                          label: 'Flash',
-                          used: _usedPowerUps.contains('flash'),
-                          onPressed: () => _firePowerUp('flash'),
-                          child: const Icon(Icons.bolt,
-                              color: Colors.white, size: 22),
-                        ),
-                        const SizedBox(width: 10),
-                        _PowerUpButton(
-                          label: 'Photos',
-                          used: _usedPowerUps.contains('photo_bomb'),
-                          onPressed: () => _firePowerUp('photo_bomb'),
-                          child: const Icon(Icons.collections,
-                              color: Colors.white, size: 20),
-                        ),
-                        const SizedBox(width: 10),
-                        _PowerUpButton(
-                          label: 'Shake',
-                          used: _usedPowerUps.contains('shake'),
-                          onPressed: () => _firePowerUp('shake'),
-                          child: const Icon(Icons.vibration,
-                              color: Colors.white, size: 22),
-                        ),
-                        const SizedBox(width: 10),
-                        _PowerUpButton(
-                          label: 'Glitch',
-                          used: _usedPowerUps.contains('glitch'),
-                          onPressed: () => _firePowerUp('glitch'),
-                          child: const Icon(Icons.broken_image,
-                              color: Colors.white, size: 20),
-                        ),
-                        const SizedBox(width: 10),
-                        _PowerUpButton(
-                          label: 'Taunt',
-                          used: _usedPowerUps.contains('taunt'),
-                          onPressed: () => _firePowerUp('taunt'),
-                          child: const Icon(Icons.campaign,
-                              color: Colors.white, size: 22),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
               ),
             ),
             Positioned(
