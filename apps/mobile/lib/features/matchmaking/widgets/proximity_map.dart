@@ -62,7 +62,7 @@ class ProximityMap extends StatelessWidget {
     ];
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(4),
       child: Stack(
         children: [
           FlutterMap(
@@ -99,8 +99,8 @@ class ProximityMap extends StatelessWidget {
                     point: me,
                     radius: 500,
                     useRadiusInMeter: true,
-                    color: Colors.white.withOpacity(0.06),
-                    borderColor: Colors.white.withOpacity(0.35),
+                    color: AppColors.dark.foreground.withOpacity(0.06),
+                    borderColor: AppColors.dark.foreground.withOpacity(0.35),
                     borderStrokeWidth: 1.5,
                   ),
                 ],
@@ -112,7 +112,7 @@ class ProximityMap extends StatelessWidget {
                 attributions: [
                   TextSourceAttribution(
                     '© OpenStreetMap contributors © CARTO',
-                    textStyle: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 9),
+                    textStyle: TextStyle(color: AppColors.dark.foreground.withOpacity(0.4), fontSize: 9),
                   ),
                 ],
               ),
@@ -125,17 +125,17 @@ class ProximityMap extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.55),
-                borderRadius: BorderRadius.circular(12),
+                color: AppColors.dark.background.withOpacity(0.55),
+                borderRadius: BorderRadius.circular(4),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.shield_outlined, size: 14, color: Colors.white.withOpacity(0.6)),
+                  Icon(Icons.shield_outlined, size: 14, color: AppColors.dark.foreground.withOpacity(0.6)),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      'Positions are approximate — exact directions are hidden for privacy',
-                      style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 11),
+                      'POSITIONS ARE APPROXIMATE -- EXACT DIRECTIONS ARE HIDDEN FOR PRIVACY',
+                      style: TextStyle(color: AppColors.dark.foreground.withOpacity(0.6), fontSize: 11),
                     ),
                   ),
                 ],
@@ -187,16 +187,16 @@ class _SelfMarker extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white,
-        border: Border.all(color: Colors.black, width: 2),
+        color: AppColors.dark.foreground,
+        border: Border.all(color: AppColors.dark.background, width: 2),
         boxShadow: [
-          BoxShadow(color: Colors.white.withOpacity(0.5), blurRadius: 8, spreadRadius: 2),
+          BoxShadow(color: AppColors.dark.foreground.withOpacity(0.5), blurRadius: 8, spreadRadius: 2),
         ],
       ),
-      child: const SizedBox(
+      child: SizedBox(
         width: 18,
         height: 18,
-        child: Center(child: LineEyeIcon(size: 13, color: Colors.black)),
+        child: Center(child: LineEyeIcon(size: 13, color: AppColors.dark.background)),
       ),
     );
   }
@@ -223,10 +223,10 @@ class _PlayerMarker extends StatelessWidget {
             height: 32,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.white.withOpacity(0.15),
-              border: Border.all(color: Colors.white, width: 2),
+              color: AppColors.dark.foreground.withOpacity(0.15),
+              border: Border.all(color: AppColors.dark.foreground, width: 2),
               boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.6), blurRadius: 4),
+                BoxShadow(color: AppColors.dark.background.withOpacity(0.6), blurRadius: 4),
               ],
               image: avatarUrl != null
                   ? DecorationImage(image: NetworkImage(avatarUrl), fit: BoxFit.cover)
@@ -236,7 +236,7 @@ class _PlayerMarker extends StatelessWidget {
                 ? Center(
                     child: Text(
                       title.isNotEmpty ? title[0].toUpperCase() : '?',
-                      style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                      style: TextStyle(color: AppColors.dark.foreground, fontSize: 12, fontWeight: FontWeight.bold),
                     ),
                   )
                 : null,
@@ -245,12 +245,12 @@ class _PlayerMarker extends StatelessWidget {
             margin: const EdgeInsets.only(top: 2),
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.75),
-              borderRadius: BorderRadius.circular(6),
+              color: AppColors.dark.background.withOpacity(0.75),
+              borderRadius: BorderRadius.circular(4),
             ),
             child: Text(
               '~${player['distanceMeters']}m',
-              style: const TextStyle(color: Colors.white, fontSize: 9),
+              style: TextStyle(color: AppColors.dark.foreground, fontSize: 9),
             ),
           ),
         ],

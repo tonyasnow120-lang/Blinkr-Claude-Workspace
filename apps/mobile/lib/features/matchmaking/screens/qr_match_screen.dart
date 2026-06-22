@@ -77,7 +77,7 @@ class _QrMatchScreenState extends ConsumerState<QrMatchScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         foregroundColor: colors.foreground,
-        title: const Text('QR Match'),
+        title: const Text('QR MATCH'),
         actions: const [MusicToggleButton()],
       ),
       body: SafeArea(
@@ -91,20 +91,20 @@ class _QrMatchScreenState extends ConsumerState<QrMatchScreen> {
                 Text(
                   state.error?.message ?? 'Something went wrong.',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.redAccent),
+                  style: const TextStyle(color: AppColors.red),
                 ),
                 const SizedBox(height: 16),
                 TextButton(
                   onPressed: _generate,
                   child:
-                      Text('Retry', style: TextStyle(color: colors.foreground)),
+                      Text('RETRY', style: TextStyle(color: colors.foreground)),
                 ),
               ] else if (deepLink == null)
                 Center(
                     child: CircularProgressIndicator(color: colors.foreground))
               else ...[
                 Text(
-                  'Have your opponent scan this',
+                  'HAVE YOUR OPPONENT SCAN THIS',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: colors.foreground, fontSize: 20),
                 ),
@@ -113,10 +113,9 @@ class _QrMatchScreenState extends ConsumerState<QrMatchScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      // QR backing stays white regardless of theme — the
-                      // code itself is rendered as black modules on white.
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
+                      // QR spec requires high-contrast black-on-white for scanners.
+                      color: const Color(0xFFF0EDE0),
+                      borderRadius: BorderRadius.circular(4),
                     ),
                     child: QrImageView(
                       data: deepLink,
@@ -133,7 +132,7 @@ class _QrMatchScreenState extends ConsumerState<QrMatchScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Waiting for opponent…',
+                  'WAITING FOR OPPONENT…',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: colors.ink(0.5)),
                 ),
@@ -141,13 +140,13 @@ class _QrMatchScreenState extends ConsumerState<QrMatchScreen> {
                 OutlinedButton.icon(
                   onPressed: () => context.push('/qr/scan'),
                   icon: const Icon(Icons.qr_code_scanner, size: 18),
-                  label: const Text('Scan theirs instead'),
+                  label: const Text('SCAN THEIRS INSTEAD'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: colors.foreground,
                     side: BorderSide(color: colors.ink(0.3)),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(4),
                     ),
                   ),
                 ),

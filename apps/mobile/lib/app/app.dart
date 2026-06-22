@@ -32,27 +32,27 @@ class BlinkrApp extends ConsumerWidget {
         themeMode: themeMode,
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.black,
+            seedColor: AppColors.acid,
             brightness: Brightness.light,
           ),
           useMaterial3: true,
-          scaffoldBackgroundColor: Colors.white,
-          appBarTheme: const AppBarTheme(
-            backgroundColor: Colors.white,
-            foregroundColor: Colors.black,
+          scaffoldBackgroundColor: AppColors.light.background,
+          appBarTheme: AppBarTheme(
+            backgroundColor: AppColors.light.background,
+            foregroundColor: AppColors.light.foreground,
             elevation: 0,
           ),
         ),
         darkTheme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.white,
+            seedColor: AppColors.acid,
             brightness: Brightness.dark,
           ),
           useMaterial3: true,
-          scaffoldBackgroundColor: Colors.black,
-          appBarTheme: const AppBarTheme(
-            backgroundColor: Colors.black,
-            foregroundColor: Colors.white,
+          scaffoldBackgroundColor: AppColors.dark.background,
+          appBarTheme: AppBarTheme(
+            backgroundColor: AppColors.dark.background,
+            foregroundColor: AppColors.dark.foreground,
             elevation: 0,
           ),
         ),
@@ -104,9 +104,9 @@ class _ChallengeInviteListener extends ConsumerWidget {
         context: dialogContext,
         builder: (context) => AlertDialog(
           backgroundColor: context.colors.surface,
-          title: Text('Challenge!', style: TextStyle(color: context.colors.foreground)),
+          title: Text('CHALLENGE.', style: TextStyle(color: context.colors.foreground)),
           content: Text(
-            '${next.challengerName} wants to blink against you.',
+            '${next.challengerName.toUpperCase()} WANTS TO BLINK AGAINST YOU.',
             style: TextStyle(color: context.colors.ink(0.7)),
           ),
           actions: [
@@ -115,7 +115,7 @@ class _ChallengeInviteListener extends ConsumerWidget {
                 ref.read(challengeInviteProvider.notifier).dismiss();
                 Navigator.of(context).pop();
               },
-              child: const Text('Deny'),
+              child: const Text('DENY'),
             ),
             FilledButton(
               onPressed: () {
@@ -123,7 +123,7 @@ class _ChallengeInviteListener extends ConsumerWidget {
                 Navigator.of(context).pop();
                 dialogContext.push('/match/${next.code}');
               },
-              child: const Text('Accept'),
+              child: const Text('ACCEPT'),
             ),
           ],
         ),
@@ -142,13 +142,13 @@ class _ErrorApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: AppColors.dark.background,
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(32),
             child: Text(
               message,
-              style: const TextStyle(color: Colors.redAccent, fontSize: 14),
+              style: const TextStyle(color: AppColors.red, fontSize: 14),
               textAlign: TextAlign.center,
             ),
           ),

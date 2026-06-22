@@ -67,7 +67,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         foregroundColor: colors.foreground,
-        title: const Text('Scan to join'),
+        title: const Text('SCAN TO JOIN'),
       ),
       body: Stack(
         fit: StackFit.expand,
@@ -83,7 +83,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                       ? 'Camera access is required to scan a challenge code. Enable it in Settings.'
                       : 'Camera unavailable: ${error.errorCode.name}',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white70),
+                  style: TextStyle(color: context.colors.ink(0.70)),
                 ),
               ),
             ),
@@ -97,15 +97,15 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                 height: 260,
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: _handled ? Colors.greenAccent : Colors.white54,
+                    color: _handled ? AppColors.acid : context.colors.ink(0.54),
                     width: 2,
                   ),
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(4),
                 ),
                 child: _handled
                     ? const Center(
                         child: Icon(Icons.check_circle,
-                            color: Colors.greenAccent, size: 72),
+                            color: AppColors.acid, size: 72),
                       )
                     : null,
               ),
@@ -117,10 +117,10 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
             bottom: 48,
             child: Text(
               _handled
-                  ? 'Challenge found — joining…'
-                  : 'Point at your opponent\'s QR code',
+                  ? 'CHALLENGE FOUND -- JOINING...'
+                  : 'POINT AT YOUR OPPONENT\'S QR CODE',
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white70),
+              style: TextStyle(color: context.colors.ink(0.70)),
             ),
           ),
         ],

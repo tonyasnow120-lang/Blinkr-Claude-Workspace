@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:livekit_client/livekit_client.dart' as livekit;
+import '../../../core/theme/app_colors.dart';
 
 /// Renders the opponent's live video track, if one is currently subscribed.
 /// Falls back to a placeholder while waiting for the opponent's camera to
@@ -57,23 +58,23 @@ class _RemoteVideoFeedState extends State<RemoteVideoFeed> {
     final track = _videoTrack;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.dark.foreground.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(4),
       ),
       child: track != null
           ? ClipRRect(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(4),
               child: livekit.VideoTrackRenderer(track),
             )
-          : const Center(
+          : Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.videocam_off, color: Colors.white38, size: 32),
-                  SizedBox(height: 8),
+                  Icon(Icons.videocam_off, color: AppColors.dark.ink(0.38), size: 32),
+                  const SizedBox(height: 8),
                   Text(
-                    'Waiting for opponent\'s video…',
-                    style: TextStyle(color: Colors.white38, fontSize: 13),
+                    'WAITING FOR OPPONENT\'S VIDEO…',
+                    style: TextStyle(color: AppColors.dark.ink(0.38), fontSize: 13),
                   ),
                 ],
               ),

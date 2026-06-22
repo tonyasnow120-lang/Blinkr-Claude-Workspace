@@ -309,7 +309,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             Text(
                               _error!,
                               style: const TextStyle(
-                                  color: Colors.redAccent, fontSize: 12),
+                                  color: AppColors.red, fontSize: 12),
                             ),
                           ],
 
@@ -426,9 +426,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                           ),
                           children: [
                             const TextSpan(
-                                text: 'By continuing you agree to our\n'),
+                                text: 'BY CONTINUING YOU AGREE TO OUR\n'),
                             TextSpan(
-                              text: 'Terms of Service',
+                              text: 'TERMS OF SERVICE',
                               style: TextStyle(
                                 color: colors.ink(0.4),
                                 decoration: TextDecoration.underline,
@@ -438,7 +438,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             ),
                             const TextSpan(text: '   ·   '),
                             TextSpan(
-                              text: 'Privacy Policy',
+                              text: 'PRIVACY POLICY',
                               style: TextStyle(
                                 color: colors.ink(0.4),
                                 decoration: TextDecoration.underline,
@@ -654,7 +654,7 @@ class _GoogleLogoPainter extends CustomPainter {
 class _BlinkingCursor extends StatefulWidget {
   final double fontSize;
   final Color color;
-  const _BlinkingCursor({this.fontSize = 32, this.color = Colors.white});
+  const _BlinkingCursor({this.fontSize = 32, this.color = AppColors.dark.foreground});
 
   @override
   State<_BlinkingCursor> createState() => _BlinkingCursorState();

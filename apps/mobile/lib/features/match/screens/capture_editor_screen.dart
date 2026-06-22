@@ -35,9 +35,9 @@ class _CaptureEditorScreenState extends ConsumerState<CaptureEditorScreen> {
 
   static const _palette = [
     AppColors.acid,
-    Colors.white,
+    AppColors.dark.foreground,
     Color(0xFFFF3B30), // loss red — reserved, but handy as a marker here
-    Colors.black,
+    AppColors.dark.background,
   ];
 
   void _onPanStart(DragStartDetails d) {
@@ -79,26 +79,26 @@ class _CaptureEditorScreenState extends ConsumerState<CaptureEditorScreen> {
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: const Color(0xFF1C1C1E),
-        title: const Text('Add a taunt', style: TextStyle(color: Colors.white)),
+        title: Text('ADD A TAUNT', style: TextStyle(color: context.colors.foreground)),
         content: TextField(
           controller: controller,
           autofocus: true,
           textCapitalization: TextCapitalization.characters,
-          style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
+          style: TextStyle(color: context.colors.foreground),
+          decoration: InputDecoration(
             hintText: 'BLINKED ALREADY?',
-            hintStyle: TextStyle(color: Colors.white38),
+            hintStyle: TextStyle(color: context.colors.ink(0.38)),
           ),
           onSubmitted: (v) => Navigator.pop(context, v),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: const Text('CANCEL'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, controller.text),
-            child: const Text('Add'),
+            child: const Text('ADD'),
           ),
         ],
       ),
@@ -130,7 +130,7 @@ class _CaptureEditorScreenState extends ConsumerState<CaptureEditorScreen> {
       if (!mounted) return;
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Couldn't save: $e")),
+        SnackBar(content: Text("COULDN'T SAVE: $e")),
       );
     }
   }
@@ -138,10 +138,10 @@ class _CaptureEditorScreenState extends ConsumerState<CaptureEditorScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: context.colors.background,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        backgroundColor: context.colors.background,
+        foregroundColor: context.colors.foreground,
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.pop(context, false),
@@ -301,7 +301,7 @@ class _CaptionWidget extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                   letterSpacing: 2,
                   shadows: const [
-                    Shadow(blurRadius: 6, color: Colors.black54),
+                    Shadow(blurRadius: 6, color: AppColors.dark.background.withOpacity(0.54)),
                   ],
                 ),
               ),
@@ -350,8 +350,8 @@ class _Toolbar extends StatelessWidget {
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: selected == color
-                              ? Colors.white
-                              : Colors.white24,
+                              ? AppColors.dark.foreground
+                              : AppColors.dark.ink(0.24),
                           width: selected == color ? 2.5 : 1,
                         ),
                       ),
@@ -363,18 +363,18 @@ class _Toolbar extends StatelessWidget {
               children: [
                 IconButton(
                   onPressed: onAddText,
-                  icon: const Icon(Icons.text_fields, color: Colors.white),
-                  tooltip: 'Add text',
+                  icon: const Icon(Icons.text_fields, color: AppColors.dark.foreground),
+                  tooltip: 'ADD TEXT',
                 ),
                 IconButton(
                   onPressed: onUndo,
-                  icon: const Icon(Icons.undo, color: Colors.white),
-                  tooltip: 'Undo',
+                  icon: const Icon(Icons.undo, color: AppColors.dark.foreground),
+                  tooltip: 'UNDO',
                 ),
                 IconButton(
                   onPressed: onClear,
-                  icon: const Icon(Icons.delete_outline, color: Colors.white),
-                  tooltip: 'Clear',
+                  icon: const Icon(Icons.delete_outline, color: AppColors.dark.foreground),
+                  tooltip: 'CLEAR',
                 ),
               ],
             ),

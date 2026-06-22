@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../widgets/countdown_overlay.dart';
+import '../../../core/theme/app_colors.dart';
 
 class CountdownScreen extends ConsumerWidget {
   final String matchId;
@@ -16,7 +17,7 @@ class CountdownScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: context.colors.background,
       body: Stack(
         fit: StackFit.expand,
         children: [

@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../../core/theme/app_colors.dart';
 
 /// Shared "line art eye" drawing primitives — the rotating dial rings, the
 /// outward pulse rings, and the eye itself (iris/pupil/highlight with
@@ -16,7 +17,7 @@ class LineEye {
     double base, {
     required double rotation,
     required double arcRotation,
-    Color color = Colors.white,
+    Color color = AppColors.dark.foreground,
   }) {
     final innerR = base * 0.36;
     final outerR = base * 0.485;
@@ -60,7 +61,7 @@ class LineEye {
 
   static void drawPulseRings(
       Canvas canvas, Offset center, double base, double pulse,
-      {Color color = Colors.white}) {
+      {Color color = AppColors.dark.foreground}) {
     final baseR = base * 0.39;
     final p = Paint()
       ..style = PaintingStyle.stroke
@@ -94,8 +95,8 @@ class LineEye {
     double tearPhase = 0,
     bool checkmark = false,
     double checkTrim = 0,
-    Color color = Colors.white,
-    Color background = Colors.black,
+    Color color = AppColors.dark.foreground,
+    Color background = AppColors.dark.background,
   }) {
     final eyeW = base * 0.62;
     final eyeH = eyeW * 0.44;
@@ -261,7 +262,7 @@ class LineEyeIcon extends StatelessWidget {
   final double size;
   final Color color;
 
-  const LineEyeIcon({super.key, this.size = 18, this.color = Colors.white});
+  const LineEyeIcon({super.key, this.size = 18, this.color = AppColors.dark.foreground});
 
   @override
   Widget build(BuildContext context) {

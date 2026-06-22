@@ -102,7 +102,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload failed: $e')),
+          SnackBar(content: Text('UPLOAD FAILED: $e')),
         );
       }
     } finally {
@@ -128,7 +128,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload failed: $e')),
+          SnackBar(content: Text('UPLOAD FAILED: $e')),
         );
       }
     } finally {
@@ -142,21 +142,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: colors.surface,
-        title: Text('Remove photo?',
+        title: Text('REMOVE PHOTO?',
             style: TextStyle(color: colors.foreground)),
         content: Text(
-          'This photo will be removed from your collage.',
+          'THIS PHOTO WILL BE REMOVED FROM YOUR COLLAGE.',
           style: TextStyle(color: colors.ink(0.7)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: const Text('CANCEL'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Remove',
-                style: TextStyle(color: Colors.redAccent)),
+            child: const Text('REMOVE',
+                style: TextStyle(color: AppColors.red)),
           ),
         ],
       ),
@@ -169,7 +169,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Failed to remove: $e')));
+            .showSnackBar(SnackBar(content: Text('FAILED TO REMOVE: $e')));
       }
     }
   }
@@ -185,7 +185,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         foregroundColor: colors.foreground,
-        title: const Text('Profile'),
+        title: const Text('PROFILE'),
         actions: [
           const MusicToggleButton(),
           const ThemeToggleButton(),
@@ -194,7 +194,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
               await ref.read(authServiceProvider).signOut();
               if (context.mounted) context.go('/');
             },
-            child: Text('Sign out', style: TextStyle(color: colors.ink(0.7))),
+            child: Text('SIGN OUT', style: TextStyle(color: colors.ink(0.7))),
           ),
         ],
       ),
@@ -244,7 +244,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
       loading: () =>
           Center(child: CircularProgressIndicator(color: colors.foreground)),
       error: (e, _) => Center(
-        child: Text(e.toString(), style: const TextStyle(color: Colors.redAccent)),
+        child: Text(e.toString(), style: const TextStyle(color: AppColors.red)),
       ),
       data: (data) {
         final user = data['users'] as Map<String, dynamic>?;
@@ -313,7 +313,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Stats',
+                        'STATS',
                         style: TextStyle(
                           color: colors.foreground,
                           fontSize: 18,
@@ -325,20 +325,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
                           _StatTile(
-                              label: 'Wins',
+                              label: 'WINS',
                               value: _toInt(stats['wins']),
                               colors: colors),
                           _StatTile(
-                              label: 'Losses',
+                              label: 'LOSSES',
                               value: _toInt(stats['losses']),
                               colors: colors),
                           _StatTile(
-                              label: 'Streak',
+                              label: 'STREAK',
                               value: _toInt(stats['currentStreak'] ??
                                   stats['current_streak']),
                               colors: colors),
                           _StatTile(
-                              label: 'Best',
+                              label: 'BEST',
                               value: _toInt(stats['longestStreak'] ??
                                   stats['longest_streak']),
                               colors: colors),
@@ -554,7 +554,7 @@ class _PhotoCollage extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Photos',
+          'PHOTOS',
           style: TextStyle(
             color: colors.foreground,
             fontSize: 18,
@@ -563,7 +563,7 @@ class _PhotoCollage extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          'Hold a photo to remove it.',
+          'HOLD A PHOTO TO REMOVE IT.',
           style: TextStyle(color: colors.ink(0.4), fontSize: 12),
         ),
         const SizedBox(height: 16),
@@ -575,7 +575,7 @@ class _PhotoCollage extends StatelessWidget {
                     color: colors.ink(0.14), strokeWidth: 2)),
           ),
           error: (e, _) => Text(
-            'Could not load photos',
+            'COULD NOT LOAD PHOTOS.',
             style: TextStyle(color: colors.ink(0.4)),
           ),
           data: (items) => GridView.builder(
@@ -616,11 +616,11 @@ class _AddPhotoTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: uploading ? null : onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(4),
       child: Container(
         decoration: BoxDecoration(
           border: Border.all(color: colors.ink(0.18)),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(4),
         ),
         child: Center(
           child: uploading
@@ -647,7 +647,7 @@ class _PhotoTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(4),
       child: GestureDetector(
         onLongPress: onLongPress,
         child: Image.network(

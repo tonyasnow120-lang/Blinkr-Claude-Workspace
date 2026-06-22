@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app/app.dart';
+import 'core/theme/app_colors.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,8 +17,8 @@ void main() async {
   // In release builds use a generic message to avoid leaking internal details.
   ErrorWidget.builder = (details) {
     final message = kDebugMode
-        ? 'UI error:\n${details.exceptionAsString()}'
-        : 'Something went wrong.\nPlease restart the app.';
+        ? 'UI ERROR:\n${details.exceptionAsString()}'
+        : 'SOMETHING WENT WRONG.\nPLEASE RESTART THE APP.';
     return _ErrorOverlay(message: message);
   };
 
@@ -29,9 +30,9 @@ void main() async {
 
   if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
     runApp(const _StartupErrorApp(
-      message: 'Build misconfiguration: SUPABASE_URL / SUPABASE_ANON_KEY '
-          'dart-defines are empty.\n\nAdd these as GitHub Secrets and '
-          'trigger a fresh build.',
+      message: 'BUILD MISCONFIGURATION: SUPABASE_URL / SUPABASE_ANON_KEY '
+          'DART-DEFINES ARE EMPTY.\n\nADD THESE AS GITHUB SECRETS AND '
+          'TRIGGER A FRESH BUILD.',
     ));
     return;
   }
@@ -50,11 +51,11 @@ void main() async {
     ).timeout(const Duration(seconds: 15));
   } on TimeoutException {
     runApp(const _StartupErrorApp(
-      message: 'Startup timed out connecting to Supabase.\nPlease check your internet connection and restart.',
+      message: 'STARTUP TIMED OUT CONNECTING TO SUPABASE.\nPLEASE CHECK YOUR INTERNET CONNECTION AND RESTART.',
     ));
     return;
   } catch (e) {
-    runApp(_StartupErrorApp(message: 'Supabase init failed:\n$e'));
+    runApp(_StartupErrorApp(message: 'SUPABASE INIT FAILED:\n$e'));
     return;
   }
 
@@ -75,7 +76,7 @@ class _LoadingApp extends StatelessWidget {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: AppColors.dark.background,
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -83,14 +84,14 @@ class _LoadingApp extends StatelessWidget {
               Text(
                 'BLINKR',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppColors.dark.foreground,
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 8,
                 ),
               ),
               SizedBox(height: 32),
-              CircularProgressIndicator(color: Colors.white),
+              CircularProgressIndicator(color: AppColors.dark.foreground),
             ],
           ),
         ),
@@ -109,13 +110,13 @@ class _StartupErrorApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: AppColors.dark.background,
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(32),
             child: Text(
               message,
-              style: const TextStyle(color: Colors.redAccent, fontSize: 14),
+              style: const TextStyle(color: AppColors.red, fontSize: 14),
               textAlign: TextAlign.center,
             ),
           ),
@@ -134,13 +135,13 @@ class _ErrorOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: Colors.black,
+      color: AppColors.dark.background,
       child: Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
           child: Text(
             message,
-            style: const TextStyle(color: Colors.redAccent, fontSize: 14),
+            style: const TextStyle(color: AppColors.red, fontSize: 14),
             textAlign: TextAlign.center,
           ),
         ),

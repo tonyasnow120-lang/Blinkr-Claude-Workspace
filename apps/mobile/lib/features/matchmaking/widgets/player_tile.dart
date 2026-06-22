@@ -64,12 +64,12 @@ class ChallengeButton extends StatelessWidget {
         backgroundColor: colors.foreground,
         foregroundColor: colors.background,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('Challenge', style: TextStyle(fontSize: 13)),
+          const Text('CHALLENGE', style: TextStyle(fontSize: 13)),
           const SizedBox(width: 6),
           LineEyeIcon(size: 15, color: colors.background),
         ],

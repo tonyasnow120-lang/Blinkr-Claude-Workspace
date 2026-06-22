@@ -61,7 +61,7 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
       await _navigateAfterLogin();
     } catch (e) {
       final msg = e is AuthException ? e.message : e.toString();
-      setState(() => _error = 'Verification failed: $msg');
+      setState(() => _error = 'VERIFICATION FAILED: $msg');
     } finally {
       setState(() => _loading = false);
     }
@@ -89,7 +89,7 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
           children: [
             const SizedBox(height: 40),
             Text(
-              'Check your email',
+              'CHECK YOUR EMAIL',
               style: TextStyle(
                 color: colors.foreground,
                 fontSize: 28,
@@ -98,7 +98,7 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Tap the sign-in button in the email sent to ${widget.email} — the app will open automatically.\n\nOr enter the code below if one was included.',
+              'TAP THE LINK SENT TO ${widget.email}.\nOR ENTER THE CODE BELOW.',
               style: TextStyle(color: colors.ink(0.6)),
             ),
             const SizedBox(height: 32),
@@ -123,14 +123,14 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
                 filled: true,
                 fillColor: colors.ink(0.1),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(4),
                   borderSide: BorderSide.none,
                 ),
               ),
             ),
             if (_error != null) ...[
               const SizedBox(height: 12),
-              Text(_error!, style: const TextStyle(color: Colors.redAccent)),
+              Text(_error!, style: const TextStyle(color: AppColors.red)),
             ],
             const SizedBox(height: 24),
             FilledButton(
@@ -140,7 +140,7 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
                 foregroundColor: colors.background,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(4),
                 ),
               ),
               child: _loading
@@ -151,7 +151,7 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
                           strokeWidth: 2, color: colors.background),
                     )
                   : const Text(
-                      'Verify',
+                      'VERIFY',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
             ),

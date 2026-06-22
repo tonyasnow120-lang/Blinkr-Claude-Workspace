@@ -53,7 +53,7 @@ class _JoinChallengeScreenState extends ConsumerState<JoinChallengeScreen> {
         context.push('/match/${result['matchId']}/lobby', extra: result);
       } else {
         final state = ref.read(challengeNotifierProvider);
-        setState(() => _error = state.error ?? 'Failed to join challenge.');
+        setState(() => _error = state.error ?? 'FAILED TO JOIN CHALLENGE.');
       }
     }
   }
@@ -66,7 +66,7 @@ class _JoinChallengeScreenState extends ConsumerState<JoinChallengeScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         foregroundColor: colors.foreground,
-        title: const Text('Join Challenge'),
+        title: const Text('JOIN CHALLENGE'),
         actions: const [MusicToggleButton()],
       ),
       body: Padding(
@@ -76,7 +76,7 @@ class _JoinChallengeScreenState extends ConsumerState<JoinChallengeScreen> {
           children: [
             const SizedBox(height: 40),
             Text(
-              'Enter the 9-letter code',
+              'ENTER THE 9-LETTER CODE',
               style: TextStyle(color: colors.foreground, fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
@@ -102,14 +102,14 @@ class _JoinChallengeScreenState extends ConsumerState<JoinChallengeScreen> {
                 filled: true,
                 fillColor: colors.ink(0.1),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(4),
                   borderSide: BorderSide.none,
                 ),
               ),
             ),
             if (_error != null) ...[
               const SizedBox(height: 12),
-              Text(_error!, style: const TextStyle(color: Colors.redAccent)),
+              Text(_error!, style: const TextStyle(color: AppColors.red)),
             ],
             const SizedBox(height: 24),
             FilledButton(
@@ -119,7 +119,7 @@ class _JoinChallengeScreenState extends ConsumerState<JoinChallengeScreen> {
                 foregroundColor: colors.background,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(4),
                 ),
               ),
               child: _loading
@@ -129,7 +129,7 @@ class _JoinChallengeScreenState extends ConsumerState<JoinChallengeScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Text(
-                      'Accept Challenge',
+                      'ACCEPT CHALLENGE',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
             ),

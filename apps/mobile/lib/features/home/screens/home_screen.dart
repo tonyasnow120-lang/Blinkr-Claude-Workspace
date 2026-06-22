@@ -434,7 +434,7 @@ class _MatchmakingShortcut extends StatelessWidget {
     final colors = context.colors;
     return InkWell(
       onTap: () => context.push(route),
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(4),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Column(

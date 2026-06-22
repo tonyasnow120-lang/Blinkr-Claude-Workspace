@@ -31,7 +31,7 @@ class FriendsListScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         foregroundColor: colors.foreground,
-        title: const Text('Friends'),
+        title: const Text('FRIENDS'),
         actions: [
           IconButton(
             icon: const Icon(Icons.person_add_alt),
@@ -52,7 +52,7 @@ class FriendsListScreen extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   child: Text(state.error!.message,
-                      style: const TextStyle(color: Colors.redAccent)),
+                      style: const TextStyle(color: AppColors.red)),
                 ),
               if (state.incomingRequests.isNotEmpty) ...[
                 Padding(
@@ -76,7 +76,7 @@ class FriendsListScreen extends ConsumerWidget {
                       children: [
                         IconButton(
                           icon: const Icon(Icons.check_circle,
-                              color: Colors.greenAccent),
+                              color: AppColors.acid),
                           onPressed: () =>
                               notifier.accept(req['friendshipId'] as String),
                         ),
@@ -102,7 +102,7 @@ class FriendsListScreen extends ConsumerWidget {
                   child: Column(
                     children: [
                       Text(
-                        'No friends yet',
+                        'NO FRIENDS YET',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                             color: colors.ink(0.5), fontSize: 16),
@@ -110,7 +110,7 @@ class FriendsListScreen extends ConsumerWidget {
                       const SizedBox(height: 12),
                       TextButton(
                         onPressed: () => context.push('/friends/search'),
-                        child: Text('Find players',
+                        child: Text('FIND PLAYERS',
                             style: TextStyle(color: colors.foreground)),
                       ),
                     ],

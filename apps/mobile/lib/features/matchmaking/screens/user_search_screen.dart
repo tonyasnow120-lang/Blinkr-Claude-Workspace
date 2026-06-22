@@ -37,14 +37,14 @@ class _UserSearchScreenState extends ConsumerState<UserSearchScreen> {
     final requestedByMe = user['friendshipRequestedByMe'] == true;
 
     if (status == 'blocked') {
-      return Text('Blocked',
+      return Text('BLOCKED',
           style: TextStyle(color: colors.ink(0.4), fontSize: 13));
     }
     if (status == 'accepted') {
       return ChallengeButton(onPressed: () => _challenge(user));
     }
     if (status == 'pending') {
-      return Text(requestedByMe ? 'Requested' : 'Respond in Friends',
+      return Text(requestedByMe ? 'REQUESTED' : 'RESPOND IN FRIENDS',
           style: TextStyle(color: colors.ink(0.4), fontSize: 13));
     }
     return OutlinedButton(
@@ -65,9 +65,9 @@ class _UserSearchScreenState extends ConsumerState<UserSearchScreen> {
         foregroundColor: colors.foreground,
         side: BorderSide(color: colors.ink(0.3)),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
       ),
-      child: const Text('Add Friend', style: TextStyle(fontSize: 13)),
+      child: const Text('ADD FRIEND', style: TextStyle(fontSize: 13)),
     );
   }
 
@@ -81,7 +81,7 @@ class _UserSearchScreenState extends ConsumerState<UserSearchScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         foregroundColor: colors.foreground,
-        title: const Text('Find players'),
+        title: const Text('FIND PLAYERS'),
         actions: const [MusicToggleButton()],
       ),
       body: SafeArea(
@@ -103,7 +103,7 @@ class _UserSearchScreenState extends ConsumerState<UserSearchScreen> {
                   filled: true,
                   fillColor: colors.ink(0.1),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(4),
                     borderSide: BorderSide.none,
                   ),
                 ),
@@ -114,7 +114,7 @@ class _UserSearchScreenState extends ConsumerState<UserSearchScreen> {
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(state.error!.message,
-                      style: const TextStyle(color: Colors.redAccent)),
+                      style: const TextStyle(color: AppColors.red)),
                 ),
               Expanded(
                 child: state.results.isEmpty

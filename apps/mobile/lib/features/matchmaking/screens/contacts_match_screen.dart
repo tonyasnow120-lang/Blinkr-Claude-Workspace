@@ -101,7 +101,7 @@ class _ContactsMatchScreenState extends ConsumerState<ContactsMatchScreen> {
           Icon(Icons.contacts_outlined, color: colors.foreground, size: 48),
           const SizedBox(height: 24),
           Text(
-            'Find friends from your contacts',
+            'FIND FRIENDS FROM YOUR CONTACTS',
             textAlign: TextAlign.center,
             style: TextStyle(
                 color: colors.foreground, fontSize: 22, fontWeight: FontWeight.bold),
@@ -126,15 +126,15 @@ class _ContactsMatchScreenState extends ConsumerState<ContactsMatchScreen> {
               foregroundColor: colors.background,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(4)),
             ),
-            child: const Text('Continue',
+            child: const Text('CONTINUE',
                 style: TextStyle(fontWeight: FontWeight.bold)),
           ),
           const SizedBox(height: 12),
           TextButton(
             onPressed: () => context.pop(),
-            child: Text('Not now', style: TextStyle(color: colors.ink(0.5))),
+            child: Text('NOT NOW', style: TextStyle(color: colors.ink(0.5))),
           ),
         ],
       ),
@@ -177,7 +177,7 @@ class _ContactsMatchScreenState extends ConsumerState<ContactsMatchScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         foregroundColor: colors.foreground,
-        title: const Text('Contacts'),
+        title: const Text('CONTACTS'),
         actions: [
           if (_stage == _Stage.list)
             IconButton(
@@ -203,12 +203,12 @@ class _ContactsMatchScreenState extends ConsumerState<ContactsMatchScreen> {
                     Text(
                       _error ?? 'Something went wrong.',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.redAccent),
+                      style: const TextStyle(color: AppColors.red),
                     ),
                     const SizedBox(height: 16),
                     TextButton(
                       onPressed: () => _load(forceRefresh: true),
-                      child: Text('Retry',
+                      child: Text('RETRY',
                           style: TextStyle(color: colors.foreground)),
                     ),
                   ],

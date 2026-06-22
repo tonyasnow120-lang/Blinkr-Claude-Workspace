@@ -114,7 +114,7 @@ const BlinkTestScreen = () => {
   if (!hasPermission) {
     return (
       <View style={styles.center}>
-        <Text style={styles.errorText}>Camera permission required</Text>
+        <Text style={styles.errorText}>CAMERA PERMISSION REQUIRED.</Text>
       </View>
     );
   }
@@ -122,7 +122,7 @@ const BlinkTestScreen = () => {
   if (!device) {
     return (
       <View style={styles.center}>
-        <Text style={styles.errorText}>No front camera found</Text>
+        <Text style={styles.errorText}>NO FRONT CAMERA FOUND.</Text>
       </View>
     );
   }
@@ -145,7 +145,7 @@ const BlinkTestScreen = () => {
       <SafeAreaView style={styles.safeArea}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Blinkr — Detection Test</Text>
+          <Text style={styles.headerTitle}>BLINKR — DETECTION TEST</Text>
           <Text style={styles.detectorBadge}>{detectorName}</Text>
         </View>
 
@@ -157,17 +157,17 @@ const BlinkTestScreen = () => {
           <View style={styles.divider} />
 
           <View style={styles.metaRow}>
-            <Text style={styles.metaLabel}>Blinks</Text>
+            <Text style={styles.metaLabel}>BLINKS</Text>
             <Text style={styles.metaValue}>{blinkCount}</Text>
           </View>
           <View style={styles.metaRow}>
-            <Text style={styles.metaLabel}>Latency</Text>
-            <Text style={styles.metaValue}>{latencyMs} ms</Text>
+            <Text style={styles.metaLabel}>LATENCY</Text>
+            <Text style={styles.metaValue}>{latencyMs} MS</Text>
           </View>
 
           {blinkVisible && (
             <View style={styles.blinkBanner}>
-              <Text style={styles.blinkBannerText}>BLINK DETECTED</Text>
+              <Text style={styles.blinkBannerText}>BLINK DETECTED.</Text>
             </View>
           )}
         </View>
@@ -183,17 +183,18 @@ export default BlinkTestScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#080808',
   },
   center: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#000',
+    backgroundColor: '#080808',
   },
   errorText: {
-    color: '#ff4444',
+    color: '#FF3B30',
     fontSize: 16,
+    letterSpacing: 1,
   },
   safeArea: {
     flex: 1,
@@ -207,24 +208,25 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   headerTitle: {
-    color: '#fff',
+    color: '#F0EDE0',
     fontSize: 16,
     fontWeight: '700',
-    letterSpacing: 0.5,
+    letterSpacing: 2,
   },
   detectorBadge: {
-    color: '#00e5ff',
+    color: '#39FF14',
     fontSize: 13,
     fontWeight: '600',
-    backgroundColor: 'rgba(0,229,255,0.15)',
+    backgroundColor: 'rgba(57,255,20,0.15)',
     paddingHorizontal: 10,
     paddingVertical: 3,
-    borderRadius: 8,
+    borderRadius: 4,
     overflow: 'hidden',
+    letterSpacing: 1,
   },
   statsPanel: {
-    backgroundColor: 'rgba(0,0,0,0.65)',
-    borderRadius: 16,
+    backgroundColor: 'rgba(8,8,8,0.65)',
+    borderRadius: 4,
     marginHorizontal: 16,
     marginBottom: 24,
     padding: 16,
@@ -235,30 +237,30 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   eyeLabel: {
-    color: '#aaa',
+    color: 'rgba(240,237,224,0.54)',
     fontSize: 12,
     fontWeight: '700',
     width: 44,
-    letterSpacing: 0.5,
+    letterSpacing: 1,
   },
   scoreTrack: {
     flex: 1,
     height: 10,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 5,
+    backgroundColor: 'rgba(240,237,224,0.15)',
+    borderRadius: 2,
     overflow: 'hidden',
     marginHorizontal: 10,
   },
   scoreFill: {
     height: '100%',
-    backgroundColor: '#00e5ff',
-    borderRadius: 5,
+    backgroundColor: '#39FF14',
+    borderRadius: 2,
   },
   scoreFillAlert: {
-    backgroundColor: '#ff4444',
+    backgroundColor: '#FF3B30',
   },
   eyeScore: {
-    color: '#fff',
+    color: '#F0EDE0',
     fontSize: 14,
     fontVariant: ['tabular-nums'],
     width: 36,
@@ -266,7 +268,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(240,237,224,0.12)',
     marginVertical: 10,
   },
   metaRow: {
@@ -275,28 +277,29 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   metaLabel: {
-    color: '#888',
+    color: 'rgba(240,237,224,0.38)',
     fontSize: 13,
+    letterSpacing: 1,
   },
   metaValue: {
-    color: '#fff',
+    color: '#F0EDE0',
     fontSize: 13,
     fontWeight: '600',
     fontVariant: ['tabular-nums'],
   },
   blinkOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#fff',
+    backgroundColor: '#F0EDE0',
   },
   blinkBanner: {
     marginTop: 12,
     alignItems: 'center',
-    backgroundColor: 'rgba(255,68,68,0.9)',
-    borderRadius: 10,
+    backgroundColor: 'rgba(255,59,48,0.9)',
+    borderRadius: 4,
     paddingVertical: 8,
   },
   blinkBannerText: {
-    color: '#fff',
+    color: '#F0EDE0',
     fontSize: 18,
     fontWeight: '900',
     letterSpacing: 2,

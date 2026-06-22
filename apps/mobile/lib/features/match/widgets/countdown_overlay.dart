@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../core/audio/countdown_sound.dart';
+import '../../../core/theme/app_colors.dart';
 
 class CountdownOverlay extends StatefulWidget {
   final DateTime startsAt;
@@ -58,7 +59,7 @@ class _CountdownOverlayState extends State<CountdownOverlay> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.black.withOpacity(0.7),
+      color: AppColors.dark.background.withOpacity(0.7),
       child: Center(
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 200),
@@ -66,7 +67,7 @@ class _CountdownOverlayState extends State<CountdownOverlay> {
             '$_remaining',
             key: ValueKey(_remaining),
             style: const TextStyle(
-              color: Colors.white,
+              color: AppColors.dark.foreground,
               fontSize: 120,
               fontWeight: FontWeight.w900,
             ),

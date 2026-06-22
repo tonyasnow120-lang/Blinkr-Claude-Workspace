@@ -131,7 +131,7 @@ class _SetupProfileScreenState extends ConsumerState<SetupProfileScreen>
                 child: SlideTransition(
                   position: _headerSlide,
                   child: Text(
-                    'Set up your profile',
+                    'CLAIM YOUR NAME',
                     style: TextStyle(
                       color: colors.foreground,
                       fontSize: 28,
@@ -146,7 +146,7 @@ class _SetupProfileScreenState extends ConsumerState<SetupProfileScreen>
                 child: SlideTransition(
                   position: _headerSlide,
                   child: Text(
-                    'Choose a username to get started.',
+                    'CHOOSE A USERNAME.',
                     style: TextStyle(color: colors.ink(0.6)),
                   ),
                 ),
@@ -167,7 +167,7 @@ class _SetupProfileScreenState extends ConsumerState<SetupProfileScreen>
                 const SizedBox(height: 12),
                 Text(
                   _error!,
-                  style: const TextStyle(color: Colors.redAccent),
+                  style: const TextStyle(color: AppColors.red),
                 ),
               ],
               const SizedBox(height: 24),
@@ -180,7 +180,7 @@ class _SetupProfileScreenState extends ConsumerState<SetupProfileScreen>
                     foregroundColor: colors.background,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(4),
                     ),
                   ),
                   child: _loading
@@ -191,7 +191,7 @@ class _SetupProfileScreenState extends ConsumerState<SetupProfileScreen>
                               strokeWidth: 2, color: colors.background),
                         )
                       : const Text(
-                          'Get started',
+                          'GET STARTED',
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                 ),

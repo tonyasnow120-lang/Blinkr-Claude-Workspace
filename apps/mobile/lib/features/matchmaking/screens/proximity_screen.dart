@@ -59,7 +59,7 @@ class _ProximityScreenState extends ConsumerState<ProximityScreen> {
           Icon(Icons.near_me_outlined, color: colors.foreground, size: 48),
           const SizedBox(height: 24),
           Text(
-            'Play people nearby',
+            'PLAY PEOPLE NEARBY',
             textAlign: TextAlign.center,
             style: TextStyle(
                 color: colors.foreground, fontSize: 22, fontWeight: FontWeight.bold),
@@ -83,9 +83,9 @@ class _ProximityScreenState extends ConsumerState<ProximityScreen> {
               foregroundColor: colors.background,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(4)),
             ),
-            child: const Text('Got it',
+            child: const Text('GOT IT',
                 style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
@@ -104,7 +104,7 @@ class _ProximityScreenState extends ConsumerState<ProximityScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         foregroundColor: colors.foreground,
-        title: const Text('Nearby'),
+        title: const Text('NEARBY'),
         actions: [
           if (state.visible) ...[
             IconButton(
@@ -135,7 +135,7 @@ class _ProximityScreenState extends ConsumerState<ProximityScreen> {
                           onChanged:
                               state.busy ? null : (on) => notifier.setVisible(on),
                           activeColor: colors.foreground,
-                          activeTrackColor: Colors.greenAccent.withOpacity(0.5),
+                          activeTrackColor: AppColors.acid.withOpacity(0.5),
                           title: Text(
                             'Make me visible to nearby players',
                             style: TextStyle(color: colors.foreground),
@@ -157,7 +157,7 @@ class _ProximityScreenState extends ConsumerState<ProximityScreen> {
                           child: Text(
                             state.error!.message,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(color: Colors.redAccent),
+                            style: const TextStyle(color: AppColors.red),
                           ),
                         ),
                       Expanded(

@@ -72,7 +72,7 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
     if (!mounted) return;
     if (bytes == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('No opponent video to capture yet'),
+        content: Text('NO OPPONENT VIDEO TO CAPTURE YET.'),
       ));
       return;
     }
@@ -85,7 +85,7 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
     if (saved == true && mounted) {
       ref.invalidate(userPhotosProvider);
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Saved to your collage'),
+        content: Text('SAVED TO YOUR COLLAGE.'),
       ));
     }
   }
@@ -103,7 +103,7 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
     });
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: context.colors.background,
       body: SafeArea(
         child: Stack(
           fit: StackFit.expand,
@@ -114,18 +114,18 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
                 children: [
                   Expanded(
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(4),
                       child: Stack(
                         fit: StackFit.expand,
                         children: [
                           matchState.videoConnected && room != null
                               ? RemoteVideoFeed(room: room)
                               : Container(
-                                  color: Colors.grey[900],
-                                  child: const Center(
+                                  color: AppColors.dark.surface,
+                                  child: Center(
                                     child: Text(
-                                      'Opponent',
-                                      style: TextStyle(color: Colors.white54),
+                                      'OPPONENT',
+                                      style: TextStyle(color: AppColors.dark.ink(0.54)),
                                     ),
                                   ),
                                 ),
@@ -136,10 +136,10 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Text(
+                                Text(
                                   "DON'T ",
                                   style: TextStyle(
-                                    color: Colors.white,
+                                    color: context.colors.foreground,
                                     fontSize: 22,
                                     fontWeight: FontWeight.w200,
                                     letterSpacing: 5,
@@ -181,7 +181,7 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
                                     used: _usedPowerUps.contains('eye_swarm'),
                                     onPressed: () => _firePowerUp('eye_swarm'),
                                     child: const LineEyeIcon(
-                                        size: 20, color: Colors.white),
+                                        size: 20, color: AppColors.dark.foreground),
                                   ),
                                   const SizedBox(height: 18),
                                   _PowerUpButton(
@@ -189,7 +189,7 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
                                     used: _usedPowerUps.contains('flash'),
                                     onPressed: () => _firePowerUp('flash'),
                                     child: const Icon(Icons.bolt,
-                                        color: Colors.white, size: 22),
+                                        color: AppColors.dark.foreground, size: 22),
                                   ),
                                   const SizedBox(height: 18),
                                   _PowerUpButton(
@@ -197,7 +197,7 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
                                     used: _usedPowerUps.contains('photo_bomb'),
                                     onPressed: () => _firePowerUp('photo_bomb'),
                                     child: const Icon(Icons.collections,
-                                        color: Colors.white, size: 20),
+                                        color: AppColors.dark.foreground, size: 20),
                                   ),
                                   const SizedBox(height: 18),
                                   _PowerUpButton(
@@ -205,7 +205,7 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
                                     used: _usedPowerUps.contains('shake'),
                                     onPressed: () => _firePowerUp('shake'),
                                     child: const Icon(Icons.vibration,
-                                        color: Colors.white, size: 22),
+                                        color: AppColors.dark.foreground, size: 22),
                                   ),
                                   const SizedBox(height: 18),
                                   _PowerUpButton(
@@ -213,7 +213,7 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
                                     used: _usedPowerUps.contains('glitch'),
                                     onPressed: () => _firePowerUp('glitch'),
                                     child: const Icon(Icons.broken_image,
-                                        color: Colors.white, size: 20),
+                                        color: AppColors.dark.foreground, size: 20),
                                   ),
                                   const SizedBox(height: 18),
                                   _PowerUpButton(
@@ -221,7 +221,7 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
                                     used: _usedPowerUps.contains('taunt'),
                                     onPressed: () => _firePowerUp('taunt'),
                                     child: const Icon(Icons.campaign,
-                                        color: Colors.white, size: 22),
+                                        color: AppColors.dark.foreground, size: 22),
                                   ),
                                 ],
                               ),
@@ -268,25 +268,25 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
                     final confirm = await showDialog<bool>(
                       context: context,
                       builder: (_) => AlertDialog(
-                        backgroundColor: Colors.grey[900],
-                        title: const Text('Abandon match?',
-                            style: TextStyle(color: Colors.white)),
+                        backgroundColor: AppColors.dark.surface,
+                        title: Text('ABANDON MATCH?',
+                            style: TextStyle(color: context.colors.foreground)),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.pop(context, false),
-                            child: const Text('Cancel'),
+                            child: const Text('CANCEL'),
                           ),
                           TextButton(
                             onPressed: () => Navigator.pop(context, true),
-                            child: const Text('Abandon',
-                                style: TextStyle(color: Colors.red)),
+                            child: const Text('ABANDON',
+                                style: TextStyle(color: AppColors.red)),
                           ),
                         ],
                       ),
                     );
                     if (confirm == true) await notifier.abandon();
                   },
-                  child: const Text('Quit', style: TextStyle(color: Colors.white54)),
+                  child: Text('QUIT', style: TextStyle(color: context.colors.ink(0.54))),
                 ),
               ),
             ),
@@ -330,10 +330,10 @@ class _CameraSwitchButton extends StatelessWidget {
         height: 36,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.black.withOpacity(0.4),
-          border: Border.all(color: Colors.white24),
+          color: AppColors.dark.background.withOpacity(0.4),
+          border: Border.all(color: AppColors.dark.ink(0.24)),
         ),
-        child: const Icon(Icons.cameraswitch, color: Colors.white, size: 18),
+        child: Icon(Icons.cameraswitch, color: context.colors.foreground, size: 18),
       ),
     );
   }
@@ -356,10 +356,10 @@ class _CaptureButton extends StatelessWidget {
         height: 40,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.black.withOpacity(0.4),
-          border: Border.all(color: Colors.white24),
+          color: AppColors.dark.background.withOpacity(0.4),
+          border: Border.all(color: AppColors.dark.ink(0.24)),
         ),
-        child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
+        child: Icon(Icons.camera_alt, color: context.colors.foreground, size: 20),
       ),
     );
   }
@@ -393,8 +393,8 @@ class _PowerUpButton extends StatelessWidget {
               height: 48,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.08),
-                border: Border.all(color: Colors.white24),
+                color: AppColors.dark.foreground.withOpacity(0.08),
+                border: Border.all(color: AppColors.dark.ink(0.24)),
               ),
               child: Center(child: child),
             ),
@@ -402,8 +402,8 @@ class _PowerUpButton extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             label.toUpperCase(),
-            style: const TextStyle(
-              color: Colors.white38,
+            style: TextStyle(
+              color: AppColors.dark.ink(0.38),
               fontSize: 8,
               letterSpacing: 2,
             ),

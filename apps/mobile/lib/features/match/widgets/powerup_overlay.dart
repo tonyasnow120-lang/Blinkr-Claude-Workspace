@@ -114,7 +114,7 @@ class _PowerUpOverlayState extends State<PowerUpOverlay>
               opacity: math.sin(math.pi * ((t + d.phase) % 1.0)) * 0.9,
               child: Transform.rotate(
                 angle: math.sin((t + d.phase) * math.pi * 4) * 0.25,
-                child: LineEyeIcon(size: d.size, color: Colors.white),
+                child: LineEyeIcon(size: d.size, color: AppColors.dark.foreground),
               ),
             ),
           ),
@@ -130,7 +130,7 @@ class _PowerUpOverlayState extends State<PowerUpOverlay>
       final tri = (1 - (t - center).abs() / 0.12).clamp(0.0, 1.0);
       opacity = math.max(opacity, tri * 0.85);
     }
-    return Container(color: Colors.white.withOpacity(opacity));
+    return Container(color: AppColors.dark.foreground.withOpacity(opacity));
   }
 
   /// Jitters an acid frame around the screen edges in time with the haptic
@@ -226,7 +226,7 @@ class _PowerUpOverlayState extends State<PowerUpOverlay>
           child: Transform.scale(
             scale: 0.7 + 0.3 * pop,
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(4),
               child: Image.network(
                 url,
                 width: w,
@@ -254,7 +254,7 @@ class _GlitchPainter extends CustomPainter {
     Color(0xFF00FFFF), // cyan
     Color(0xFFFF00FF), // magenta
     AppColors.acid,
-    Colors.white,
+    AppColors.dark.foreground,
   ];
 
   @override
@@ -277,7 +277,7 @@ class _GlitchPainter extends CustomPainter {
       );
     }
 
-    final scan = Paint()..color = Colors.black.withOpacity(0.12 * intensity);
+    final scan = Paint()..color = AppColors.dark.background.withOpacity(0.12 * intensity);
     for (double y = 0; y < size.height; y += 4) {
       canvas.drawRect(Rect.fromLTWH(0, y, size.width, 1.5), scan);
     }

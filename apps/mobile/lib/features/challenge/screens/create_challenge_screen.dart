@@ -51,8 +51,8 @@ class _CreateChallengeScreenState
     final link = state.deepLink;
     if (link == null) return;
     await Share.share(
-      'Think you can outstare me? 👁️ Accept my Blinkr challenge: $link',
-      subject: 'Blinkr challenge',
+      'THINK YOU CAN OUTSTARE ME? Accept my Blinkr challenge: $link',
+      subject: 'BLINKR CHALLENGE',
     );
   }
 
@@ -75,7 +75,7 @@ class _CreateChallengeScreenState
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         foregroundColor: colors.foreground,
-        title: const Text('Challenge'),
+        title: const Text('CHALLENGE'),
         actions: const [MusicToggleButton()],
       ),
       body: SafeArea(
@@ -106,9 +106,9 @@ class _CreateChallengeScreenState
                 Column(
                   children: [
                     Text(
-                      state.error?.message ?? 'Something went wrong.',
+                      state.error?.message ?? 'SOMETHING WENT WRONG.',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.redAccent),
+                      style: const TextStyle(color: AppColors.red),
                     ),
                     const SizedBox(height: 16),
                     TextButton(
@@ -118,7 +118,7 @@ class _CreateChallengeScreenState
                             kind: widget.kind,
                             opponentId: widget.opponentId,
                           ),
-                      child: Text('Retry',
+                      child: Text('RETRY',
                           style: TextStyle(color: colors.foreground)),
                     ),
                   ],
@@ -153,7 +153,7 @@ class _CreateChallengeScreenState
                 LineEyeIcon(size: 56, color: colors.foreground),
                 const SizedBox(height: 24),
                 Text(
-                  'Challenge sent to ${widget.opponentName ?? 'your opponent'}',
+                  'CHALLENGE SENT TO ${(widget.opponentName ?? 'YOUR OPPONENT').toUpperCase()}',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: colors.foreground, fontSize: 20),
                 ),
@@ -168,7 +168,7 @@ class _CreateChallengeScreenState
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Waiting for them to accept…',
+                  'WAITING FOR THEM TO ACCEPT…',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: colors.ink(0.5)),
                 ),
@@ -203,7 +203,7 @@ class _CreateChallengeScreenState
                   padding: const EdgeInsets.symmetric(vertical: 24),
                   decoration: BoxDecoration(
                     color: colors.ink(0.1),
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
                     state.code ?? '',
@@ -220,13 +220,13 @@ class _CreateChallengeScreenState
                 FilledButton.icon(
                   onPressed: () => _share(state),
                   icon: const Icon(Icons.ios_share),
-                  label: const Text('Share invite link'),
+                  label: const Text('SHARE INVITE LINK'),
                   style: FilledButton.styleFrom(
                     backgroundColor: colors.foreground,
                     foregroundColor: colors.background,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(4),
                     ),
                   ),
                 ),
@@ -237,23 +237,23 @@ class _CreateChallengeScreenState
                     if (link == null) return;
                     Clipboard.setData(ClipboardData(text: link));
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Link copied!')),
+                      const SnackBar(content: Text('LINK COPIED.')),
                     );
                   },
                   icon: const Icon(Icons.copy, size: 18),
-                  label: const Text('Copy link'),
+                  label: const Text('COPY LINK'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: colors.foreground,
                     side: BorderSide(color: colors.ink(0.3)),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(4),
                     ),
                   ),
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'Waiting for opponent…',
+                  'WAITING FOR OPPONENT…',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: colors.ink(0.5)),
                 ),

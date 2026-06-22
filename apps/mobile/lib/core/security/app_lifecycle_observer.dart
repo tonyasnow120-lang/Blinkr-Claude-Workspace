@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
 
 /// Overlays an opaque screen when the app moves to background (M12).
 /// Prevents the app switcher thumbnail from capturing match camera feeds or results.
@@ -67,7 +68,7 @@ class _AppLifecycleObserverState extends State<AppLifecycleObserver>
         widget.child,
         if (_obscured)
           const ModalBarrier(
-            color: Colors.black,
+            color: AppColors.dark.background,
             dismissible: false,
           ),
       ],

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../core/theme/app_colors.dart';
 import '../features/auth/screens/welcome_screen.dart';
 import '../features/auth/screens/login_screen.dart';
 import '../features/auth/screens/verify_screen.dart';
@@ -44,8 +45,8 @@ class _AuthCallbackScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      backgroundColor: Colors.black,
-      body: Center(child: CircularProgressIndicator(color: Colors.white)),
+      backgroundColor: AppColors.dark.background,
+      body: Center(child: CircularProgressIndicator(color: AppColors.dark.foreground)),
     );
   }
 }
@@ -205,13 +206,13 @@ final routerProvider = Provider<GoRouter>((ref) {
     errorBuilder: (context, state) {
       debugPrint('BLINKR: router errorBuilder: ${state.error}');
       return Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: AppColors.dark.background,
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(32),
             child: Text(
-              'Navigation error:\n${state.error}',
-              style: const TextStyle(color: Colors.redAccent, fontSize: 14),
+              'NAVIGATION ERROR:\n${state.error}',
+              style: const TextStyle(color: AppColors.red, fontSize: 14),
               textAlign: TextAlign.center,
             ),
           ),

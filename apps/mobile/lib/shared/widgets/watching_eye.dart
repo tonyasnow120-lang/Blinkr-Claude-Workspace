@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_colors.dart';
 import 'line_eye.dart';
 
 /// The canonical animated "watching eye" — rotating dial rings, an outward
@@ -20,8 +21,8 @@ class WatchingEye extends StatefulWidget {
     this.height = 230,
     this.wander = true,
     this.crying = false,
-    this.color = Colors.white,
-    this.background = Colors.black,
+    this.color = AppColors.dark.foreground,
+    this.background = AppColors.dark.background,
   });
 
   @override

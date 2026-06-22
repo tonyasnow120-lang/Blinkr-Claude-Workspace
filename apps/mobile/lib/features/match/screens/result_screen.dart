@@ -7,6 +7,7 @@ import '../widgets/win_animation.dart';
 import '../widgets/crying_eye_animation.dart';
 import '../../../core/security/screen_security.dart';
 import '../../../core/audio/background_music.dart';
+import '../../../core/theme/app_colors.dart';
 
 class ResultScreen extends ConsumerStatefulWidget {
   final String matchId;
@@ -42,7 +43,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
     final won = result != null && result.winnerId == currentUserId;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: context.colors.background,
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -52,18 +53,18 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
             Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: const [
-                  CryingEyeAnimation(),
-                  SizedBox(height: 16),
+                children: [
+                  const CryingEyeAnimation(),
+                  const SizedBox(height: 16),
                   Text(
-                    'Match abandoned',
-                    style: TextStyle(color: Colors.white54, fontSize: 24),
+                    'MATCH ABANDONED',
+                    style: TextStyle(color: AppColors.dark.ink(0.54), fontSize: 24),
                   ),
                 ],
               ),
             )
           else
-            const Center(child: CircularProgressIndicator(color: Colors.white)),
+            Center(child: CircularProgressIndicator(color: context.colors.foreground)),
           Positioned(
             bottom: 48,
             left: 32,
@@ -73,28 +74,28 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
                 children: [
                   if (result != null) ...[
                     Text(
-                      'Duration: ${((result.durationMs ?? 0) / 1000).toStringAsFixed(1)}s',
-                      style: TextStyle(color: Colors.white.withOpacity(0.6)),
+                      'DURATION: ${((result.durationMs ?? 0) / 1000).toStringAsFixed(1)}S',
+                      style: TextStyle(color: context.colors.ink(0.6)),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Reason: ${result.reason}',
-                      style: TextStyle(color: Colors.white.withOpacity(0.4)),
+                      'REASON: ${result.reason.toUpperCase()}',
+                      style: TextStyle(color: context.colors.ink(0.4)),
                     ),
                     const SizedBox(height: 24),
                   ],
                   FilledButton(
                     onPressed: () => context.go('/home'),
                     style: FilledButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: Colors.black,
+                      backgroundColor: context.colors.foreground,
+                      foregroundColor: context.colors.background,
                       minimumSize: const Size.fromHeight(52),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(4),
                       ),
                     ),
                     child: const Text(
-                      'Back to Home',
+                      'BACK TO HOME',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),

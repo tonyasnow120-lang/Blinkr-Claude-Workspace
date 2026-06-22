@@ -8,6 +8,7 @@ import '../../../shared/widgets/line_eye.dart';
 import '../../../core/api/api_endpoints.dart';
 import '../../../core/audio/background_music.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../../core/theme/app_colors.dart';
 
 /// Shared match lobby — every matchmaking flow (link, contacts, friends,
 /// QR, nearby) lands both players here. Shows both avatars with live ready
@@ -68,20 +69,20 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1C1C1E),
-        title: const Text('Leave lobby?',
-            style: TextStyle(color: Colors.white)),
-        content: const Text(
-          'If your opponent hasn\'t joined yet, leaving will cancel this match.',
-          style: TextStyle(color: Colors.white70),
+        title: Text('LEAVE LOBBY?',
+            style: TextStyle(color: context.colors.foreground)),
+        content: Text(
+          'YOUR OPPONENT HASN\'T JOINED YET. LEAVING WILL CANCEL THIS MATCH.',
+          style: TextStyle(color: context.colors.ink(0.70)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Stay'),
+            child: const Text('STAY'),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Leave', style: TextStyle(color: Colors.redAccent)),
+            child: const Text('LEAVE', style: TextStyle(color: AppColors.red)),
           ),
         ],
       ),
@@ -113,14 +114,14 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
           children: [
             CircleAvatar(
               radius: 40,
-              backgroundColor: Colors.white.withOpacity(0.15),
+              backgroundColor: AppColors.dark.foreground.withOpacity(0.15),
               backgroundImage:
                   avatarUrl != null ? NetworkImage(avatarUrl) : null,
               child: avatarUrl == null
                   ? Text(
                       name.isNotEmpty ? name[0].toUpperCase() : '?',
                       style:
-                          const TextStyle(color: Colors.white, fontSize: 28),
+                          const TextStyle(color: AppColors.dark.foreground, fontSize: 28),
                     )
                   : null,
             ),
@@ -130,9 +131,9 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                 bottom: 0,
                 child: CircleAvatar(
                   radius: 12,
-                  backgroundColor: Colors.black,
+                  backgroundColor: AppColors.dark.background,
                   child: Icon(Icons.check_circle,
-                      color: Colors.greenAccent, size: 22),
+                      color: AppColors.acid, size: 22),
                 ),
               ),
           ],
@@ -145,14 +146,14 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.white),
+            style: const TextStyle(color: AppColors.dark.foreground),
           ),
         ),
         const SizedBox(height: 4),
         Text(
           ready ? 'READY' : 'NOT READY',
           style: TextStyle(
-            color: ready ? Colors.greenAccent : Colors.white38,
+            color: ready ? AppColors.acid : AppColors.dark.ink(0.38),
             fontSize: 10,
             letterSpacing: 2,
           ),
@@ -180,20 +181,20 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
         context.pushReplacement('/match/${widget.matchId}/result');
       } else if (next.opponentReady && prev?.opponentReady == false) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Your opponent is ready!'),
+          content: Text('YOUR OPPONENT IS READY.'),
           duration: Duration(seconds: 2),
         ));
       }
     });
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: context.colors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         automaticallyImplyLeading: false,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          tooltip: 'Leave lobby',
+          icon: Icon(Icons.arrow_back, color: context.colors.foreground),
+          tooltip: 'LEAVE LOBBY',
           onPressed: _confirmLeave,
         ),
         actions: const [MusicToggleButton()],
@@ -205,11 +206,11 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
-                'Lobby',
+              Text(
+                'LOBBY',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.white,
+                  color: context.colors.foreground,
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
                 ),
@@ -232,7 +233,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                   Text(
                     'VS',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.3),
+                      color: context.colors.ink(0.3),
                       fontSize: 20,
                       fontWeight: FontWeight.w200,
                       letterSpacing: 4,
@@ -262,11 +263,11 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                     }
                   },
                   style: FilledButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
+                    backgroundColor: context.colors.foreground,
+                    foregroundColor: context.colors.background,
                     padding: const EdgeInsets.symmetric(vertical: 18),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(4),
                     ),
                   ),
                   child: const Row(
@@ -274,26 +275,26 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        "I'm Ready",
+                        "I'M READY",
                         style: TextStyle(
                             fontWeight: FontWeight.bold, fontSize: 18),
                       ),
                       SizedBox(width: 10),
-                      LineEyeIcon(size: 22, color: Colors.black),
+                      LineEyeIcon(size: 22, color: AppColors.dark.background),
                     ],
                   ),
                 )
               else
                 Column(
                   children: [
-                    const CircularProgressIndicator(color: Colors.white),
+                    CircularProgressIndicator(color: context.colors.foreground),
                     const SizedBox(height: 16),
                     Text(
                       matchState.opponentReady
-                          ? 'Starting…'
-                          : 'Waiting for opponent…',
+                          ? 'STARTING…'
+                          : 'WAITING FOR OPPONENT…',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white.withOpacity(0.6)),
+                      style: TextStyle(color: context.colors.ink(0.6)),
                     ),
                   ],
                 ),
