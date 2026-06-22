@@ -94,7 +94,7 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
   Widget build(BuildContext context) {
     final notifier = ref.read(matchNotifierProvider(widget.matchId).notifier);
     final matchState = ref.watch(matchNotifierProvider(widget.matchId));
-    final room = notifier.livekit.room;
+    final room = notifier.livekitService.room;
 
     ref.listen(matchNotifierProvider(widget.matchId), (prev, next) {
       if (next.phase == MatchPhase.result || next.phase == MatchPhase.abandoned) {
@@ -240,7 +240,7 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
                           child: CameraFeed(
                             blinkDetector: notifier.blinkDetector,
                             localVideoTrack: matchState.videoConnected
-                                ? notifier.livekit.localVideoTrack
+                                ? notifier.livekitService.localVideoTrack
                                 : null,
                             cameraPosition: matchState.cameraPosition,
                           ),

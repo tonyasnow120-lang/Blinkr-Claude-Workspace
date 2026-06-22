@@ -221,7 +221,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                 child: CameraFeed(
                   blinkDetector: notifier.blinkDetector,
                   localVideoTrack: matchState.videoConnected
-                      ? notifier.livekit.localVideoTrack
+                      ? notifier.livekitService.localVideoTrack
                       : null,
                 ),
               ),

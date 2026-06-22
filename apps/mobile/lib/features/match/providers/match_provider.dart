@@ -107,7 +107,7 @@ class MatchNotifier extends StateNotifier<MatchState> {
     _startPolling();
   }
 
-  LiveKitService get livekit => _livekit;
+  LiveKitService get livekitService => _livekit;
 
   Future<void> _connectVideo() async {
     try {
