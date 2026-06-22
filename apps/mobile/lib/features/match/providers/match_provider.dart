@@ -325,13 +325,12 @@ class MatchNotifier extends StateNotifier<MatchState> {
     for (final participant in room.remoteParticipants.values) {
       for (final pub in participant.videoTrackPublications) {
         final track = pub.track;
-        if (track is livekit.VideoTrack) {
-          try {
-            final buffer = await track.mediaStreamTrack.captureFrame();
-            return buffer.asUint8List();
-          } catch (_) {
-            return null;
-          }
+        if (track == null || track is! livekit.VideoTrack) continue;
+        try {
+          final buffer = await track.mediaStreamTrack.captureFrame();
+          return buffer.asUint8List();
+        } catch (_) {
+          return null;
         }
       }
     }
