@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,7 +8,10 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/audio/background_music.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../shared/widgets/graffiti_highlight.dart';
+import '../../../core/theme/app_typography.dart';
+import '../../../shared/widgets/blinkr_button.dart';
+import '../../../shared/widgets/ink_enter.dart';
+import '../../../shared/widgets/ink_scaffold.dart';
 import '../../../shared/widgets/watching_eye.dart';
 import '../providers/auth_provider.dart';
 
@@ -18,68 +22,20 @@ class LoginScreen extends ConsumerStatefulWidget {
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen>
-    with TickerProviderStateMixin {
-
-  // Animation controllers
-  late final AnimationController _entranceCtrl;
-
-  late final Animation<double> _headerOpacity;
-  late final Animation<double> _headerSlide;
-  late final Animation<double> _formOpacity;
-  late final Animation<double> _formSlide;
-  late final Animation<double> _btnOpacity;
-
-  // Form state
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailCtrl = TextEditingController();
   final _focusNode = FocusNode();
-  final _formKey   = GlobalKey<FormState>();
   bool _emailValid = false;
-  bool _loading    = false;
+  bool _loading = false;
   String? _error;
 
-  // Footer legal links
   late final TapGestureRecognizer _termsTap;
   late final TapGestureRecognizer _privacyTap;
 
   @override
   void initState() {
     super.initState();
-
-    _entranceCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1600));
-
-    _headerOpacity = CurvedAnimation(
-      parent: _entranceCtrl,
-      curve: const Interval(0.0, 0.55, curve: Curves.easeOut),
-    );
-    _headerSlide = Tween<double>(begin: -14, end: 0).animate(
-      CurvedAnimation(
-        parent: _entranceCtrl,
-        curve: const Interval(0.0, 0.55, curve: Curves.easeOutCubic),
-      ),
-    );
-    _formOpacity = CurvedAnimation(
-      parent: _entranceCtrl,
-      curve: const Interval(0.3, 0.75, curve: Curves.easeOut),
-    );
-    _formSlide = Tween<double>(begin: 18, end: 0).animate(
-      CurvedAnimation(
-        parent: _entranceCtrl,
-        curve: const Interval(0.3, 0.75, curve: Curves.easeOutCubic),
-      ),
-    );
-    _btnOpacity = CurvedAnimation(
-      parent: _entranceCtrl,
-      curve: const Interval(0.6, 1.0, curve: Curves.easeOut),
-    );
-
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (mounted) _entranceCtrl.forward();
-    });
-
     _emailCtrl.addListener(_onEmailChanged);
-
     _termsTap = TapGestureRecognizer()
       ..onTap = () => context.push('/legal/terms');
     _privacyTap = TapGestureRecognizer()
@@ -94,7 +50,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
   @override
   void dispose() {
-    _entranceCtrl.dispose();
     _emailCtrl.dispose();
     _focusNode.dispose();
     _termsTap.dispose();
@@ -148,308 +103,213 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
     );
 
-    return Scaffold(
-      backgroundColor: colors.background,
-      resizeToAvoidBottomInset: true,
+    return InkScaffold(
+      splatSeed: 27,
       body: GestureDetector(
         onTap: () => _focusNode.unfocus(),
         child: SafeArea(
           child: Column(
             children: [
-              // Back nav + music toggle
+              // Top bar — back + music toggle
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 4, 12, 0),
+                padding: const EdgeInsets.fromLTRB(4, 4, 8, 0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    TextButton.icon(
+                    IconButton(
                       onPressed: () => context.pop(),
                       icon: Icon(Icons.arrow_back,
-                          color: colors.foreground, size: 16),
-                      label: Text(
-                        'BACK',
-                        style: TextStyle(
-                          color: colors.foreground,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w300,
-                          letterSpacing: 3,
-                        ),
-                      ),
-                      style: TextButton.styleFrom(
-                        foregroundColor: colors.ink(0.45),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 4, vertical: 8),
-                      ),
+                          color: colors.foreground, size: 20),
                     ),
                     const MusicToggleButton(),
                   ],
                 ),
               ),
 
-              // Eye + rings
-              WatchingEye(
-                height: 200,
-                color: colors.foreground,
-                background: colors.background,
-              ),
-
-              // Wordmark
-              AnimatedBuilder(
-                animation: _entranceCtrl,
-                builder: (_, child) => Opacity(
-                  opacity: _headerOpacity.value,
-                  child: Transform.translate(
-                    offset: Offset(0, _headerSlide.value),
-                    child: child,
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      'BLINKR',
-                      style: TextStyle(
-                        color: colors.foreground,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w200,
-                        letterSpacing: 10,
-                      ),
-                    ),
-                    const SizedBox(width: 3),
-                    _BlinkingCursor(fontSize: 20, color: colors.foreground),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 12),
-              AnimatedBuilder(
-                animation: _entranceCtrl,
-                builder: (_, child) => Opacity(
-                  opacity: _headerOpacity.value,
-                  child: child,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'HOLD YOUR ',
-                      style: TextStyle(
-                        color: colors.ink(0.55),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w300,
-                        letterSpacing: 4,
-                      ),
-                    ),
-                    GraffitiHighlight(
-                      variant: GraffitiVariant.underline,
-                      child: Text(
-                        'NERVE',
-                        style: TextStyle(
-                          color: colors.foreground,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w300,
-                          letterSpacing: 4,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Form
               Expanded(
-                child: AnimatedBuilder(
-                  animation: _entranceCtrl,
-                  builder: (_, child) => Opacity(
-                    opacity: _formOpacity.value,
-                    child: Transform.translate(
-                      offset: Offset(0, _formSlide.value),
-                      child: child,
-                    ),
-                  ),
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 36),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'ENTER YOUR EMAIL',
-                            style: TextStyle(
-                              color: colors.foreground,
-                              fontSize: 8.5,
-                              fontWeight: FontWeight.w400,
-                              letterSpacing: 4.5,
-                            ),
-                          ),
-                          const SizedBox(height: 18),
-
-                          _EmailField(
-                            controller: _emailCtrl,
-                            focusNode: _focusNode,
-                            onSubmit: _submit,
-                          ),
-
-                          const SizedBox(height: 12),
-                          Text(
-                            "WE'LL SEND YOU A SECURE LINK",
-                            style: TextStyle(
-                              color: colors.foreground,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w300,
-                              letterSpacing: 2,
-                            ),
-                          ),
-
-                          if (_error != null) ...[
-                            const SizedBox(height: 16),
-                            Text(
-                              _error!,
-                              style: const TextStyle(
-                                  color: AppColors.red, fontSize: 12),
-                            ),
-                          ],
-
-                          // OR divider
-                          Padding(
-                            padding:
-                                const EdgeInsets.symmetric(vertical: 30),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                    child: Container(
-                                        height: 0.5,
-                                        color: colors.ink(0.2))),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 14),
-                                  child: Text(
-                                    'OR CONTINUE WITH',
-                                    style: TextStyle(
-                                      color: colors.ink(0.3),
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w300,
-                                      letterSpacing: 3,
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                    child: Container(
-                                        height: 0.5,
-                                        color: colors.ink(0.2))),
-                              ],
-                            ),
-                          ),
-
-                          // Social buttons
-                          _SocialButton(
-                            icon: Icon(Icons.apple,
-                                color: colors.foreground, size: 18),
-                            label: 'APPLE',
-                            onTap: _signInWithApple,
-                          ),
-                          const SizedBox(height: 12),
-                          _SocialButton(
-                            icon: const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CustomPaint(painter: _GoogleLogoPainter()),
-                            ),
-                            label: 'GOOGLE',
-                            onTap: _signInWithGoogle,
-                          ),
-
-                          const SizedBox(height: 32),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              // Continue button
-              AnimatedBuilder(
-                animation: _btnOpacity,
-                builder: (_, child) =>
-                    Opacity(opacity: _btnOpacity.value, child: child),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(36, 0, 36, 16),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
                   child: Column(
                     children: [
-                      AnimatedOpacity(
-                        opacity: _emailValid ? 1.0 : 0.38,
-                        duration: const Duration(milliseconds: 250),
-                        child: SizedBox(
-                          width: double.infinity,
-                          height: 52,
-                          child: ElevatedButton(
-                            onPressed:
-                                (_emailValid && !_loading) ? _submit : null,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: colors.foreground,
-                              foregroundColor: colors.background,
-                              disabledBackgroundColor: colors.foreground,
-                              disabledForegroundColor: colors.background,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(4)),
-                            ),
-                            child: _loading
-                                ? SizedBox(
-                                    height: 18,
-                                    width: 18,
-                                    child: CircularProgressIndicator(
-                                        strokeWidth: 2, color: colors.background),
-                                  )
-                                : const Text(
-                                    'CONTINUE',
-                                    style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w400,
-                                        letterSpacing: 4),
-                                  ),
+                      const SizedBox(height: 8),
+
+                      // Eye — smaller for login
+                      InkEnter(
+                        child: Opacity(
+                          opacity: 0.55,
+                          child: WatchingEye(
+                            height: 100,
+                            color: colors.foreground,
+                            background: colors.background,
                           ),
                         ),
                       ),
-                      const SizedBox(height: 14),
-                      Text.rich(
-                        TextSpan(
-                          style: TextStyle(
-                            color: colors.ink(0.2),
-                            fontSize: 8.5,
-                            fontWeight: FontWeight.w300,
-                            letterSpacing: 1.5,
-                            height: 1.8,
+                      const SizedBox(height: 24),
+
+                      // Title
+                      InkEnter(
+                        delay: const Duration(milliseconds: 100),
+                        child: Text(
+                          'WHO ARE YOU?',
+                          style: AppText.display(
+                            size: 52,
+                            color: colors.foreground,
+                            letterSpacing: 3,
                           ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+
+                      // Subtitle
+                      InkEnter(
+                        delay: const Duration(milliseconds: 160),
+                        child: Text(
+                          "WE'LL SEND A CODE.",
+                          style: AppText.label(
+                            size: 13,
+                            weight: FontWeight.w500,
+                            color: colors.ink(0.45),
+                            letterSpacing: 2.4,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+
+                      // Email input
+                      InkEnter(
+                        delay: const Duration(milliseconds: 240),
+                        child: _EmailInput(
+                          controller: _emailCtrl,
+                          focusNode: _focusNode,
+                          onSubmit: _submit,
+                        ),
+                      ),
+
+                      if (_error != null) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          _error!,
+                          style: AppText.body(
+                            size: 12,
+                            color: AppColors.red,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 24),
+
+                      // CTA
+                      InkEnter(
+                        delay: const Duration(milliseconds: 320),
+                        child: AnimatedOpacity(
+                          opacity: _emailValid ? 1.0 : 0.38,
+                          duration: const Duration(milliseconds: 250),
+                          child: BlinkrButton.accent(
+                            label: _loading ? '...' : 'CONTINUE',
+                            onPressed:
+                                (_emailValid && !_loading) ? _submit : null,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+
+                      // OR divider
+                      InkEnter(
+                        delay: const Duration(milliseconds: 380),
+                        child: Row(
                           children: [
-                            const TextSpan(
-                                text: 'BY CONTINUING YOU AGREE TO OUR\n'),
-                            TextSpan(
-                              text: 'TERMS OF SERVICE',
-                              style: TextStyle(
-                                color: colors.ink(0.4),
-                                decoration: TextDecoration.underline,
-                                decorationColor: colors.ink(0.2),
-                              ),
-                              recognizer: _termsTap,
+                            Expanded(
+                              child: Container(
+                                  height: 0.5, color: colors.ink(0.15)),
                             ),
-                            const TextSpan(text: '   ·   '),
-                            TextSpan(
-                              text: 'PRIVACY POLICY',
-                              style: TextStyle(
-                                color: colors.ink(0.4),
-                                decoration: TextDecoration.underline,
-                                decorationColor: colors.ink(0.2),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 14),
+                              child: Text(
+                                'OR CONTINUE WITH',
+                                style: AppText.label(
+                                  size: 10,
+                                  weight: FontWeight.w500,
+                                  color: colors.ink(0.3),
+                                  letterSpacing: 2.4,
+                                ),
                               ),
-                              recognizer: _privacyTap,
+                            ),
+                            Expanded(
+                              child: Container(
+                                  height: 0.5, color: colors.ink(0.15)),
                             ),
                           ],
                         ),
-                        textAlign: TextAlign.center,
                       ),
+                      const SizedBox(height: 20),
+
+                      // Social buttons
+                      InkEnter(
+                        delay: const Duration(milliseconds: 440),
+                        child: _SocialButton(
+                          icon: Icon(Icons.apple,
+                              color: colors.foreground, size: 18),
+                          label: 'APPLE',
+                          onTap: _signInWithApple,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      InkEnter(
+                        delay: const Duration(milliseconds: 500),
+                        child: _SocialButton(
+                          icon: SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CustomPaint(
+                                painter: const _GoogleLogoPainter()),
+                          ),
+                          label: 'GOOGLE',
+                          onTap: _signInWithGoogle,
+                        ),
+                      ),
+
+                      const SizedBox(height: 32),
+
+                      // Legal
+                      InkEnter(
+                        delay: const Duration(milliseconds: 540),
+                        child: Text.rich(
+                          TextSpan(
+                            style: AppText.label(
+                              size: 9,
+                              weight: FontWeight.w400,
+                              color: colors.ink(0.25),
+                              letterSpacing: 1.5,
+                              height: 1.8,
+                            ),
+                            children: [
+                              const TextSpan(
+                                  text: 'BY CONTINUING YOU AGREE TO OUR\n'),
+                              TextSpan(
+                                text: 'TERMS OF SERVICE',
+                                style: TextStyle(
+                                  color: colors.ink(0.45),
+                                  decoration: TextDecoration.underline,
+                                  decorationColor: colors.ink(0.2),
+                                ),
+                                recognizer: _termsTap,
+                              ),
+                              const TextSpan(text: '   ·   '),
+                              TextSpan(
+                                text: 'PRIVACY POLICY',
+                                style: TextStyle(
+                                  color: colors.ink(0.45),
+                                  decoration: TextDecoration.underline,
+                                  decorationColor: colors.ink(0.2),
+                                ),
+                                recognizer: _privacyTap,
+                              ),
+                            ],
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      const SizedBox(height: 32),
                     ],
                   ),
                 ),
@@ -462,105 +322,68 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 }
 
-// ── Animated underline email field ────────────────────────────────────────────
-class _EmailField extends StatefulWidget {
+// ── Email input with focus-aware acid border ─────────────────────────────────
+class _EmailInput extends StatefulWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final VoidCallback onSubmit;
 
-  const _EmailField({
+  const _EmailInput({
     required this.controller,
     required this.focusNode,
     required this.onSubmit,
   });
 
   @override
-  State<_EmailField> createState() => _EmailFieldState();
+  State<_EmailInput> createState() => _EmailInputState();
 }
 
-class _EmailFieldState extends State<_EmailField>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _lineCtrl;
-  late final Animation<double> _lineWidth;
-
+class _EmailInputState extends State<_EmailInput> {
   @override
   void initState() {
     super.initState();
-    _lineCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 300));
-    _lineWidth =
-        CurvedAnimation(parent: _lineCtrl, curve: Curves.easeOut);
-    widget.focusNode.addListener(() {
-      widget.focusNode.hasFocus
-          ? _lineCtrl.forward()
-          : _lineCtrl.reverse();
-    });
-  }
-
-  @override
-  void dispose() {
-    _lineCtrl.dispose();
-    super.dispose();
+    widget.focusNode.addListener(() => setState(() {}));
   }
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        TextFormField(
-          controller: widget.controller,
-          focusNode: widget.focusNode,
-          keyboardType: TextInputType.emailAddress,
-          textInputAction: TextInputAction.done,
-          onFieldSubmitted: (_) => widget.onSubmit(),
-          autocorrect: false,
-          style: TextStyle(
-            color: colors.foreground,
-            fontSize: 15,
-            fontWeight: FontWeight.w300,
-            letterSpacing: 0.5,
-          ),
-          decoration: InputDecoration(
-            hintText: 'you@example.com',
-            hintStyle: TextStyle(
-              color: colors.ink(0.2),
-              fontWeight: FontWeight.w200,
-              letterSpacing: 0.5,
-            ),
-            enabledBorder: UnderlineInputBorder(
-              borderSide:
-                  BorderSide(color: colors.ink(0.3), width: 0.5),
-            ),
-            focusedBorder: const UnderlineInputBorder(
-              borderSide:
-                  BorderSide(color: Colors.transparent, width: 0),
-            ),
-            contentPadding: const EdgeInsets.only(bottom: 8),
-          ),
-          cursorColor: colors.foreground,
-          cursorWidth: 1.2,
+    final focused = widget.focusNode.hasFocus;
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surfaceInsetDark,
+        borderRadius: BorderRadius.circular(2),
+        border: Border.all(
+          color: focused ? AppColors.acid : AppColors.borderDefault,
+          width: 2,
         ),
-        // Animated underline on focus
-        AnimatedBuilder(
-          animation: _lineWidth,
-          builder: (_, __) => Container(
-            height: 0.5,
-            width: double.infinity,
-            alignment: Alignment.centerLeft,
-            child: FractionallySizedBox(
-              widthFactor: _lineWidth.value,
-              child: Container(color: colors.foreground),
-            ),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      child: TextField(
+        controller: widget.controller,
+        focusNode: widget.focusNode,
+        keyboardType: TextInputType.emailAddress,
+        textInputAction: TextInputAction.done,
+        onSubmitted: (_) => widget.onSubmit(),
+        autocorrect: false,
+        cursorColor: AppColors.acid,
+        style: AppText.mono(size: 16, color: AppColors.chalk),
+        decoration: InputDecoration(
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(vertical: 16),
+          border: InputBorder.none,
+          hintText: 'you@example.com',
+          hintStyle: AppText.label(
+            size: 14,
+            weight: FontWeight.w500,
+            color: AppColors.chalkInk(0.30),
           ),
         ),
-      ],
+      ),
     );
   }
 }
 
-// ── Social sign-in button ─────────────────────────────────────────────────────
+// ── Ghost social sign-in button ──────────────────────────────────────────────
 class _SocialButton extends StatelessWidget {
   final Widget icon;
   final String label;
@@ -570,38 +393,41 @@ class _SocialButton extends StatelessWidget {
       {required this.icon, required this.label, this.onTap});
 
   @override
-  Widget build(BuildContext context) => SizedBox(
-        width: double.infinity,
-        height: 48,
-        child: OutlinedButton(
-          onPressed: onTap,
-          style: OutlinedButton.styleFrom(
-            foregroundColor: context.colors.foreground,
-            side: BorderSide(color: context.colors.ink(0.18), width: 0.5),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(4)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              icon,
-              const SizedBox(width: 10),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w300,
-                  letterSpacing: 3,
-                ),
-              ),
-            ],
-          ),
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: OutlinedButton(
+        onPressed: onTap,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: colors.foreground,
+          side: BorderSide(color: colors.ink(0.18), width: 1),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(2)),
         ),
-      );
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            icon,
+            const SizedBox(width: 10),
+            Text(
+              label,
+              style: AppText.label(
+                size: 13,
+                weight: FontWeight.w600,
+                color: colors.foreground,
+                letterSpacing: 2.4,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-/// Renders the official Google "G" logo as four colored arcs plus the blue
-/// crossbar, avoiding the need to bundle an image asset.
+/// Official Google "G" logo as four colored arcs plus the blue crossbar.
 class _GoogleLogoPainter extends CustomPainter {
   const _GoogleLogoPainter();
 
@@ -621,19 +447,18 @@ class _GoogleLogoPainter extends CustomPainter {
     const gap = 0.05;
     const quarter = math.pi / 2;
 
-    paint.color = const Color(0xFF4285F4); // blue
+    paint.color = const Color(0xFF4285F4);
     canvas.drawArc(rect, -quarter + gap, quarter - gap * 2, false, paint);
 
-    paint.color = const Color(0xFF34A853); // green
+    paint.color = const Color(0xFF34A853);
     canvas.drawArc(rect, gap, quarter - gap * 2, false, paint);
 
-    paint.color = const Color(0xFFFBBC05); // yellow
+    paint.color = const Color(0xFFFBBC05);
     canvas.drawArc(rect, quarter + gap, quarter - gap * 2, false, paint);
 
-    paint.color = const Color(0xFFEA4335); // red
+    paint.color = const Color(0xFFEA4335);
     canvas.drawArc(rect, math.pi + gap, quarter - gap * 2, false, paint);
 
-    // Blue crossbar — the horizontal stroke of the "G"
     final barPaint = Paint()..color = const Color(0xFF4285F4);
     canvas.drawRect(
       Rect.fromLTWH(
@@ -649,43 +474,3 @@ class _GoogleLogoPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _GoogleLogoPainter oldDelegate) => false;
 }
-
-// ── Blinking cursor ───────────────────────────────────────────────────────────
-class _BlinkingCursor extends StatefulWidget {
-  final double fontSize;
-  final Color color;
-  const _BlinkingCursor({this.fontSize = 32, this.color = AppColors.chalk});
-
-  @override
-  State<_BlinkingCursor> createState() => _BlinkingCursorState();
-}
-
-class _BlinkingCursorState extends State<_BlinkingCursor>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl = AnimationController(
-      vsync: this, duration: const Duration(milliseconds: 960))
-    ..repeat(reverse: true);
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => FadeTransition(
-        opacity: _ctrl,
-        child: Padding(
-          padding: const EdgeInsets.only(bottom: 2),
-          child: Text(
-            '|',
-            style: TextStyle(
-              color: widget.color,
-              fontSize: widget.fontSize,
-              fontWeight: FontWeight.w100,
-            ),
-          ),
-        ),
-      );
-}
-

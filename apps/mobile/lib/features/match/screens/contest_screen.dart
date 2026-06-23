@@ -11,7 +11,8 @@ import '../../profile/providers/profile_provider.dart';
 import '../../../core/security/screen_security.dart';
 import '../../../core/audio/background_music.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../shared/widgets/graffiti_highlight.dart';
+import '../../../core/theme/app_typography.dart';
+import '../../../shared/widgets/ink_scaffold.dart';
 import '../../../shared/widgets/line_eye.dart';
 
 class ContestScreen extends ConsumerStatefulWidget {
@@ -31,7 +32,6 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
   @override
   void initState() {
     super.initState();
-    // Block screenshots and screen recording during live contest (GAP-15)
     ScreenSecurity.enableSecureMode();
     _powerUpSub = ref
         .read(matchNotifierProvider(widget.matchId).notifier)
@@ -58,21 +58,36 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
       if (!mounted) return;
       setState(() => _usedPowerUps.remove(type));
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString().replaceFirst('Exception: ', '')),
+        backgroundColor: AppColors.dark.surfaceRaised,
+        content: Text(
+          e.toString().replaceFirst('Exception: ', ''),
+          style: AppText.label(
+            size: 12,
+            weight: FontWeight.w600,
+            color: AppColors.red,
+            letterSpacing: 1,
+          ),
+        ),
       ));
     }
   }
 
-  /// Grabs the opponent's current video frame and opens the editor. Saved
-  /// shots land in the player's collage (and become photo-bomb ammo). Unlike
-  /// power-ups this can be used repeatedly.
   Future<void> _captureOpponent() async {
     final notifier = ref.read(matchNotifierProvider(widget.matchId).notifier);
     final bytes = await notifier.captureOpponentFrame();
     if (!mounted) return;
     if (bytes == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('NO OPPONENT VIDEO TO CAPTURE YET.'),
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        backgroundColor: AppColors.dark.surfaceRaised,
+        content: Text(
+          'NO OPPONENT VIDEO TO CAPTURE YET.',
+          style: AppText.label(
+            size: 12,
+            weight: FontWeight.w600,
+            color: AppColors.chalk,
+            letterSpacing: 1,
+          ),
+        ),
       ));
       return;
     }
@@ -84,8 +99,17 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
     );
     if (saved == true && mounted) {
       ref.invalidate(userPhotosProvider);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('SAVED TO YOUR COLLAGE.'),
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        backgroundColor: AppColors.dark.surfaceRaised,
+        content: Text(
+          'SAVED TO YOUR COLLAGE.',
+          style: AppText.label(
+            size: 12,
+            weight: FontWeight.w600,
+            color: AppColors.acid,
+            letterSpacing: 1,
+          ),
+        ),
       ));
     }
   }
@@ -95,6 +119,7 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
     final notifier = ref.read(matchNotifierProvider(widget.matchId).notifier);
     final matchState = ref.watch(matchNotifierProvider(widget.matchId));
     final room = notifier.livekitService.room;
+    final colors = context.colors;
 
     ref.listen(matchNotifierProvider(widget.matchId), (prev, next) {
       if (next.phase == MatchPhase.result || next.phase == MatchPhase.abandoned) {
@@ -102,200 +127,294 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
       }
     });
 
-    return Scaffold(
-      backgroundColor: context.colors.background,
+    return InkScaffold(
+      splatSeed: 92,
+      splatIntensity: 0.3,
       body: SafeArea(
         child: Stack(
           fit: StackFit.expand,
           children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  Expanded(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          matchState.videoConnected && room != null
-                              ? RemoteVideoFeed(room: room)
-                              : Container(
-                                  color: AppColors.dark.surface,
-                                  child: Center(
-                                    child: Text(
-                                      'OPPONENT',
-                                      style: TextStyle(color: AppColors.dark.ink(0.54)),
-                                    ),
+            // Main layout — opponent feed (60%) + local feed (40%)
+            Column(
+              children: [
+                // Opponent video — 60%
+                Expanded(
+                  flex: 6,
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(2),
+                      bottomRight: Radius.circular(2),
+                    ),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        matchState.videoConnected && room != null
+                            ? RemoteVideoFeed(room: room)
+                            : Container(
+                                color: AppColors.surfaceInsetDark,
+                                child: Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      LineEyeIcon(
+                                          size: 40,
+                                          color: AppColors.chalkInk(0.2)),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        'OPPONENT',
+                                        style: AppText.label(
+                                          size: 12,
+                                          weight: FontWeight.w600,
+                                          color: AppColors.chalkInk(0.3),
+                                          letterSpacing: 3,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                          Positioned(
-                            bottom: 16,
-                            left: 0,
-                            right: 0,
+                              ),
+
+                        // "DON'T BLINK." taunt
+                        Positioned(
+                          bottom: 16,
+                          left: 0,
+                          right: 0,
+                          child: Center(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: AppColors.bg.withOpacity(0.6),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                              child: Text(
+                                "DON'T BLINK.",
+                                style: AppText.display(
+                                  size: 28,
+                                  color: AppColors.acid,
+                                  letterSpacing: 4,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // LIVE badge
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: AppColors.red,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
                             child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text(
-                                  "DON'T ",
-                                  style: TextStyle(
-                                    color: context.colors.foreground,
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.w200,
-                                    letterSpacing: 5,
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.white,
                                   ),
                                 ),
-                                GraffitiHighlight(
-                                  child: Text(
-                                    'BLINK',
-                                    style: TextStyle(
-                                      color: AppColors.acidInk,
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.w500,
-                                      letterSpacing: 5,
-                                    ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'LIVE',
+                                  style: AppText.label(
+                                    size: 9,
+                                    weight: FontWeight.w700,
+                                    color: Colors.white,
+                                    letterSpacing: 1.5,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          // Grab a reaction shot of the opponent for the
-                          // collage / future photo bombs.
-                          Positioned(
-                            top: 8,
-                            left: 8,
-                            child: _CaptureButton(onPressed: _captureOpponent),
-                          ),
-                          // Distraction power-ups — each usable once per
-                          // match. Vertical rail on the left edge.
-                          Positioned(
-                            left: 20,
-                            top: 0,
-                            bottom: 0,
-                            child: Center(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  _PowerUpButton(
-                                    label: 'Swarm',
-                                    used: _usedPowerUps.contains('eye_swarm'),
-                                    onPressed: () => _firePowerUp('eye_swarm'),
-                                    child: const LineEyeIcon(
-                                        size: 20, color: AppColors.chalk),
-                                  ),
-                                  const SizedBox(height: 18),
-                                  _PowerUpButton(
-                                    label: 'Flash',
-                                    used: _usedPowerUps.contains('flash'),
-                                    onPressed: () => _firePowerUp('flash'),
-                                    child: const Icon(Icons.bolt,
-                                        color: AppColors.chalk, size: 22),
-                                  ),
-                                  const SizedBox(height: 18),
-                                  _PowerUpButton(
-                                    label: 'Photos',
-                                    used: _usedPowerUps.contains('photo_bomb'),
-                                    onPressed: () => _firePowerUp('photo_bomb'),
-                                    child: const Icon(Icons.collections,
-                                        color: AppColors.chalk, size: 20),
-                                  ),
-                                  const SizedBox(height: 18),
-                                  _PowerUpButton(
-                                    label: 'Shake',
-                                    used: _usedPowerUps.contains('shake'),
-                                    onPressed: () => _firePowerUp('shake'),
-                                    child: const Icon(Icons.vibration,
-                                        color: AppColors.chalk, size: 22),
-                                  ),
-                                  const SizedBox(height: 18),
-                                  _PowerUpButton(
-                                    label: 'Glitch',
-                                    used: _usedPowerUps.contains('glitch'),
-                                    onPressed: () => _firePowerUp('glitch'),
-                                    child: const Icon(Icons.broken_image,
-                                        color: AppColors.chalk, size: 20),
-                                  ),
-                                  const SizedBox(height: 18),
-                                  _PowerUpButton(
-                                    label: 'Taunt',
-                                    used: _usedPowerUps.contains('taunt'),
-                                    onPressed: () => _firePowerUp('taunt'),
-                                    child: const Icon(Icons.campaign,
-                                        color: AppColors.chalk, size: 22),
-                                  ),
-                                ],
-                              ),
+                        ),
+
+                        // Capture button
+                        Positioned(
+                          top: 8,
+                          left: 8,
+                          child: _CaptureButton(onPressed: _captureOpponent),
+                        ),
+
+                        // Power-up rail — vertical left edge
+                        Positioned(
+                          left: 8,
+                          top: 48,
+                          bottom: 48,
+                          child: Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _PowerUpButton(
+                                  label: 'Swarm',
+                                  used: _usedPowerUps.contains('eye_swarm'),
+                                  onPressed: () => _firePowerUp('eye_swarm'),
+                                  child: const LineEyeIcon(
+                                      size: 18, color: AppColors.chalk),
+                                ),
+                                const SizedBox(height: 12),
+                                _PowerUpButton(
+                                  label: 'Flash',
+                                  used: _usedPowerUps.contains('flash'),
+                                  onPressed: () => _firePowerUp('flash'),
+                                  child: const Icon(Icons.bolt,
+                                      color: AppColors.chalk, size: 20),
+                                ),
+                                const SizedBox(height: 12),
+                                _PowerUpButton(
+                                  label: 'Photos',
+                                  used: _usedPowerUps.contains('photo_bomb'),
+                                  onPressed: () => _firePowerUp('photo_bomb'),
+                                  child: const Icon(Icons.collections,
+                                      color: AppColors.chalk, size: 18),
+                                ),
+                                const SizedBox(height: 12),
+                                _PowerUpButton(
+                                  label: 'Shake',
+                                  used: _usedPowerUps.contains('shake'),
+                                  onPressed: () => _firePowerUp('shake'),
+                                  child: const Icon(Icons.vibration,
+                                      color: AppColors.chalk, size: 20),
+                                ),
+                                const SizedBox(height: 12),
+                                _PowerUpButton(
+                                  label: 'Glitch',
+                                  used: _usedPowerUps.contains('glitch'),
+                                  onPressed: () => _firePowerUp('glitch'),
+                                  child: const Icon(Icons.broken_image,
+                                      color: AppColors.chalk, size: 18),
+                                ),
+                                const SizedBox(height: 12),
+                                _PowerUpButton(
+                                  label: 'Taunt',
+                                  used: _usedPowerUps.contains('taunt'),
+                                  onPressed: () => _firePowerUp('taunt'),
+                                  child: const Icon(Icons.campaign,
+                                      color: AppColors.chalk, size: 20),
+                                ),
+                              ],
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    height: 160,
-                    child: Stack(
-                      children: [
-                        Positioned.fill(
-                          child: CameraFeed(
-                            blinkDetector: notifier.blinkDetector,
-                            localVideoTrack: matchState.videoConnected
-                                ? notifier.livekitService.localVideoTrack
-                                : null,
-                            cameraPosition: matchState.cameraPosition,
                           ),
                         ),
-                        if (matchState.videoConnected)
-                          Positioned(
-                            right: 8,
-                            bottom: 8,
-                            child: _CameraSwitchButton(
-                              onPressed: () => notifier.switchCamera(),
-                            ),
-                          ),
                       ],
                     ),
                   ),
-                ],
-              ),
-            ),
-            Positioned(
-              top: 16,
-              right: 16,
-              child: SafeArea(
-                child: TextButton(
-                  onPressed: () async {
-                    final confirm = await showDialog<bool>(
-                      context: context,
-                      builder: (_) => AlertDialog(
-                        backgroundColor: AppColors.dark.surface,
-                        title: Text('ABANDON MATCH?',
-                            style: TextStyle(color: context.colors.foreground)),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, false),
-                            child: const Text('CANCEL'),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, true),
-                            child: const Text('ABANDON',
-                                style: TextStyle(color: AppColors.red)),
-                          ),
-                        ],
+                ),
+
+                const SizedBox(height: 2),
+
+                // Local camera — 40%
+                Expanded(
+                  flex: 4,
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: CameraFeed(
+                          blinkDetector: notifier.blinkDetector,
+                          localVideoTrack: matchState.videoConnected
+                              ? notifier.livekitService.localVideoTrack
+                              : null,
+                          cameraPosition: matchState.cameraPosition,
+                        ),
                       ),
-                    );
-                    if (confirm == true) await notifier.abandon();
-                  },
-                  child: Text('QUIT', style: TextStyle(color: context.colors.ink(0.54))),
+                      if (matchState.videoConnected)
+                        Positioned(
+                          right: 8,
+                          bottom: 8,
+                          child: _CameraSwitchButton(
+                            onPressed: () => notifier.switchCamera(),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            // Top-left: music toggle
+            const Positioned(
+              top: 4,
+              left: 56,
+              child: MusicToggleButton(),
+            ),
+
+            // Top-right: quit
+            Positioned(
+              top: 4,
+              right: 8,
+              child: GestureDetector(
+                onTap: () async {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      backgroundColor: AppColors.dark.surfaceRaised,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(2)),
+                      title: Text(
+                        'ABANDON MATCH?',
+                        style: AppText.display(
+                          size: 24,
+                          color: colors.foreground,
+                        ),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: Text(
+                            'CANCEL',
+                            style: AppText.label(
+                              size: 12,
+                              weight: FontWeight.w600,
+                              color: colors.ink(0.5),
+                              letterSpacing: 2,
+                            ),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: Text(
+                            'ABANDON',
+                            style: AppText.label(
+                              size: 12,
+                              weight: FontWeight.w700,
+                              color: AppColors.red,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirm == true) await notifier.abandon();
+                },
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.bg.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                  child: Text(
+                    'QUIT',
+                    style: AppText.label(
+                      size: 11,
+                      weight: FontWeight.w600,
+                      color: colors.ink(0.5),
+                      letterSpacing: 2,
+                    ),
+                  ),
                 ),
               ),
             ),
-            // Quit sits top-right, so the music toggle takes top-left.
-            const Positioned(
-              top: 8,
-              left: 8,
-              child: MusicToggleButton(),
-            ),
+
+            // Power-up overlay
             if (_activePowerUp != null)
               Positioned.fill(
                 child: PowerUpOverlay(
@@ -313,8 +432,6 @@ class _ContestScreenState extends ConsumerState<ContestScreen> {
   }
 }
 
-/// Switches which camera (front/back) is shown to the opponent. The front
-/// camera keeps running for blink detection regardless of which is selected.
 class _CameraSwitchButton extends StatelessWidget {
   final VoidCallback onPressed;
 
@@ -322,25 +439,22 @@ class _CameraSwitchButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return GestureDetector(
       onTap: onPressed,
-      customBorder: const CircleBorder(),
       child: Container(
         width: 36,
         height: 36,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: AppColors.dark.background.withOpacity(0.4),
-          border: Border.all(color: AppColors.dark.ink(0.24)),
+          color: AppColors.bg.withOpacity(0.5),
+          border: Border.all(color: AppColors.chalkInk(0.2)),
         ),
-        child: Icon(Icons.cameraswitch, color: context.colors.foreground, size: 18),
+        child: const Icon(Icons.cameraswitch, color: AppColors.chalk, size: 18),
       ),
     );
   }
 }
 
-/// Snaps a still of the opponent's feed. Lives on the feed itself so it reads
-/// as "capture what you're looking at".
 class _CaptureButton extends StatelessWidget {
   final VoidCallback onPressed;
 
@@ -348,18 +462,17 @@ class _CaptureButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return GestureDetector(
       onTap: onPressed,
-      customBorder: const CircleBorder(),
       child: Container(
         width: 40,
         height: 40,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: AppColors.dark.background.withOpacity(0.4),
-          border: Border.all(color: AppColors.dark.ink(0.24)),
+          color: AppColors.bg.withOpacity(0.5),
+          border: Border.all(color: AppColors.chalkInk(0.2)),
         ),
-        child: Icon(Icons.camera_alt, color: context.colors.foreground, size: 20),
+        child: const Icon(Icons.camera_alt, color: AppColors.chalk, size: 20),
       ),
     );
   }
@@ -385,27 +498,31 @@ class _PowerUpButton extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          InkWell(
+          GestureDetector(
             onTap: used ? null : onPressed,
-            customBorder: const CircleBorder(),
             child: Container(
-              width: 48,
-              height: 48,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.dark.foreground.withOpacity(0.08),
-                border: Border.all(color: AppColors.dark.ink(0.24)),
+                color: AppColors.bg.withOpacity(0.5),
+                border: Border.all(
+                  color: used
+                      ? AppColors.chalkInk(0.1)
+                      : AppColors.acid.withOpacity(0.4),
+                ),
               ),
               child: Center(child: child),
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 3),
           Text(
             label.toUpperCase(),
-            style: TextStyle(
-              color: AppColors.dark.ink(0.38),
-              fontSize: 8,
-              letterSpacing: 2,
+            style: AppText.label(
+              size: 8,
+              weight: FontWeight.w600,
+              color: AppColors.chalkInk(0.35),
+              letterSpacing: 1.4,
             ),
           ),
         ],
