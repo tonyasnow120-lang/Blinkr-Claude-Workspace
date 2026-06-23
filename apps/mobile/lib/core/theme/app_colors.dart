@@ -27,6 +27,17 @@ class AppColors {
   static const chalk = Color(0xFFF0EDE0);
   static const bg = Color(0xFF080808);
 
+  // --- Extra surfaces / washes (const-safe) ---
+  static const surfaceInsetDark = Color(0xFF0D0F0A); // recessed wells, inputs
+  static const inkWash = Color(0xFF1C2A1A); // green-tinted dividers / wash
+
+  // --- Accent glow rgba(57,255,20,0.35) ---
+  static const acidGlow = Color(0x5939FF14);
+
+  /// Chalk ink ladder, theme-independent (dark-default). Use in const-free
+  /// contexts where you want chalk at a given opacity without a BuildContext.
+  static Color chalkInk(double opacity) => chalk.withOpacity(opacity);
+
   const AppColors._({
     required this.background,
     required this.surface,

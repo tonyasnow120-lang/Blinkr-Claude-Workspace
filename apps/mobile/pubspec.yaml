@@ -17,6 +17,8 @@ dependencies:
   go_router: ^14.0.0
   flutter_riverpod: ^2.5.0
   riverpod_annotation: ^2.3.0
+  google_fonts: ^6.2.1         # Ink-Punk type lanes: Bebas Neue, Barlow
+                               # Condensed, Share Tech Mono, Inter
   lottie: ^3.1.0
   freezed_annotation: ^2.4.0
   json_annotation: ^4.9.0
