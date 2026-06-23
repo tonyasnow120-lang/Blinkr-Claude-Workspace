@@ -107,7 +107,7 @@ class _CreateChallengeScreenState
   }
 
   Widget _buildContent(
-      MatchmakingState state, AppColorsData colors, bool targeted) {
+      MatchmakingState state, AppColors colors, bool targeted) {
     if (state.phase == MatchmakingPhase.creating ||
         state.phase == MatchmakingPhase.idle) {
       return _buildLoading(colors);
@@ -124,7 +124,7 @@ class _CreateChallengeScreenState
     return _buildLinkChallenge(state, colors);
   }
 
-  Widget _buildLoading(AppColorsData colors) {
+  Widget _buildLoading(AppColors colors) {
     return Column(
       children: [
         const SizedBox(height: 80),
@@ -155,7 +155,7 @@ class _CreateChallengeScreenState
     );
   }
 
-  Widget _buildError(MatchmakingState state, AppColorsData colors) {
+  Widget _buildError(MatchmakingState state, AppColors colors) {
     return Column(
       children: [
         const SizedBox(height: 80),
@@ -178,7 +178,7 @@ class _CreateChallengeScreenState
     );
   }
 
-  Widget _buildTargeted(MatchmakingState state, AppColorsData colors) {
+  Widget _buildTargeted(MatchmakingState state, AppColors colors) {
     return Column(
       children: [
         const SizedBox(height: 40),
@@ -234,7 +234,7 @@ class _CreateChallengeScreenState
     );
   }
 
-  Widget _buildLinkChallenge(MatchmakingState state, AppColorsData colors) {
+  Widget _buildLinkChallenge(MatchmakingState state, AppColors colors) {
     return Column(
       children: [
         const SizedBox(height: 40),
