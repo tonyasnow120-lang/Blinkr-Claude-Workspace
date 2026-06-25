@@ -399,11 +399,84 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                     ),
                   ),
                 ),
+              const SizedBox(height: 24),
+
+              // Quick actions
+              InkEnter(
+                delay: const Duration(milliseconds: 140),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _ProfileAction(
+                        icon: Icons.people_outline,
+                        label: 'FRIENDS',
+                        onTap: () => context.push('/friends'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _ProfileAction(
+                        icon: Icons.person_search_outlined,
+                        label: 'SEARCH',
+                        onTap: () => context.push('/friends/search'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _ProfileAction(
+                        icon: Icons.qr_code_2,
+                        label: 'QR CODE',
+                        onTap: () => context.push('/qr'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _ProfileAction(
+                        icon: Icons.history,
+                        label: 'HISTORY',
+                        onTap: () => context.push('/history'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Start challenge
+              InkEnter(
+                delay: const Duration(milliseconds: 180),
+                child: GestureDetector(
+                  onTap: () => context.push('/challenge/create'),
+                  child: Container(
+                    width: double.infinity,
+                    height: 52,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: AppColors.acid,
+                      borderRadius: BorderRadius.circular(2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.acid.withOpacity(0.30),
+                          blurRadius: 16,
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      'START CHALLENGE',
+                      style: AppText.label(
+                        size: 14,
+                        weight: FontWeight.w700,
+                        color: AppColors.acidInk,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
               const SizedBox(height: 32),
 
               // Private photos — owner only
               InkEnter(
-                delay: const Duration(milliseconds: 160),
+                delay: const Duration(milliseconds: 240),
                 child: _PhotoSection(
                   title: 'MY PHOTOS',
                   subtitle: 'ONLY YOU CAN SEE THESE',
@@ -421,7 +494,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
 
               // Public photos — visible to friends
               InkEnter(
-                delay: const Duration(milliseconds: 240),
+                delay: const Duration(milliseconds: 320),
                 child: _PhotoSection(
                   title: 'SHARED PHOTOS',
                   subtitle: 'VISIBLE TO FRIENDS',
@@ -661,6 +734,50 @@ class _PhotoSection extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// -- Profile quick-action card -----------------------------------------------
+class _ProfileAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _ProfileAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.dark.surfaceRaised,
+          borderRadius: BorderRadius.circular(2),
+          border: Border.all(color: colors.ink(0.1), width: 1),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: colors.ink(0.55), size: 22),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: AppText.label(
+                size: 9,
+                weight: FontWeight.w600,
+                color: colors.ink(0.45),
+                letterSpacing: 1.6,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
