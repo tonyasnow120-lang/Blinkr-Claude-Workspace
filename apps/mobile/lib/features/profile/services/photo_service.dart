@@ -36,10 +36,17 @@ class PhotoService {
     return supabase.storage.from(_bucket).getPublicUrl(storagePath);
   }
 
-  Future<Map<String, dynamic>> uploadPhoto(XFile file) async {
-    final url = await _uploadToStorage(file, prefix: '');
+  Future<Map<String, dynamic>> uploadPhoto(
+    XFile file, {
+    String visibility = 'public',
+  }) async {
+    final prefix = visibility == 'private' ? 'private-' : '';
+    final url = await _uploadToStorage(file, prefix: prefix);
 
-    final response = await _api.post(ApiEndpoints.myPhotos, body: {'url': url});
+    final response = await _api.post(
+      ApiEndpoints.myPhotos,
+      body: {'url': url, 'visibility': visibility},
+    );
     return response['data'] as Map<String, dynamic>;
   }
 

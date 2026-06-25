@@ -5,6 +5,8 @@ class ApiEndpoints {
   static const String me = '/v1/users/me';
   static const String myMatches = '/v1/users/me/matches';
   static const String myPhotos = '/v1/users/me/photos';
+  static const String myPrivatePhotos = '/v1/users/me/photos?visibility=private';
+  static const String myPublicPhotos = '/v1/users/me/photos?visibility=public';
   static String deletePhoto(String id) => '/v1/users/me/photos/$id';
   static String userById(String id) => '/v1/users/$id';
 

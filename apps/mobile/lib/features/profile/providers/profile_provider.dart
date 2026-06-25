@@ -19,6 +19,18 @@ final userPhotosProvider = FutureProvider<List<dynamic>>((ref) async {
   return (response['data'] as List).cast<dynamic>();
 });
 
+final privatePhotosProvider = FutureProvider<List<dynamic>>((ref) async {
+  final api = ref.watch(apiClientProvider);
+  final response = await api.get(ApiEndpoints.myPrivatePhotos);
+  return (response['data'] as List).cast<dynamic>();
+});
+
+final publicPhotosProvider = FutureProvider<List<dynamic>>((ref) async {
+  final api = ref.watch(apiClientProvider);
+  final response = await api.get(ApiEndpoints.myPublicPhotos);
+  return (response['data'] as List).cast<dynamic>();
+});
+
 final myMatchesProvider =
     FutureProvider.family<List<dynamic>, ({int limit, int offset})>(
   (ref, args) async {

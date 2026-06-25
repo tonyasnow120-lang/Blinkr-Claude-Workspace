@@ -5,7 +5,11 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/audio/background_music.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../shared/widgets/theme_toggle_button.dart';
+import '../../../core/theme/app_typography.dart';
+import '../../../shared/widgets/ink_enter.dart';
+import '../../../shared/widgets/ink_scaffold.dart';
+import '../../../shared/widgets/stat_strip.dart';
+import '../../../shared/widgets/watching_eye.dart';
 import '../providers/profile_provider.dart';
 import '../../auth/providers/auth_provider.dart';
 
@@ -18,74 +22,29 @@ class ProfileScreen extends ConsumerStatefulWidget {
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen>
     with TickerProviderStateMixin {
-  late final AnimationController _entranceCtrl;
   late final AnimationController _auraCtrl;
 
-  late final Animation<double> _avatarFade;
-  late final Animation<double> _avatarScale;
-  late final Animation<double> _statsFade;
-  late final Animation<double> _statsSlide;
-  late final Animation<double> _collageFade;
-  late final Animation<double> _collageSlide;
-
-  bool _uploading = false;
+  bool _uploadingPrivate = false;
+  bool _uploadingPublic = false;
   bool _uploadingAvatar = false;
 
   @override
   void initState() {
     super.initState();
-
-    _entranceCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1100));
     _auraCtrl = AnimationController(
         vsync: this, duration: const Duration(seconds: 18))
       ..repeat();
-
-    _avatarFade = CurvedAnimation(
-      parent: _entranceCtrl,
-      curve: const Interval(0.0, 0.45, curve: Curves.easeOut),
-    );
-    _avatarScale = Tween<double>(begin: 0.85, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _entranceCtrl,
-        curve: const Interval(0.0, 0.5, curve: Curves.easeOutBack),
-      ),
-    );
-    _statsFade = CurvedAnimation(
-      parent: _entranceCtrl,
-      curve: const Interval(0.25, 0.75, curve: Curves.easeOut),
-    );
-    _statsSlide = Tween<double>(begin: 24, end: 0).animate(
-      CurvedAnimation(
-        parent: _entranceCtrl,
-        curve: const Interval(0.25, 0.75, curve: Curves.easeOutCubic),
-      ),
-    );
-    _collageFade = CurvedAnimation(
-      parent: _entranceCtrl,
-      curve: const Interval(0.45, 1.0, curve: Curves.easeOut),
-    );
-    _collageSlide = Tween<double>(begin: 24, end: 0).animate(
-      CurvedAnimation(
-        parent: _entranceCtrl,
-        curve: const Interval(0.45, 1.0, curve: Curves.easeOutCubic),
-      ),
-    );
-
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (mounted) _entranceCtrl.forward();
-    });
   }
 
   @override
   void dispose() {
-    _entranceCtrl.dispose();
     _auraCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _pickAndUploadPhoto() async {
-    if (_uploading) return;
+  Future<void> _pickAndUploadPhoto({required String visibility}) async {
+    final isPrivate = visibility == 'private';
+    if (isPrivate ? _uploadingPrivate : _uploadingPublic) return;
 
     final picker = ImagePicker();
     final file = await picker.pickImage(
@@ -95,18 +54,45 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     );
     if (file == null) return;
 
-    setState(() => _uploading = true);
+    setState(() {
+      if (isPrivate) {
+        _uploadingPrivate = true;
+      } else {
+        _uploadingPublic = true;
+      }
+    });
     try {
-      await ref.read(photoServiceProvider).uploadPhoto(file);
-      ref.invalidate(userPhotosProvider);
+      await ref
+          .read(photoServiceProvider)
+          .uploadPhoto(file, visibility: visibility);
+      ref.invalidate(isPrivate ? privatePhotosProvider : publicPhotosProvider);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('UPLOAD FAILED: $e')),
+          SnackBar(
+            backgroundColor: AppColors.dark.surfaceRaised,
+            content: Text(
+              'UPLOAD FAILED.',
+              style: AppText.label(
+                size: 12,
+                weight: FontWeight.w600,
+                color: AppColors.red,
+                letterSpacing: 2,
+              ),
+            ),
+          ),
         );
       }
     } finally {
-      if (mounted) setState(() => _uploading = false);
+      if (mounted) {
+        setState(() {
+          if (isPrivate) {
+            _uploadingPrivate = false;
+          } else {
+            _uploadingPublic = false;
+          }
+        });
+      }
     }
   }
 
@@ -128,7 +114,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('UPLOAD FAILED: $e')),
+          SnackBar(
+            backgroundColor: AppColors.dark.surfaceRaised,
+            content: Text(
+              'UPLOAD FAILED.',
+              style: AppText.label(
+                size: 12,
+                weight: FontWeight.w600,
+                color: AppColors.red,
+                letterSpacing: 2,
+              ),
+            ),
+          ),
         );
       }
     } finally {
@@ -136,27 +133,48 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     }
   }
 
-  Future<void> _confirmDeletePhoto(String id) async {
+  Future<void> _confirmDeletePhoto(String id,
+      {required String visibility}) async {
     final colors = context.colors;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: colors.surface,
-        title: Text('REMOVE PHOTO?',
-            style: TextStyle(color: colors.foreground)),
+        title: Text(
+          'REMOVE PHOTO?',
+          style: AppText.label(
+            size: 16,
+            weight: FontWeight.w700,
+            color: colors.foreground,
+            letterSpacing: 2,
+          ),
+        ),
         content: Text(
-          'THIS PHOTO WILL BE REMOVED FROM YOUR COLLAGE.',
-          style: TextStyle(color: colors.ink(0.7)),
+          'THIS PHOTO WILL BE PERMANENTLY REMOVED.',
+          style: AppText.body(size: 13, color: colors.ink(0.6)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('CANCEL'),
+            child: Text(
+              'CANCEL',
+              style: AppText.label(
+                size: 12,
+                weight: FontWeight.w600,
+                color: colors.ink(0.5),
+              ),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('REMOVE',
-                style: TextStyle(color: AppColors.red)),
+            child: Text(
+              'REMOVE',
+              style: AppText.label(
+                size: 12,
+                weight: FontWeight.w600,
+                color: AppColors.red,
+              ),
+            ),
           ),
         ],
       ),
@@ -165,11 +183,25 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
 
     try {
       await ref.read(photoServiceProvider).deletePhoto(id);
-      ref.invalidate(userPhotosProvider);
+      ref.invalidate(visibility == 'private'
+          ? privatePhotosProvider
+          : publicPhotosProvider);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('FAILED TO REMOVE: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppColors.dark.surfaceRaised,
+            content: Text(
+              'FAILED TO REMOVE.',
+              style: AppText.label(
+                size: 12,
+                weight: FontWeight.w600,
+                color: AppColors.red,
+                letterSpacing: 2,
+              ),
+            ),
+          ),
+        );
       }
     }
   }
@@ -177,95 +209,130 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(profileProvider);
-    final photos = ref.watch(userPhotosProvider);
+    final privatePhotos = ref.watch(privatePhotosProvider);
+    final publicPhotos = ref.watch(publicPhotosProvider);
     final colors = context.colors;
 
-    return Scaffold(
-      backgroundColor: colors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        foregroundColor: colors.foreground,
-        title: const Text('PROFILE'),
-        actions: [
-          const MusicToggleButton(),
-          const ThemeToggleButton(),
-          TextButton(
-            onPressed: () async {
-              await ref.read(authServiceProvider).signOut();
-              if (context.mounted) context.go('/');
-            },
-            child: Text('SIGN OUT', style: TextStyle(color: colors.ink(0.7))),
-          ),
-        ],
-      ),
-      // Primary post-login landing page: profile details up top, start
-      // challenge pinned below so it's reachable even while the profile
-      // request is still loading.
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(child: _buildProfileBody(profile, photos, colors)),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(40, 0, 40, 36),
-            child: SizedBox(
-              height: 52,
-              child: ElevatedButton(
-                onPressed: () => context.push('/home'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colors.foreground,
-                  foregroundColor: colors.background,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(4),
+    return InkScaffold(
+      splatSeed: 55,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Top bar
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 4, 8, 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    onPressed: () => context.pop(),
+                    icon: Icon(Icons.arrow_back,
+                        color: colors.foreground, size: 20),
                   ),
-                ),
-                child: const Text(
-                  'START CHALLENGE',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w400,
-                    letterSpacing: 4,
+                  Text(
+                    'PROFILE',
+                    style: AppText.label(
+                      size: 13,
+                      weight: FontWeight.w700,
+                      color: colors.foreground,
+                      letterSpacing: 3,
+                    ),
                   ),
-                ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const MusicToggleButton(),
+                      GestureDetector(
+                        onTap: () async {
+                          await ref.read(authServiceProvider).signOut();
+                          if (context.mounted) context.go('/');
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          child: Text(
+                            'OUT',
+                            style: AppText.label(
+                              size: 11,
+                              weight: FontWeight.w600,
+                              color: colors.ink(0.45),
+                              letterSpacing: 2,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-          ),
-        ],
+
+            Expanded(
+              child: _buildBody(
+                  profile, privatePhotos, publicPhotos, colors),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildProfileBody(
+  Widget _buildBody(
     AsyncValue<Map<String, dynamic>> profile,
-    AsyncValue<List<dynamic>> photos,
+    AsyncValue<List<dynamic>> privatePhotos,
+    AsyncValue<List<dynamic>> publicPhotos,
     AppColors colors,
   ) {
     return profile.when(
-      loading: () =>
-          Center(child: CircularProgressIndicator(color: colors.foreground)),
+      loading: () => Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Opacity(
+              opacity: 0.55,
+              child: WatchingEye(
+                height: 100,
+                color: colors.foreground,
+                background: colors.background,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'LOADING...',
+              style: AppText.label(
+                size: 11,
+                weight: FontWeight.w600,
+                color: colors.ink(0.4),
+                letterSpacing: 2.4,
+              ),
+            ),
+          ],
+        ),
+      ),
       error: (e, _) => Center(
-        child: Text(e.toString(), style: const TextStyle(color: AppColors.red)),
+        child: Text(
+          e.toString(),
+          textAlign: TextAlign.center,
+          style: AppText.body(size: 14, color: AppColors.red),
+        ),
       ),
       data: (data) {
         final user = data['users'] as Map<String, dynamic>?;
         final stats = data['user_stats'] as Map<String, dynamic>?;
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+          padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AnimatedBuilder(
-                animation: _entranceCtrl,
-                builder: (_, child) => Opacity(
-                  opacity: _avatarFade.value,
-                  child: Transform.scale(scale: _avatarScale.value, child: child),
-                ),
+              const SizedBox(height: 24),
+
+              // Avatar + name
+              InkEnter(
                 child: Row(
                   children: [
                     _AnimatedAvatar(
                       rotation: _auraCtrl,
-                      // Drizzle serializes columns with camelCase keys
                       avatarUrl: (user?['avatarUrl'] ??
                           user?['avatar_url']) as String?,
                       uploading: _uploadingAvatar,
@@ -278,19 +345,25 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            (user?['displayName'] ??
-                                user?['display_name'] ??
-                                user?['username'] ??
-                                '') as String,
-                            style: TextStyle(
+                            ((user?['displayName'] ??
+                                        user?['display_name'] ??
+                                        user?['username'] ??
+                                        '') as String)
+                                .toUpperCase(),
+                            style: AppText.display(
+                              size: 28,
                               color: colors.foreground,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1,
                             ),
                           ),
                           Text(
                             '@${user?['username'] ?? ''}',
-                            style: TextStyle(color: colors.ink(0.5)),
+                            style: AppText.label(
+                              size: 12,
+                              weight: FontWeight.w500,
+                              color: colors.ink(0.45),
+                              letterSpacing: 1.6,
+                            ),
                           ),
                         ],
                       ),
@@ -298,73 +371,71 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                   ],
                 ),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 24),
+
+              // Stat strip
               if (stats != null)
-                AnimatedBuilder(
-                  animation: _entranceCtrl,
-                  builder: (_, child) => Opacity(
-                    opacity: _statsFade.value,
-                    child: Transform.translate(
-                      offset: Offset(0, _statsSlide.value),
-                      child: child,
+                InkEnter(
+                  delay: const Duration(milliseconds: 80),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(2),
+                    child: StatStrip(
+                      stats: [
+                        StatItem(
+                            label: 'WINS',
+                            value: '${_toInt(stats['wins'])}'),
+                        StatItem(
+                            label: 'LOSSES',
+                            value: '${_toInt(stats['losses'])}'),
+                        StatItem(
+                            label: 'STREAK',
+                            value:
+                                '${_toInt(stats['currentStreak'] ?? stats['current_streak'])}'),
+                        StatItem(
+                            label: 'BEST',
+                            value:
+                                '${_toInt(stats['longestStreak'] ?? stats['longest_streak'])}'),
+                      ],
                     ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'STATS',
-                        style: TextStyle(
-                          color: colors.foreground,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _StatTile(
-                              label: 'WINS',
-                              value: _toInt(stats['wins']),
-                              colors: colors),
-                          _StatTile(
-                              label: 'LOSSES',
-                              value: _toInt(stats['losses']),
-                              colors: colors),
-                          _StatTile(
-                              label: 'STREAK',
-                              value: _toInt(stats['currentStreak'] ??
-                                  stats['current_streak']),
-                              colors: colors),
-                          _StatTile(
-                              label: 'BEST',
-                              value: _toInt(stats['longestStreak'] ??
-                                  stats['longest_streak']),
-                              colors: colors),
-                        ],
-                      ),
-                    ],
-                  ),
                 ),
-              const SizedBox(height: 40),
-              AnimatedBuilder(
-                animation: _entranceCtrl,
-                builder: (_, child) => Opacity(
-                  opacity: _collageFade.value,
-                  child: Transform.translate(
-                    offset: Offset(0, _collageSlide.value),
-                    child: child,
-                  ),
-                ),
-                child: _PhotoCollage(
-                  photos: photos,
-                  uploading: _uploading,
-                  onAdd: _pickAndUploadPhoto,
-                  onDelete: _confirmDeletePhoto,
+              const SizedBox(height: 32),
+
+              // Private photos — owner only
+              InkEnter(
+                delay: const Duration(milliseconds: 160),
+                child: _PhotoSection(
+                  title: 'MY PHOTOS',
+                  subtitle: 'ONLY YOU CAN SEE THESE',
+                  icon: Icons.lock_outline,
+                  photos: privatePhotos,
+                  uploading: _uploadingPrivate,
+                  onAdd: () =>
+                      _pickAndUploadPhoto(visibility: 'private'),
+                  onDelete: (id) => _confirmDeletePhoto(id,
+                      visibility: 'private'),
                   colors: colors,
                 ),
               ),
+              const SizedBox(height: 32),
+
+              // Public photos — visible to friends
+              InkEnter(
+                delay: const Duration(milliseconds: 240),
+                child: _PhotoSection(
+                  title: 'SHARED PHOTOS',
+                  subtitle: 'VISIBLE TO FRIENDS',
+                  icon: Icons.people_outline,
+                  photos: publicPhotos,
+                  uploading: _uploadingPublic,
+                  onAdd: () =>
+                      _pickAndUploadPhoto(visibility: 'public'),
+                  onDelete: (id) => _confirmDeletePhoto(id,
+                      visibility: 'public'),
+                  colors: colors,
+                ),
+              ),
+              const SizedBox(height: 40),
             ],
           ),
         );
@@ -375,7 +446,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
   int _toInt(dynamic v) => int.tryParse('${v ?? 0}') ?? 0;
 }
 
-// ── Avatar with animated rotating ring + pulse aura ───────────────────────────
+// -- Avatar with animated rotating ring + pulse aura -------------------------
 class _AnimatedAvatar extends StatelessWidget {
   final Animation<double> rotation;
   final String? avatarUrl;
@@ -410,36 +481,35 @@ class _AnimatedAvatar extends StatelessWidget {
             child: Center(
               child: CircleAvatar(
                 radius: 36,
-                backgroundColor: colors.ink(0.07),
+                backgroundColor: AppColors.surfaceInsetDark,
                 backgroundImage:
                     avatarUrl != null ? NetworkImage(avatarUrl!) : null,
                 child: avatarUrl == null
-                    ? Icon(Icons.person, color: colors.foreground, size: 36)
+                    ? Icon(Icons.person, color: colors.ink(0.4), size: 36)
                     : null,
               ),
             ),
           ),
-          // Small "+" badge to set/replace the profile picture
           Positioned(
             right: 4,
             bottom: 4,
-            child: Material(
-              color: colors.foreground,
-              shape: const CircleBorder(),
-              child: InkWell(
-                customBorder: const CircleBorder(),
-                onTap: uploading ? null : onAddPhoto,
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: uploading
-                      ? Padding(
-                          padding: const EdgeInsets.all(5),
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: colors.background),
-                        )
-                      : Icon(Icons.add, color: colors.background, size: 16),
+            child: GestureDetector(
+              onTap: uploading ? null : onAddPhoto,
+              child: Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: AppColors.acid,
+                  shape: BoxShape.circle,
                 ),
+                child: uploading
+                    ? const Padding(
+                        padding: EdgeInsets.all(5),
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: AppColors.acidInk),
+                      )
+                    : const Icon(Icons.add,
+                        color: AppColors.acidInk, size: 14),
               ),
             ),
           ),
@@ -460,7 +530,6 @@ class _AvatarAuraPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2 - 4;
 
-    // Pulsing glow behind the avatar
     final pulseT = (math.sin(rotation * math.pi * 2) + 1) / 2;
     canvas.drawCircle(
       center,
@@ -468,7 +537,6 @@ class _AvatarAuraPainter extends CustomPainter {
       Paint()..color = color.withOpacity(0.03 + pulseT * 0.05),
     );
 
-    // Rotating dashed ring
     final ringPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.2
@@ -497,50 +565,21 @@ class _AvatarAuraPainter extends CustomPainter {
       oldDelegate.rotation != rotation || oldDelegate.color != color;
 }
 
-// ── Stats with count-up animation ─────────────────────────────────────────────
-class _StatTile extends StatelessWidget {
-  final String label;
-  final int value;
-  final AppColors colors;
-
-  const _StatTile({required this.label, required this.value, required this.colors});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        TweenAnimationBuilder<int>(
-          tween: IntTween(begin: 0, end: value),
-          duration: const Duration(milliseconds: 900),
-          curve: Curves.easeOutCubic,
-          builder: (_, v, __) => Text(
-            '$v',
-            style: TextStyle(
-              color: colors.foreground,
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(color: colors.ink(0.5), fontSize: 12),
-        ),
-      ],
-    );
-  }
-}
-
-// ── Photo collage ──────────────────────────────────────────────────────────────
-class _PhotoCollage extends StatelessWidget {
+// -- Photo section (reused for private + public) -----------------------------
+class _PhotoSection extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
   final AsyncValue<List<dynamic>> photos;
   final bool uploading;
   final VoidCallback onAdd;
   final void Function(String id) onDelete;
   final AppColors colors;
 
-  const _PhotoCollage({
+  const _PhotoSection({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
     required this.photos,
     required this.uploading,
     required this.onAdd,
@@ -553,43 +592,64 @@ class _PhotoCollage extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'PHOTOS',
-          style: TextStyle(
-            color: colors.foreground,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+        // Section header
+        Row(
+          children: [
+            Icon(icon, color: AppColors.acid, size: 16),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: AppText.label(
+                size: 13,
+                weight: FontWeight.w700,
+                color: colors.foreground,
+                letterSpacing: 2.4,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 4),
         Text(
-          'HOLD A PHOTO TO REMOVE IT.',
-          style: TextStyle(color: colors.ink(0.4), fontSize: 12),
+          subtitle,
+          style: AppText.label(
+            size: 10,
+            weight: FontWeight.w500,
+            color: colors.ink(0.35),
+            letterSpacing: 2,
+          ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 6),
+        Text(
+          'HOLD A PHOTO TO REMOVE IT.',
+          style: AppText.body(size: 11, color: colors.ink(0.3)),
+        ),
+        const SizedBox(height: 12),
+        // Photo grid
         photos.when(
           loading: () => Padding(
             padding: const EdgeInsets.symmetric(vertical: 24),
             child: Center(
-                child: CircularProgressIndicator(
-                    color: colors.ink(0.14), strokeWidth: 2)),
+              child: CircularProgressIndicator(
+                  color: AppColors.acid, strokeWidth: 2),
+            ),
           ),
           error: (e, _) => Text(
             'COULD NOT LOAD PHOTOS.',
-            style: TextStyle(color: colors.ink(0.4)),
+            style: AppText.body(size: 12, color: colors.ink(0.4)),
           ),
           data: (items) => GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 3,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
+              crossAxisSpacing: 6,
+              mainAxisSpacing: 6,
             ),
             itemCount: items.length + 1,
             itemBuilder: (context, index) {
               if (index == 0) {
-                return _AddPhotoTile(uploading: uploading, onTap: onAdd, colors: colors);
+                return _AddPhotoTile(
+                    uploading: uploading, onTap: onAdd, colors: colors);
               }
               final photo = items[index - 1] as Map<String, dynamic>;
               return _PhotoTile(
@@ -610,27 +670,28 @@ class _AddPhotoTile extends StatelessWidget {
   final VoidCallback onTap;
   final AppColors colors;
 
-  const _AddPhotoTile({required this.uploading, required this.onTap, required this.colors});
+  const _AddPhotoTile(
+      {required this.uploading, required this.onTap, required this.colors});
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return GestureDetector(
       onTap: uploading ? null : onTap,
-      borderRadius: BorderRadius.circular(4),
       child: Container(
         decoration: BoxDecoration(
-          border: Border.all(color: colors.ink(0.18)),
-          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: AppColors.acid.withOpacity(0.3), width: 1),
+          borderRadius: BorderRadius.circular(2),
+          color: AppColors.surfaceInsetDark,
         ),
         child: Center(
           child: uploading
-              ? SizedBox(
+              ? const SizedBox(
                   width: 18,
                   height: 18,
                   child: CircularProgressIndicator(
-                      strokeWidth: 2, color: colors.ink(0.33)),
+                      strokeWidth: 2, color: AppColors.acid),
                 )
-              : Icon(Icons.add, color: colors.ink(0.5)),
+              : Icon(Icons.add, color: AppColors.acid.withOpacity(0.6), size: 24),
         ),
       ),
     );
@@ -642,21 +703,23 @@ class _PhotoTile extends StatelessWidget {
   final VoidCallback onLongPress;
   final AppColors colors;
 
-  const _PhotoTile({required this.url, required this.onLongPress, required this.colors});
+  const _PhotoTile(
+      {required this.url, required this.onLongPress, required this.colors});
 
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(4),
+      borderRadius: BorderRadius.circular(2),
       child: GestureDetector(
         onLongPress: onLongPress,
         child: Image.network(
           url,
           fit: BoxFit.cover,
-          loadingBuilder: (context, child, progress) =>
-              progress == null ? child : Container(color: colors.ink(0.06)),
+          loadingBuilder: (context, child, progress) => progress == null
+              ? child
+              : Container(color: AppColors.surfaceInsetDark),
           errorBuilder: (_, __, ___) => Container(
-            color: colors.ink(0.06),
+            color: AppColors.surfaceInsetDark,
             child: Icon(Icons.broken_image, color: colors.ink(0.2)),
           ),
         ),
