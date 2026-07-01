@@ -21,6 +21,12 @@ GoogleService-Info.plist
 apps/mobile/build/
 apps/mobile/.dart_tool/
 apps/mobile/pubspec.lock
+apps/mobile/.flutter-plugins-dependencies
+apps/mobile/android/local.properties
+apps/mobile/android/app/src/main/java/
+apps/mobile/ios/Flutter/
+apps/mobile/ios/Runner/GeneratedPluginRegistrant.h
+apps/mobile/ios/Runner/GeneratedPluginRegistrant.m
 
 # Android signing
 *.keystore
