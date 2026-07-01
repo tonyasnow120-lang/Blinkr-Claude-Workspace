@@ -5,6 +5,7 @@ import 'router.dart';
 import '../core/audio/background_music.dart';
 import '../core/security/app_lifecycle_observer.dart';
 import '../core/theme/app_colors.dart';
+import '../core/deep_links/deep_link_handler.dart';
 import '../core/theme/theme_provider.dart';
 import '../features/matchmaking/providers/challenge_invite_provider.dart';
 
@@ -57,8 +58,10 @@ class BlinkrApp extends ConsumerWidget {
           ),
         ),
         routerConfig: router,
-        builder: (context, child) => _ChallengeInviteListener(
-          child: _MusicBootstrap(child: child ?? const SizedBox.shrink()),
+        builder: (context, child) => DeepLinkHandler(
+          child: _ChallengeInviteListener(
+            child: _MusicBootstrap(child: child ?? const SizedBox.shrink()),
+          ),
         ),
       ),
     );

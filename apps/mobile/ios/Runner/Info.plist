@@ -43,6 +43,12 @@
         </dict>
     </array>
 
+    <!-- Invite links are captured in Dart via the app_links plugin, not the
+         engine's built-in Router integration, so disable automatic forwarding
+         (keeps custom-scheme handling consistent with Android). -->
+    <key>FlutterDeepLinkingEnabled</key>
+    <false/>
+
     <key>NSCameraUsageDescription</key>
     <string>Blinkr uses your camera to detect blinks during a staring contest, show live video to your opponent, and scan challenge QR codes.</string>
 

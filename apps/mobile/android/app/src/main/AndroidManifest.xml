@@ -37,6 +37,14 @@
                 android:name="io.flutter.embedding.android.NormalTheme"
                 android:resource="@style/NormalTheme"/>
 
+            <!-- Invite links are captured in Dart via the app_links plugin, not
+                 the engine's built-in Router integration. Disable automatic
+                 forwarding so the custom scheme (blinkr://match/CODE) isn't
+                 double-routed by the engine as /CODE. -->
+            <meta-data
+                android:name="flutter_deeplinking_enabled"
+                android:value="false"/>
+
             <!-- Standard launcher intent -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
