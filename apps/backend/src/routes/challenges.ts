@@ -17,8 +17,12 @@ const CreateChallengeSchema = z.object({
 })
 
 // Primary deep link scheme — HTTPS Universal Link (GAP-9)
-// blinkr:// custom scheme kept as fallback for backward compat
-const HTTPS_BASE_URL = process.env.APP_BASE_URL ?? 'https://blinkr.app'
+// blinkr:// custom scheme kept as fallback for backward compat.
+// Default is the Railway deployment domain (which also serves the
+// /.well-known association files); override via APP_BASE_URL if a custom
+// domain is added later.
+const HTTPS_BASE_URL =
+  process.env.APP_BASE_URL ?? 'https://blinkr-production-80d5.up.railway.app'
 
 // Artificial delay for not-found responses to prevent timing-based code enumeration (GAP-12)
 const NOT_FOUND_DELAY_MS = 50

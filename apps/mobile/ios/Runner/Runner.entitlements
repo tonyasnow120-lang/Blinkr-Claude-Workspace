@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
-  Runner entitlements — enables iOS Universal Links (GAP-9)
-  Add the Associated Domains capability in Xcode or via this file.
-  Ensure https://blinkr.app/.well-known/apple-app-site-association is served
-  by the backend with the correct Content-Type and appID.
+  Runner entitlements — enables iOS Universal Links (GAP-9).
+  The distribution provisioning profile (Blinkr AppStore) carries the
+  com.apple.developer.associated-domains capability, so this codesigns.
+  The backend serves the matching apple-app-site-association at
+  https://blinkr-production-80d5.up.railway.app/.well-known/apple-app-site-association
+  (appID C76TA7LCHD.com.blinkr.app).
 -->
 <plist version="1.0">
 <dict>
-    <!-- Universal Links (associated-domains) removed for now: the
-         provisioning profile must carry every entitlement listed here or
-         codesign fails the whole build. blinkr.app universal links aren't
-         operational yet (auth uses the blinkr:// custom scheme). Re-add
-         com.apple.developer.applesignin's sibling key
-         com.apple.developer.associated-domains = [applinks:blinkr.app]
-         once the domain + App ID capability + profile are configured. -->
+    <!-- Universal Links: routes https://<domain>/match/* into the app. -->
+    <key>com.apple.developer.associated-domains</key>
+    <array>
+        <string>applinks:blinkr-production-80d5.up.railway.app</string>
+    </array>
     <key>com.apple.developer.applesignin</key>
     <array>
         <string>Default</string>

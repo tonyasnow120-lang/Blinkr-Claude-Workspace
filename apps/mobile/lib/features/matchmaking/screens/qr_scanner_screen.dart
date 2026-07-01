@@ -28,11 +28,13 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     super.dispose();
   }
 
-  /// Accepts both https://blinkr.app/match/CODE and blinkr://match/CODE.
+  /// Accepts both https://<host>/match/CODE and blinkr://match/CODE. The host
+  /// is not pinned (invite links use the backend's deployment domain); the
+  /// strict 9-char code pattern below is what actually gates a valid scan.
   String? _extractCode(String raw) {
     final uri = Uri.tryParse(raw.trim());
     if (uri == null) return null;
-    final isHttps = uri.scheme == 'https' && uri.host == 'blinkr.app';
+    final isHttps = uri.scheme == 'https';
     final isCustom = uri.scheme == 'blinkr';
     if (!isHttps && !isCustom) return null;
 

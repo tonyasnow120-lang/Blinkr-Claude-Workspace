@@ -1,26 +1,29 @@
 import type { FastifyInstance } from 'fastify'
 
 // Digital Asset Links — Android App Links verification (GAP-9)
-// PRODUCTION_TODO: replace sha256_cert_fingerprints with your release keystore SHA-256
+// Fingerprint is the SHA-256 of the release keystore certificate (public value,
+// safe to serve). Regenerate this if the release keystore is ever rotated.
 const assetLinks = [
   {
     relation: ['delegate_permission/common.handle_all_urls'],
     target: {
       namespace: 'android_app',
       package_name: 'com.blinkr.app',
-      sha256_cert_fingerprints: ['PRODUCTION_TODO:replace_with_release_keystore_sha256'],
+      sha256_cert_fingerprints: [
+        '34:5D:3C:88:1E:74:89:82:AF:78:9E:1F:C6:DA:FB:30:74:BA:EB:B5:A2:64:71:3B:CF:5B:44:1F:FB:83:57:3A',
+      ],
     },
   },
 ]
 
 // Apple App Site Association — iOS Universal Links (GAP-9)
-// PRODUCTION_TODO: replace TEAM_ID with your Apple Developer Team ID
+// appID is <AppleTeamID>.<bundleId>; the Team ID is a public identifier.
 const appleAppSiteAssociation = {
   applinks: {
     apps: [],
     details: [
       {
-        appID: 'PRODUCTION_TODO_TEAM_ID.com.blinkr.app',
+        appID: 'C76TA7LCHD.com.blinkr.app',
         paths: ['/match/*', '/challenge/*'],
       },
     ],
