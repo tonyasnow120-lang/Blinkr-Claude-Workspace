@@ -424,6 +424,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                     const SizedBox(width: 8),
                     Expanded(
                       child: _ProfileAction(
+                        icon: Icons.history,
+                        label: 'HISTORY',
+                        onTap: () => context.push('/history'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              InkEnter(
+                delay: const Duration(milliseconds: 160),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _ProfileAction(
                         icon: Icons.qr_code_2,
                         label: 'QR CODE',
                         onTap: () => context.push('/qr'),
@@ -432,9 +447,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                     const SizedBox(width: 8),
                     Expanded(
                       child: _ProfileAction(
-                        icon: Icons.history,
-                        label: 'HISTORY',
-                        onTap: () => context.push('/history'),
+                        icon: Icons.near_me_outlined,
+                        label: 'NEARBY',
+                        onTap: () => context.push('/nearby'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _ProfileAction(
+                        icon: Icons.contacts_outlined,
+                        label: 'CONTACTS',
+                        onTap: () => context.push('/contacts'),
                       ),
                     ),
                   ],
